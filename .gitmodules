@@ -1,0 +1,18 @@
+[submodule "vendor/vendor-boolector/btor2tools"]
+	path = vendor/vendor-boolector/btor2tools
+	url = git@github.com:smuenzel/btor2tools.git
+[submodule "vendor/vendor-boolector/boolector"]
+	path = vendor/vendor-boolector/boolector
+	url = git@github.com:smuenzel/boolector.git
+[submodule "vendor/vendor-boolector/cadical"]
+	path = vendor/vendor-boolector/cadical
+	url = git@github.com:smuenzel/cadical.git
+[submodule "vendor/vendor-boolector/cryptominisat"]
+	path = vendor/vendor-boolector/cryptominisat
+	url = git@github.com:smuenzel/cryptominisat.git
+[submodule "vendor/vendor-boolector/lingeling"]
+	path = vendor/vendor-boolector/lingeling
+	url = git@github.com:smuenzel/lingeling.git
+[submodule "vendor/vendor-boolector/minisat"]
+	path = vendor/vendor-boolector/minisat
+	url = git@github.com:smuenzel/minisat.git
