@@ -1,19 +1,1 @@
 (data_only_dirs vendor-boolector)
-
-(rule
-  (deps (source_tree vendor-boolector))
-  (targets
-    libboolector.a
-    boolector.h
-    btortypes.h
-    )
-  (action
-    (no-infer
-      (progn
-        (chdir vendor-boolector (system ./build-all.sh))
-        (copy vendor-boolector/build/lib/libboolector.a libboolector.a)
-        (copy vendor-boolector/build/include/boolector/boolector.h boolector.h)
-        (copy vendor-boolector/build/include/boolector/btortypes.h btortypes.h)
-        )
-     ))
-  )
