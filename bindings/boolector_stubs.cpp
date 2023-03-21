@@ -222,3 +222,19 @@ apireturn caml_boolector_print_stats(value v_btor){
   boolector_print_stats(btor);
   return Val_unit;
 }
+
+apireturn caml_boolector_assert(value v_node){
+  auto node = Custom_value<caml_boolector_node>(v_node);
+  boolector_assert(node.btor.get(),node.dep);
+  return Val_unit;
+}
+
+apireturn caml_boolector_sat(value v_btor){
+  auto btor = Btor_value(v_btor);
+  auto sat = boolector_sat(btor);
+  switch(sat){
+    case BTOR_RESULT_SAT: return Val_int(1);
+    case BTOR_RESULT_UNSAT: return Val_int(2);
+    default: return Val_int(0);
+  }
+}

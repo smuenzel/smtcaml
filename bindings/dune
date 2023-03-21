@@ -8,6 +8,7 @@
     ../vendor/build/lib/btor2parser
     ../vendor/build/lib/minisat
     )
+  (preprocess (pps ppx_jane))
   (modes            native)
   (library_flags -cclib -Wl,-lgmp -cclib -Wl,-lboost_serialization)
   (no_dynlink)
