@@ -5,6 +5,7 @@
 #include <caml/custom.h>
 
 #include <memory>
+#include <typeinfo>
 
 void delete_btor(Btor*b){
   boolector_delete(b);
@@ -66,61 +67,30 @@ static inline BoolectorSort& Sort_value(value v){
   return Custom_value<caml_boolector_sort>(v).sort;
 }
 
-void finalize_context(value v_context){
-  Custom_value<caml_boolector_btor>(v_context).~caml_boolector_btor();
-}
-
-static struct custom_operations context_ops =
-{ "boolector_context"
-, finalize_context
-, custom_compare_default
-, custom_hash_default
-, custom_serialize_default
-, custom_deserialize_default
-, custom_compare_ext_default
-, custom_fixed_length_default
-};
-
-void finalize_node(value v_node){
-  Custom_value<caml_boolector_node>(v_node).~caml_boolector_node();
-}
-
-void finalize_sort(value v_sort){
-  Custom_value<caml_boolector_sort>(v_sort).~caml_boolector_sort();
+template<typename T> void finalize_custom(value v_custom){
+  Custom_value<T>(v_custom).~T();
 }
 
 template<typename Container> struct container_ops {
   static struct custom_operations value;
 };
 
-template<>
-struct custom_operations container_ops<caml_boolector_node>::value =
-{ "boolector_node"
-, finalize_node
-, custom_compare_default
-, custom_hash_default
-, custom_serialize_default
-, custom_deserialize_default
-, custom_compare_ext_default
-, custom_fixed_length_default
-};
-
-template<>
-struct custom_operations container_ops<caml_boolector_sort>::value =
-{ "boolector_sort"
-, finalize_sort
-, custom_compare_default
-, custom_hash_default
-, custom_serialize_default
-, custom_deserialize_default
-, custom_compare_ext_default
-, custom_fixed_length_default
-};
+template<typename Container>
+  struct custom_operations container_ops<Container>::value =
+  { typeid(Container).name()
+  , &finalize_custom<Container>
+  , custom_compare_default
+  , custom_hash_default
+  , custom_serialize_default
+  , custom_deserialize_default
+  , custom_compare_ext_default
+  , custom_fixed_length_default
+  };
 
 #define apireturn extern "C" CAMLprim value
 
 apireturn caml_boolector_new(value){
-  value v_btor = caml_alloc_custom(&context_ops,sizeof(caml_boolector_btor),1,10);
+  value v_btor = caml_alloc_custom(&container_ops<caml_boolector_btor>::value,sizeof(caml_boolector_btor),1,10);
   new(&Custom_value<caml_boolector_btor>(v_btor)) caml_boolector_btor(boolector_new());
   return v_btor;
 }
@@ -203,8 +173,5 @@ apireturn caml_boolector_var_implied(value v_sort, value v_symbol){
   return alloc_dependent_internal(sort_s.btor, node);
 }
 
-/*
-apireturn caml_boolector_bool_sort(value v_btor){
+API0(boolector_bool_sort);
 
-}
-*/
