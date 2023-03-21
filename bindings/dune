@@ -1,0 +1,9 @@
+(library
+  (name             smtcaml_bindings)
+  (foreign_archives ../vendor/build/lib/boolector)
+  (modes            native)
+  (foreign_stubs
+    (language     cxx)
+    (names        boolector_stubs)
+    (flags :standard -Wall -std=c++20)
+    (include_dirs ../vendor/build/include)))
