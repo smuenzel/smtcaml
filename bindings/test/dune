@@ -1,0 +1,5 @@
+
+(executable
+  (name test_bindings)
+  (libraries core smtcaml_bindings)
+  )

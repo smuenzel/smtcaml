@@ -6,6 +6,7 @@
 
 #include <memory>
 #include <typeinfo>
+#include <functional>
 
 void delete_btor(Btor*b){
   boolector_delete(b);
@@ -15,31 +16,45 @@ struct caml_boolector_btor {
   std::shared_ptr<Btor> btor;
 
   caml_boolector_btor(Btor* b) : btor(b,delete_btor){}
+  caml_boolector_btor(std::shared_ptr<Btor>&btor) : btor(btor) {}
 };
 
-struct caml_boolector_node {
+template<typename T>
+struct always_false : std::false_type {};
+
+template<typename T>
+struct remove_const_pointer { typedef T type; };
+
+template<typename T>
+struct remove_const_pointer<const T*> { typedef T* type; };
+
+template<typename t_bt> void release(Btor*, t_bt){
+  static_assert(always_false<t_bt>::value , "You must specialize release<> for your type");
+}
+
+template<> void release<BoolectorNode*>(Btor*btor, BoolectorNode*node){
+  boolector_release(btor,node);
+}
+
+template<> void release<BoolectorSort>(Btor*btor, BoolectorSort sort){
+  boolector_release_sort(btor,sort);
+}
+
+template<typename t_bt>
+struct caml_boolector_wrap {
   std::shared_ptr<Btor> btor;
-  BoolectorNode* node;
+  t_bt dep;
 
-  caml_boolector_node(std::shared_ptr<Btor>&btor, BoolectorNode*node)
-    : btor(btor), node(node) { }
+  caml_boolector_wrap(std::shared_ptr<Btor>&btor, t_bt bt)
+    : btor(btor), dep(bt) { }
 
-  ~caml_boolector_node(){
-    boolector_release(this->btor.get(), this->node);
+  ~caml_boolector_wrap(){
+    release(this->btor.get(), this->dep);
   }
 };
 
-struct caml_boolector_sort {
-  std::shared_ptr<Btor> btor;
-  BoolectorSort sort;
-
-  caml_boolector_sort(std::shared_ptr<Btor>&btor, BoolectorSort sort)
-    : btor(btor), sort(sort) { }
-
-  ~caml_boolector_sort(){
-    boolector_release_sort(this->btor.get(), this->sort);
-  }
-};
+typedef caml_boolector_wrap<BoolectorNode*> caml_boolector_node;
+typedef caml_boolector_wrap<BoolectorSort> caml_boolector_sort;
 
 template<typename T> static inline T& Custom_value(value v){
   return (*((T*)Data_custom_val(v)));
@@ -52,7 +67,7 @@ static inline Btor * Btor_value(value v){
 }
 
 static inline BoolectorNode *& Node_value(value v){
-  return Custom_value<caml_boolector_node>(v).node;
+  return Custom_value<caml_boolector_node>(v).dep;
 }
 
 static inline caml_boolector_node& Node_s_value(value v){
@@ -64,7 +79,7 @@ static inline caml_boolector_sort& Sort_s_value(value v){
 }
 
 static inline BoolectorSort& Sort_value(value v){
-  return Custom_value<caml_boolector_sort>(v).sort;
+  return Custom_value<caml_boolector_sort>(v).dep;
 }
 
 template<typename T> void finalize_custom(value v_custom){
@@ -99,19 +114,27 @@ template<typename t_dep> struct t_dep_container { typedef void type; };
 template<> struct t_dep_container<BoolectorNode*> { typedef caml_boolector_node type; };
 template<> struct t_dep_container<BoolectorSort> { typedef caml_boolector_sort type; };
 
-template<typename Value> 
-static inline value alloc_dependent_internal(std::shared_ptr<Btor>& btor, Value dep){
-  typedef typename t_dep_container<Value>::type Container;
-  value v_container = caml_alloc_custom(&container_ops<Container>::value,sizeof(Container),1,50000);
+template<typename t_dep> 
+static inline value alloc_dependent_internal(std::shared_ptr<Btor>& btor, t_dep dep){
+  typedef typename t_dep_container<t_dep>::type Container;
+  value v_container = caml_alloc_custom(&container_ops<Container>::value,sizeof(Container),1,500000);
   new(&Custom_value<Container>(v_container)) Container(btor, dep);
   return v_container;
 }
 
-template<typename Value>
-static inline value alloc_dependent(value v_btor, Value dep){
-  typedef typename t_dep_container<Value>::type Container;
+template<typename t_dep>
+static inline value alloc_dependent(value v_btor, t_dep dep){
+  typedef typename t_dep_container<t_dep>::type Container;
   auto& s_btor = Custom_value<Container>(v_btor);
-  return alloc_dependent_internal<Value>(s_btor.btor, dep);
+  return alloc_dependent_internal<t_dep>(s_btor.btor, dep);
+}
+
+apireturn caml_boolector_get_btor(value v_node){
+  auto node = Custom_value<caml_boolector_node>(v_node);
+  auto btor = node.btor;
+  value v_btor = caml_alloc_custom(&container_ops<caml_boolector_btor>::value,sizeof(caml_boolector_btor),1,10);
+  new(&Custom_value<caml_boolector_btor>(v_btor)) caml_boolector_btor(btor);
+  return v_btor;
 }
 
 template<typename F> inline value boolector_api0(F mkdep, value v_btor){
@@ -121,23 +144,23 @@ template<typename F> inline value boolector_api0(F mkdep, value v_btor){
   return v_dep;
 }
 
-template<typename F> inline value
-boolector_node_api2(F mknod, value v_btor, value v_p0, value v_p1){
-  auto p0 = Node_value(v_p0);
-  auto p1 = Node_value(v_p1);
-  auto btor = Btor_value(v_btor);
-  auto node = mknod(btor,p0,p1);
+template<typename R, typename A0, typename A1> inline value
+boolector_api1_implied(R (*mknod)(A0, A1), value v_p0){
+  auto p0_s = Custom_value<caml_boolector_wrap<typename remove_const_pointer<A1>::type>>(v_p0);
+  auto p0 = p0_s.dep;
+  auto btor = p0_s.btor.get();
   // we retrieve all the inner values before allocation, so we don't need to register
   // roots
-  value v_node = alloc_dependent(v_btor, node);
-  return v_node;
+  auto dep = mknod(btor,p0);
+  value v_dep = alloc_dependent_internal(p0_s.btor, dep);
+  return v_dep;
 }
 
-template<typename F> inline value
-boolector_node_api2_implied(F mknod, value v_p0, value v_p1){
-  auto p0_s = Node_s_value(v_p0);
-  auto p0 = p0_s.node;
-  auto p1 = Node_value(v_p1);
+template<typename R, typename A0, typename A1, typename A2> inline value
+boolector_api2_implied(R (*mknod)(A0,A1,A2), value v_p0, value v_p1){
+  auto p0_s = Custom_value<caml_boolector_wrap<A1>>(v_p0);
+  auto p0 = p0_s.dep;
+  auto p1 = Custom_value<caml_boolector_wrap<A2>>(v_p1).dep;
   auto btor = p0_s.btor.get();
   // we retrieve all the inner values before allocation, so we don't need to register
   // roots
@@ -151,13 +174,17 @@ boolector_node_api2_implied(F mknod, value v_p0, value v_p1){
     return boolector_api0(APIF,v_btor);\
   }
 
+#define API1(APIF) \
+  apireturn caml_##APIF (value v_p0){\
+    return boolector_api1_implied(APIF,v_p0);\
+  }
+
 #define API2(APIF) \
-  apireturn caml_##APIF (value v_btor, value v_p0, value v_p1){\
-    return boolector_node_api2(APIF,v_btor, v_p0, v_p1);\
-  } \
-  apireturn caml_##APIF##_implied(value v_p0, value v_p1){\
-    return boolector_node_api2_implied(APIF,v_p0, v_p1);\
-  } \
+  apireturn caml_##APIF (value v_p0, value v_p1){\
+    return boolector_api2_implied(APIF,v_p0, v_p1);\
+  }
+
+API1(boolector_get_sort);
 
 API0(boolector_false);
 API0(boolector_true);
@@ -166,12 +193,32 @@ API2(boolector_iff);
 API2(boolector_eq);
 API2(boolector_ne);
 
-apireturn caml_boolector_var_implied(value v_sort, value v_symbol){
+apireturn caml_boolector_var(value v_sort, value v_symbol){
   auto sort_s = Sort_s_value(v_sort);
   auto symbol = String_val(v_symbol);
-  auto node = boolector_var(sort_s.btor.get(), sort_s.sort, symbol);
+  auto node = boolector_var(sort_s.btor.get(), sort_s.dep, symbol);
   return alloc_dependent_internal(sort_s.btor, node);
 }
 
 API0(boolector_bool_sort);
 
+apireturn caml_boolector_bitvec_sort(value v_btor, value v_width){
+  auto btor = Btor_value(v_btor);
+  auto width = Int_val(v_width);
+  auto dep = boolector_bitvec_sort(btor, width);
+  value v_dep = alloc_dependent<decltype(dep)>(v_btor, dep);
+  return v_dep;
+}
+
+apireturn caml_boolector_array_sort(value v_index, value v_element){
+  auto index_s = Sort_s_value(v_index);
+  auto element = Sort_value(v_element);
+  auto sort = boolector_array_sort(index_s.btor.get(), index_s.dep, element);
+  return alloc_dependent_internal(index_s.btor, sort);
+}
+
+apireturn caml_boolector_print_stats(value v_btor){
+  auto btor = Btor_value(v_btor);
+  boolector_print_stats(btor);
+  return Val_unit;
+}
