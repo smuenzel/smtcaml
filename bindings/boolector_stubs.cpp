@@ -3,10 +3,20 @@
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <caml/custom.h>
+#include <caml/threads.h>
+#include <caml/callback.h>
+#include <caml/fail.h>
+#include "caml/domain_state.h"
 
 #include <memory>
 #include <typeinfo>
 #include <functional>
+
+
+static void abort_callback(const char* msg){
+  if(Caml_state == NULL) caml_acquire_runtime_system();
+  caml_failwith(msg);
+}
 
 void delete_btor(Btor*b){
   boolector_delete(b);
@@ -105,6 +115,7 @@ template<typename Container>
 #define apireturn extern "C" CAMLprim value
 
 apireturn caml_boolector_new(value){
+  boolector_set_abort(&abort_callback);
   value v_btor = caml_alloc_custom(&container_ops<caml_boolector_btor>::value,sizeof(caml_boolector_btor),1,10);
   new(&Custom_value<caml_boolector_btor>(v_btor)) caml_boolector_btor(boolector_new());
   return v_btor;
@@ -230,8 +241,11 @@ apireturn caml_boolector_assert(value v_node){
 }
 
 apireturn caml_boolector_sat(value v_btor){
-  auto btor = Btor_value(v_btor);
-  auto sat = boolector_sat(btor);
+  /* acquire ownership before blocking section */
+  auto s_btor = Custom_value<caml_boolector_btor>(v_btor).btor;
+  caml_enter_blocking_section();
+  auto sat = boolector_sat(s_btor.get());
+  caml_leave_blocking_section();
   switch(sat){
     case BTOR_RESULT_SAT: return Val_int(1);
     case BTOR_RESULT_UNSAT: return Val_int(2);

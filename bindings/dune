@@ -17,3 +17,8 @@
     (names        boolector_stubs)
     (flags :standard -Wall -std=c++20)
     (include_dirs ../vendor/build/include)))
+
+(cinaps
+  (files boolector.ml)
+  (libraries core)
+  )
