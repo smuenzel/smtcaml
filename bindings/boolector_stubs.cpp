@@ -195,72 +195,72 @@ boolector_api3_implied(R (*mknod)(A0,A1,A2,A3), value v_p0, value v_p1, value v_
 }
 
 #define API0(APIF) \
-  apireturn caml_##APIF (value v_btor){\
-    return boolector_api0(APIF,v_btor);\
+  apireturn caml_boolector_##APIF (value v_btor){\
+    return boolector_api0(boolector_##APIF,v_btor);\
   }
 
 #define API1(APIF) \
-  apireturn caml_##APIF (value v_p0){\
-    return boolector_api1_implied(APIF,v_p0);\
+  apireturn caml_boolector_##APIF (value v_p0){\
+    return boolector_api1_implied(boolector_##APIF,v_p0);\
   }
 
 #define API2(APIF) \
-  apireturn caml_##APIF (value v_p0, value v_p1){\
-    return boolector_api2_implied(APIF,v_p0, v_p1);\
+  apireturn caml_boolector_##APIF (value v_p0, value v_p1){\
+    return boolector_api2_implied(boolector_##APIF,v_p0, v_p1);\
   }
 
 #define API3(APIF) \
-  apireturn caml_##APIF (value v_p0, value v_p1, value v_p2){\
-    return boolector_api3_implied(APIF,v_p0, v_p1, v_p2);\
+  apireturn caml_boolector_##APIF (value v_p0, value v_p1, value v_p2){\
+    return boolector_api3_implied(boolector_##APIF,v_p0, v_p1, v_p2);\
   }
 
-API1(boolector_get_sort);
+API1(get_sort);
 
-API0(boolector_false);
-API0(boolector_true);
-API2(boolector_implies);
-API2(boolector_iff);
-API2(boolector_eq);
-API2(boolector_ne);
-API2(boolector_xor);
-API2(boolector_and);
-API2(boolector_or);
-API2(boolector_nand);
-API2(boolector_nor);
-API2(boolector_add);
-API2(boolector_uaddo);
-API2(boolector_saddo);
-API2(boolector_mul);
-API2(boolector_umulo);
-API2(boolector_smulo);
-API2(boolector_ult);
-API2(boolector_ulte);
-API2(boolector_slte);
-API2(boolector_slt);
-API2(boolector_ugt);
-API2(boolector_sgt);
-API2(boolector_ugte);
-API2(boolector_sgte);
-API2(boolector_sll);
-API2(boolector_srl);
-API2(boolector_sra);
-API2(boolector_rol);
-API2(boolector_ror);
-API2(boolector_sub);
-API2(boolector_usubo);
-API2(boolector_ssubo);
-API2(boolector_udiv);
-API2(boolector_sdiv);
-API2(boolector_sdivo);
-API2(boolector_urem);
-API2(boolector_srem);
-API2(boolector_smod);
-API2(boolector_concat);
-API2(boolector_read);
-API3(boolector_write);
-API3(boolector_cond);
-API1(boolector_inc);
-API1(boolector_dec);
+API0(false);
+API0(true);
+API2(implies);
+API2(iff);
+API2(eq);
+API2(ne);
+API2(xor);
+API2(and);
+API2(or);
+API2(nand);
+API2(nor);
+API2(add);
+API2(uaddo);
+API2(saddo);
+API2(mul);
+API2(umulo);
+API2(smulo);
+API2(ult);
+API2(ulte);
+API2(slte);
+API2(slt);
+API2(ugt);
+API2(sgt);
+API2(ugte);
+API2(sgte);
+API2(sll);
+API2(srl);
+API2(sra);
+API2(rol);
+API2(ror);
+API2(sub);
+API2(usubo);
+API2(ssubo);
+API2(udiv);
+API2(sdiv);
+API2(sdivo);
+API2(urem);
+API2(srem);
+API2(smod);
+API2(concat);
+API2(read);
+API3(write);
+API3(cond);
+API1(inc);
+API1(dec);
 
 
 apireturn caml_boolector_var(value v_sort, value v_symbol){
@@ -270,7 +270,7 @@ apireturn caml_boolector_var(value v_sort, value v_symbol){
   return alloc_dependent_internal(sort_s.btor, node);
 }
 
-API0(boolector_bool_sort);
+API0(bool_sort);
 
 apireturn caml_boolector_bitvec_sort(value v_btor, value v_width){
   auto btor = Btor_value(v_btor);
