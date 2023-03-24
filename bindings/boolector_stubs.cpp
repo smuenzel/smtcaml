@@ -252,3 +252,58 @@ apireturn caml_boolector_sat(value v_btor){
     default: return Val_int(0);
   }
 }
+
+apireturn caml_boolector_set_solver(value v_btor, value v_solver){
+  auto btor = Btor_value(v_btor);
+  auto s = String_val(v_solver);
+  boolector_set_sat_solver(btor,s);
+  return Val_unit;
+}
+
+apireturn caml_boolector_first_opt(value v_btor){
+  auto btor = Btor_value(v_btor);
+  return Val_long(boolector_first_opt(btor));
+}
+
+apireturn caml_boolector_has_opt(value v_btor, value v_opt){
+  auto btor = Btor_value(v_btor);
+  auto opt = Long_val(v_opt);
+  return Val_bool(boolector_has_opt(btor, (BtorOption) opt));
+}
+
+apireturn caml_boolector_next_opt(value v_btor, value v_opt){
+  auto btor = Btor_value(v_btor);
+  auto opt = Long_val(v_opt);
+  return Val_long(boolector_next_opt(btor, (BtorOption) opt));
+}
+
+apireturn caml_boolector_get_opt_lng(value v_btor, value v_opt){
+  auto btor = Btor_value(v_btor);
+  auto str = boolector_get_opt_lng(btor, (BtorOption) Long_val(v_opt)); 
+  return caml_copy_string(str);
+}
+
+apireturn caml_boolector_get_opt_desc(value v_btor, value v_opt){
+  auto btor = Btor_value(v_btor);
+  auto str = boolector_get_opt_desc(btor, (BtorOption) Long_val(v_opt)); 
+  str = str?str:"";
+  return caml_copy_string(str);
+}
+
+apireturn caml_boolector_get_opt_min(value v_btor, value v_opt){
+  auto btor = Btor_value(v_btor);
+  auto v = boolector_get_opt_min(btor, (BtorOption) Long_val(v_opt)); 
+  return Val_long(v);
+}
+
+apireturn caml_boolector_get_opt_max(value v_btor, value v_opt){
+  auto btor = Btor_value(v_btor);
+  auto v = boolector_get_opt_max(btor, (BtorOption) Long_val(v_opt)); 
+  return Val_long(v);
+}
+
+apireturn caml_boolector_get_opt_dflt(value v_btor, value v_opt){
+  auto btor = Btor_value(v_btor);
+  auto v = boolector_get_opt_dflt(btor, (BtorOption) Long_val(v_opt)); 
+  return Val_long(v);
+}

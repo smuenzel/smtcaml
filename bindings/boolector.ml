@@ -1,17 +1,75 @@
-
+open! Base
 
 type btor
 type sort
 type node
+type btor_option [@@immediate]
 
 type solver =
   | Lingeling
   | MiniSat
-  | CryptoMiniSat
+  | Cms
   | Cadical
 [@@deriving sexp]
 
 external make : unit -> btor = "caml_boolector_new"
+
+external set_solver : btor -> string -> unit = "caml_boolector_set_solver" [@@noalloc]
+
+let set_solver btor (solver : solver) =
+  Sexp.to_string ([%sexp_of: solver] solver)
+  |> String.lowercase
+  |> set_solver btor 
+
+external first_opt : btor -> btor_option = "caml_boolector_first_opt" [@@noalloc]
+external next_opt : btor -> btor_option -> btor_option = "caml_boolector_next_opt" [@@noalloc]
+external has_opt : btor -> btor_option -> bool = "caml_boolector_has_opt" [@@noalloc]
+external opt_name_long : btor -> btor_option -> string = "caml_boolector_get_opt_lng"
+external opt_desc : btor -> btor_option -> string = "caml_boolector_get_opt_desc"
+external opt_min : btor -> btor_option -> int = "caml_boolector_get_opt_min"
+external opt_max : btor -> btor_option -> int = "caml_boolector_get_opt_max"
+external opt_default : btor -> btor_option -> int = "caml_boolector_get_opt_dflt"
+
+module BOption = struct
+  type t =
+    { b : (btor_option [@sexp.opaque])
+    ; name_long : string
+    ; description : string
+    ; min : int
+    ; max : int
+    ; default : int
+    } [@@deriving sexp_of]
+
+  let create btor b =
+    { b
+    ; name_long = opt_name_long btor b
+    ; description = opt_desc btor b
+    ; min = opt_min btor b
+    ; max = opt_max btor b
+    ; default = opt_default btor b
+    }
+end
+
+let all_options btor =
+  let first_opt = first_opt btor in
+  let current = ref first_opt in
+  let acc = ref [ first_opt ] in
+  while
+    let next = next_opt btor !current in
+    if not (has_opt btor next)
+    then begin
+      Stdlib.Printf.printf "%i %i\n" (Stdlib.Obj.magic next) (List.length !acc);
+      false
+    end
+    else begin
+      acc := next :: !acc;
+      current := next;
+      true
+    end
+  do ()
+  done;
+  List.map ~f:(BOption.create btor) !acc
+
 external print_stats : btor -> unit = "caml_boolector_print_stats"
 
 external assert_ : node -> unit = "caml_boolector_assert" [@@noalloc]

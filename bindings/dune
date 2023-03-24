@@ -1,5 +1,6 @@
 (library
   (name             smtcaml_bindings)
+  (libraries base)
   (foreign_archives 
     ../vendor/build/lib/boolector
     ../vendor/build/lib/lgl
