@@ -29,6 +29,8 @@ external opt_desc : btor -> btor_option -> string = "caml_boolector_get_opt_desc
 external opt_min : btor -> btor_option -> int = "caml_boolector_get_opt_min"
 external opt_max : btor -> btor_option -> int = "caml_boolector_get_opt_max"
 external opt_default : btor -> btor_option -> int = "caml_boolector_get_opt_dflt"
+external get_opt : btor -> btor_option -> int = "caml_boolector_get_opt"
+external set_opt : btor -> btor_option -> int -> unit = "caml_boolector_set_opt"
 
 module BOption = struct
   type t =
@@ -84,13 +86,54 @@ external sat : btor -> solver_result = "caml_boolector_sat" [@@noalloc]
 
 (*$ open! Core
 
+  let v ?caml_name s i = s, caml_name, i
+
   let operators =
-    [ "true", Some "true_val", 0
-    ; "false", Some "false_val", 0
-    ; "implies", None, 2
-    ; "iff", None, 2
-    ; "eq", None, 2
-    ; "ne", None, 2
+    [ v "true" ~caml_name:"true_val" 0
+    ; v "false" ~caml_name:"false_val" 0
+    ; v "implies" 2
+    ; v "iff" 2
+    ; v "eq" 2
+    ; v "ne" 2
+    ; v "xor" 2
+    ; v "and" ~caml_name:"and_" 2
+    ; v "or" ~caml_name:"or_" 2
+    ; v "nand" 2
+    ; v "nor" 2
+    ; v "add" 2
+    ; v "uaddo" 2
+    ; v "saddo" 2
+    ; v "mul" 2
+    ; v "umulo" 2
+    ; v "smulo" 2
+    ; v "ult" 2
+    ; v "slt" 2
+    ; v "ulte" 2
+    ; v "slte" 2
+    ; v "ugt" 2
+    ; v "sgt" 2
+    ; v "ugte" 2
+    ; v "sgte" 2
+    ; v "sll" 2
+    ; v "srl" 2
+    ; v "sra" 2
+    ; v "rol" 2
+    ; v "ror" 2
+    ; v "sub" 2
+    ; v "usubo" 2
+    ; v "ssubo" 2
+    ; v "udiv" 2
+    ; v "sdiv" 2
+    ; v "sdivo" 2
+    ; v "urem" 2
+    ; v "srem" 2
+    ; v "smod" 2
+    ; v "concat" 2
+    ; v "read" 2
+    ; v "write" 2
+    ; v "cond" 3
+    ; v "inc" 1
+    ; v "dec" 1
     ]
 
   let () = print_endline ""
@@ -114,4 +157,43 @@ external implies : node -> node -> node = "caml_boolector_implies"
 external iff : node -> node -> node = "caml_boolector_iff"
 external eq : node -> node -> node = "caml_boolector_eq"
 external ne : node -> node -> node = "caml_boolector_ne"
+external xor : node -> node -> node = "caml_boolector_xor"
+external and_ : node -> node -> node = "caml_boolector_and"
+external or_ : node -> node -> node = "caml_boolector_or"
+external nand : node -> node -> node = "caml_boolector_nand"
+external nor : node -> node -> node = "caml_boolector_nor"
+external add : node -> node -> node = "caml_boolector_add"
+external uaddo : node -> node -> node = "caml_boolector_uaddo"
+external saddo : node -> node -> node = "caml_boolector_saddo"
+external mul : node -> node -> node = "caml_boolector_mul"
+external umulo : node -> node -> node = "caml_boolector_umulo"
+external smulo : node -> node -> node = "caml_boolector_smulo"
+external ult : node -> node -> node = "caml_boolector_ult"
+external slt : node -> node -> node = "caml_boolector_slt"
+external ulte : node -> node -> node = "caml_boolector_ulte"
+external slte : node -> node -> node = "caml_boolector_slte"
+external ugt : node -> node -> node = "caml_boolector_ugt"
+external sgt : node -> node -> node = "caml_boolector_sgt"
+external ugte : node -> node -> node = "caml_boolector_ugte"
+external sgte : node -> node -> node = "caml_boolector_sgte"
+external sll : node -> node -> node = "caml_boolector_sll"
+external srl : node -> node -> node = "caml_boolector_srl"
+external sra : node -> node -> node = "caml_boolector_sra"
+external rol : node -> node -> node = "caml_boolector_rol"
+external ror : node -> node -> node = "caml_boolector_ror"
+external sub : node -> node -> node = "caml_boolector_sub"
+external usubo : node -> node -> node = "caml_boolector_usubo"
+external ssubo : node -> node -> node = "caml_boolector_ssubo"
+external udiv : node -> node -> node = "caml_boolector_udiv"
+external sdiv : node -> node -> node = "caml_boolector_sdiv"
+external sdivo : node -> node -> node = "caml_boolector_sdivo"
+external urem : node -> node -> node = "caml_boolector_urem"
+external srem : node -> node -> node = "caml_boolector_srem"
+external smod : node -> node -> node = "caml_boolector_smod"
+external concat : node -> node -> node = "caml_boolector_concat"
+external read : node -> node -> node = "caml_boolector_read"
+external write : node -> node -> node = "caml_boolector_write"
+external cond : node -> node -> node -> node = "caml_boolector_cond"
+external inc : node -> node = "caml_boolector_inc"
+external dec : node -> node = "caml_boolector_dec"
 (*$*)

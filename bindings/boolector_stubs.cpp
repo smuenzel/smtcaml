@@ -180,6 +180,20 @@ boolector_api2_implied(R (*mknod)(A0,A1,A2), value v_p0, value v_p1){
   return v_node;
 }
 
+template<typename R, typename A0, typename A1, typename A2, typename A3> inline value
+boolector_api3_implied(R (*mknod)(A0,A1,A2,A3), value v_p0, value v_p1, value v_p2){
+  auto p0_s = Custom_value<caml_boolector_wrap<A1>>(v_p0);
+  auto p0 = p0_s.dep;
+  auto p1 = Custom_value<caml_boolector_wrap<A2>>(v_p1).dep;
+  auto p2 = Custom_value<caml_boolector_wrap<A3>>(v_p2).dep;
+  auto btor = p0_s.btor.get();
+  // we retrieve all the inner values before allocation, so we don't need to register
+  // roots
+  auto node = mknod(btor,p0,p1,p2);
+  value v_node = alloc_dependent_internal(p0_s.btor, node);
+  return v_node;
+}
+
 #define API0(APIF) \
   apireturn caml_##APIF (value v_btor){\
     return boolector_api0(APIF,v_btor);\
@@ -195,6 +209,11 @@ boolector_api2_implied(R (*mknod)(A0,A1,A2), value v_p0, value v_p1){
     return boolector_api2_implied(APIF,v_p0, v_p1);\
   }
 
+#define API3(APIF) \
+  apireturn caml_##APIF (value v_p0, value v_p1, value v_p2){\
+    return boolector_api3_implied(APIF,v_p0, v_p1, v_p2);\
+  }
+
 API1(boolector_get_sort);
 
 API0(boolector_false);
@@ -203,6 +222,46 @@ API2(boolector_implies);
 API2(boolector_iff);
 API2(boolector_eq);
 API2(boolector_ne);
+API2(boolector_xor);
+API2(boolector_and);
+API2(boolector_or);
+API2(boolector_nand);
+API2(boolector_nor);
+API2(boolector_add);
+API2(boolector_uaddo);
+API2(boolector_saddo);
+API2(boolector_mul);
+API2(boolector_umulo);
+API2(boolector_smulo);
+API2(boolector_ult);
+API2(boolector_ulte);
+API2(boolector_slte);
+API2(boolector_slt);
+API2(boolector_ugt);
+API2(boolector_sgt);
+API2(boolector_ugte);
+API2(boolector_sgte);
+API2(boolector_sll);
+API2(boolector_srl);
+API2(boolector_sra);
+API2(boolector_rol);
+API2(boolector_ror);
+API2(boolector_sub);
+API2(boolector_usubo);
+API2(boolector_ssubo);
+API2(boolector_udiv);
+API2(boolector_sdiv);
+API2(boolector_sdivo);
+API2(boolector_urem);
+API2(boolector_srem);
+API2(boolector_smod);
+API2(boolector_concat);
+API2(boolector_read);
+API3(boolector_write);
+API3(boolector_cond);
+API1(boolector_inc);
+API1(boolector_dec);
+
 
 apireturn caml_boolector_var(value v_sort, value v_symbol){
   auto sort_s = Sort_s_value(v_sort);
@@ -265,45 +324,28 @@ apireturn caml_boolector_first_opt(value v_btor){
   return Val_long(boolector_first_opt(btor));
 }
 
-apireturn caml_boolector_has_opt(value v_btor, value v_opt){
-  auto btor = Btor_value(v_btor);
-  auto opt = Long_val(v_opt);
-  return Val_bool(boolector_has_opt(btor, (BtorOption) opt));
+#define OPTFUN(name, wrap) \
+apireturn caml_boolector_##name (value v_btor, value v_opt){\
+  auto btor = Btor_value(v_btor); \
+  auto opt = (BtorOption)Long_val(v_opt); \
+  auto out = boolector_##name (btor, opt); \
+  return wrap(out); \
 }
 
-apireturn caml_boolector_next_opt(value v_btor, value v_opt){
-  auto btor = Btor_value(v_btor);
-  auto opt = Long_val(v_opt);
-  return Val_long(boolector_next_opt(btor, (BtorOption) opt));
-}
+inline value caml_copy_string_safe(const char * s) { return caml_copy_string(s?s:""); }
 
-apireturn caml_boolector_get_opt_lng(value v_btor, value v_opt){
-  auto btor = Btor_value(v_btor);
-  auto str = boolector_get_opt_lng(btor, (BtorOption) Long_val(v_opt)); 
-  return caml_copy_string(str);
-}
+OPTFUN(has_opt, Val_bool);
+OPTFUN(next_opt, Val_long);
+OPTFUN(get_opt_lng, caml_copy_string);
+OPTFUN(get_opt_desc, caml_copy_string_safe);
+OPTFUN(get_opt_min, Val_long);
+OPTFUN(get_opt_max, Val_long);
+OPTFUN(get_opt_dflt, Val_long);
+OPTFUN(get_opt, Val_long);
 
-apireturn caml_boolector_get_opt_desc(value v_btor, value v_opt){
+apireturn caml_boolector_set_opt (value v_btor, value v_opt, value v_val){
   auto btor = Btor_value(v_btor);
-  auto str = boolector_get_opt_desc(btor, (BtorOption) Long_val(v_opt)); 
-  str = str?str:"";
-  return caml_copy_string(str);
-}
-
-apireturn caml_boolector_get_opt_min(value v_btor, value v_opt){
-  auto btor = Btor_value(v_btor);
-  auto v = boolector_get_opt_min(btor, (BtorOption) Long_val(v_opt)); 
-  return Val_long(v);
-}
-
-apireturn caml_boolector_get_opt_max(value v_btor, value v_opt){
-  auto btor = Btor_value(v_btor);
-  auto v = boolector_get_opt_max(btor, (BtorOption) Long_val(v_opt)); 
-  return Val_long(v);
-}
-
-apireturn caml_boolector_get_opt_dflt(value v_btor, value v_opt){
-  auto btor = Btor_value(v_btor);
-  auto v = boolector_get_opt_dflt(btor, (BtorOption) Long_val(v_opt)); 
-  return Val_long(v);
+  auto opt = (BtorOption)Long_val(v_opt);
+  boolector_set_opt (btor, opt, Long_val(v_val));
+  return Val_unit;
 }
