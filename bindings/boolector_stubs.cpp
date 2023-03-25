@@ -16,6 +16,14 @@
 
 #define apireturn extern "C" CAMLprim value
 
+value caml_alloc_m(int line, mlsize_t s, tag_t t){
+  fprintf(stderr, "line=%i, size = %lu\n", line, s); 
+  fflush(stderr);
+  return caml_alloc(s,t);
+}
+
+#define caml_alloc(S,T) caml_alloc_m(__LINE__,S,T)
+
 template<typename T>
 struct always_false : std::false_type {};
 
@@ -43,6 +51,9 @@ struct CamlApiTypename{
   static_assert(always_false<T>::value , "You must specialize CamlApiTypename<> for your type");
 };
 
+template<typename T> struct CamlApiTypename<const T> : CamlApiTypename<T> {};
+template<typename T> struct CamlApiTypename<const T*> : CamlApiTypename<T*> {};
+
 #define DECL_API_TYPE(c_type, caml_type) \
   template<> \
   struct CamlApiTypename<c_type>{ \
@@ -53,40 +64,85 @@ DECL_API_TYPE(uint32_t,uint32_t);
 DECL_API_TYPE(bool,bool);
 DECL_API_TYPE(BoolectorNode*,node);
 DECL_API_TYPE(BoolectorSort,sort);
+DECL_API_TYPE(Btor*,btor);
+
+typedef const char* cstring;
+
+template<typename T>
+struct CamlLinkedList{
+  const T data;
+  const CamlLinkedList<T>*next;
+
+  constexpr CamlLinkedList(T data, const CamlLinkedList<T>*next=nullptr) 
+    : data{data}, next{next} {}
+};
+
+template<typename... Ps> struct Params;
+
+template<> struct Params<>{
+  static constexpr const CamlLinkedList<cstring>* p = nullptr;
+};
+
+template<typename P, typename... Ps> struct Params<P, Ps...>{
+  static inline constexpr const CamlLinkedList<cstring> pp =
+    CamlLinkedList(CamlApiTypename<P>::name,Params<Ps...>::p);
+  static inline constexpr const CamlLinkedList<cstring>* p = &pp;
+};
 
 struct CamlApiFunctionDescription {
-  const char * return_type;
-  size_t parameter_count;
+  cstring return_type;
+  const size_t parameter_count;
+  const CamlLinkedList<cstring>* parameters;
 
   template<typename R, typename... Ps>
     constexpr CamlApiFunctionDescription(R (*fun)(Ps...))
     : return_type(CamlApiTypename<R>::name), parameter_count(sizeof...(Ps))
+      , parameters(Params<Ps...>::p)
     {}
 
   value to_value();
 };
 
+static constexpr const uint64_t marker = 0xe1176dafdeadbeefl;
+
 struct CamlApiRegistryEntry {
+  const size_t q1;
   const char * wrapper_name;
   const char * name;
   CamlApiFunctionDescription description;
 
   template<typename R, typename... Ps>
   constexpr CamlApiRegistryEntry(const char * name, const char*wrapper_name, R (*fun)(Ps...))
-    : wrapper_name(wrapper_name), name(name), description(fun)
+    : q1(marker), wrapper_name(wrapper_name), name(name), description(fun)
   { }
 
   value to_value();
 };
 
+value list_to_caml(const CamlLinkedList<cstring>* l){
+  if(l == nullptr){
+    return Val_long(0);
+  } else {
+    CAMLparam0();
+    CAMLlocal1(v_l);
+    v_l = caml_alloc(2,0);
+    Store_field(v_l, 0, caml_copy_string(l->data));
+    Store_field(v_l, 1, list_to_caml(l->next));
+    CAMLreturn(v_l);
+  }
+}
+
 value CamlApiFunctionDescription::to_value(){
   CAMLparam0();
-  CAMLlocal3(v_ret, v_return_type, v_parameter_count);
+  CAMLlocal5(v_ret, v_return_type, v_parameter_count, v_parameters, v_it);
+  CAMLlocal1(v_next);
   v_return_type = caml_copy_string(this->return_type);
   v_parameter_count = Val_long(this->parameter_count);
-  v_ret = caml_alloc_small(2,0);
+  v_parameters = list_to_caml(this->parameters);
+  v_ret = caml_alloc_small(3,0);
   Field(v_ret,0) = v_return_type;
   Field(v_ret,1) = v_parameter_count;
+  Field(v_ret,2) = v_parameters;
   CAMLreturn(v_ret);
 }
 
@@ -103,19 +159,32 @@ value CamlApiRegistryEntry::to_value(){
   CAMLreturn(v_ret);
 }
 
+value api_registry_entry_to_list(CamlApiRegistryEntry*start, CamlApiRegistryEntry*stop){
+  uint64_t* idx = (uint64_t*)start;
+  uint64_t* sstop = (uint64_t*)stop;
+  fprintf(stderr, "start=%p, stop=%p\n", start,stop);
+  fflush(stderr);
+  while(idx < sstop && *idx != marker){
+    idx++;
+  };
+  if(idx >= sstop) return Val_long(0);
+  else{
+    auto entry = (CamlApiRegistryEntry*)idx;
+    CAMLparam0();
+    CAMLlocal1(v_ret);
+    v_ret = caml_alloc(2, 0);
+    Store_field(v_ret,0,entry->to_value());
+    Store_field(v_ret,1,api_registry_entry_to_list(entry+1, stop));
+    CAMLreturn(v_ret);
+  }
+}
+
 apireturn caml_get_api_registry(value){
-  CAMLparam0();
   extern CamlApiRegistryEntry __start_caml_api_registry;
   extern CamlApiRegistryEntry __stop_caml_api_registry;
-  auto start = &__start_caml_api_registry;
-  auto stop = &__stop_caml_api_registry;
-  size_t size = stop - start;
-  CAMLlocal1(ret);
-  ret = caml_alloc(size,0);
-  for(size_t i =0 ; i< size; i++){
-    Store_field(ret,i,start[i].to_value());
-  }
-  CAMLreturn(ret);
+  CamlApiRegistryEntry * start = &__start_caml_api_registry;
+  CamlApiRegistryEntry * stop = &__stop_caml_api_registry;
+  return api_registry_entry_to_list(start,stop);
 }
 
 static void abort_callback(const char* msg){
@@ -312,7 +381,7 @@ boolector_api3_implied(R (*mknod)(A0,A1,A2,A3), value v_p0, value v_p1, value v_
 }
 
 #define REGISTER_API(APIF, WRAPPER) \
-  static inline const auto __caml_api_registry_var__##APIF \
+  static inline constexpr auto __caml_api_registry_var__##APIF \
 __attribute((used, section("caml_api_registry"))) = CamlApiRegistryEntry(#APIF,#WRAPPER,APIF);
 
 
@@ -341,7 +410,6 @@ __attribute((used, section("caml_api_registry"))) = CamlApiRegistryEntry(#APIF,#
   }
 
 API1(get_sort)
-
 API0(false)
 API0(true)
 API2(implies)
@@ -397,7 +465,6 @@ API3(write)
 API3(cond)
 API1(inc)
 API1(dec)
-  
 API0(bool_sort)
 
 apireturn caml_boolector_var(value v_sort, value v_symbol){

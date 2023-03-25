@@ -3,6 +3,7 @@ open! Base
 type fun_desc =
   { return_type : string
   ; parameter_count : int
+  ; parameters : string list
   } [@@deriving sexp]
 
 type api_registry_entry =
@@ -11,7 +12,7 @@ type api_registry_entry =
   ; description : fun_desc
   } [@@deriving sexp]
 
-external get_api_registry : unit -> api_registry_entry array = "caml_get_api_registry"
+external get_api_registry : unit -> api_registry_entry list = "caml_get_api_registry"
 
 type btor
 type sort
