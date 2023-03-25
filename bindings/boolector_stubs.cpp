@@ -12,6 +12,7 @@
 #include <typeinfo>
 #include <functional>
 
+static int x __attribute((used, section(".caml_api_registry"))) = 1;
 
 static void abort_callback(const char* msg){
   if(Caml_state == NULL) caml_acquire_runtime_system();
@@ -121,9 +122,26 @@ apireturn caml_boolector_new(value){
   return v_btor;
 }
 
-template<typename t_dep> struct t_dep_container { typedef void type; };
+template<typename t_dep> struct t_dep_container { };
 template<> struct t_dep_container<BoolectorNode*> { typedef caml_boolector_node type; };
 template<> struct t_dep_container<BoolectorSort> { typedef caml_boolector_sort type; };
+
+template<typename T> concept is_dep_container = requires {
+  typename t_dep_container<T>::type;
+};
+
+template<typename T> T T_value(value v){
+  static_assert(always_false<T>::value , "You must specialize T_value<> for your type");
+}
+
+template<typename T> requires is_dep_container<T>
+T T_value(value v){
+  return Custom_value<caml_boolector_wrap<T>>(v).dep;
+}
+
+template<> uint32_t T_value<uint32_t>(value v){
+  return Long_val(v);
+}
 
 template<typename t_dep> 
 static inline value alloc_dependent_internal(std::shared_ptr<Btor>& btor, t_dep dep){
@@ -171,7 +189,7 @@ template<typename R, typename A0, typename A1, typename A2> inline value
 boolector_api2_implied(R (*mknod)(A0,A1,A2), value v_p0, value v_p1){
   auto p0_s = Custom_value<caml_boolector_wrap<A1>>(v_p0);
   auto p0 = p0_s.dep;
-  auto p1 = Custom_value<caml_boolector_wrap<A2>>(v_p1).dep;
+  auto p1 = T_value<A2>(v_p1);
   auto btor = p0_s.btor.get();
   // we retrieve all the inner values before allocation, so we don't need to register
   // roots
@@ -184,8 +202,8 @@ template<typename R, typename A0, typename A1, typename A2, typename A3> inline 
 boolector_api3_implied(R (*mknod)(A0,A1,A2,A3), value v_p0, value v_p1, value v_p2){
   auto p0_s = Custom_value<caml_boolector_wrap<A1>>(v_p0);
   auto p0 = p0_s.dep;
-  auto p1 = Custom_value<caml_boolector_wrap<A2>>(v_p1).dep;
-  auto p2 = Custom_value<caml_boolector_wrap<A3>>(v_p2).dep;
+  auto p1 = T_value<A2>(v_p1);
+  auto p2 = T_value<A3>(v_p2);
   auto btor = p0_s.btor.get();
   // we retrieve all the inner values before allocation, so we don't need to register
   // roots
@@ -214,54 +232,65 @@ boolector_api3_implied(R (*mknod)(A0,A1,A2,A3), value v_p0, value v_p1, value v_
     return boolector_api3_implied(boolector_##APIF,v_p0, v_p1, v_p2);\
   }
 
-API1(get_sort);
+API1(get_sort)
 
-API0(false);
-API0(true);
-API2(implies);
-API2(iff);
-API2(eq);
-API2(ne);
-API2(xor);
-API2(and);
-API2(or);
-API2(nand);
-API2(nor);
-API2(add);
-API2(uaddo);
-API2(saddo);
-API2(mul);
-API2(umulo);
-API2(smulo);
-API2(ult);
-API2(ulte);
-API2(slte);
-API2(slt);
-API2(ugt);
-API2(sgt);
-API2(ugte);
-API2(sgte);
-API2(sll);
-API2(srl);
-API2(sra);
-API2(rol);
-API2(ror);
-API2(sub);
-API2(usubo);
-API2(ssubo);
-API2(udiv);
-API2(sdiv);
-API2(sdivo);
-API2(urem);
-API2(srem);
-API2(smod);
-API2(concat);
-API2(read);
-API3(write);
-API3(cond);
-API1(inc);
-API1(dec);
-
+API0(false)
+API0(true)
+API2(implies)
+API2(iff)
+API2(eq)
+API2(ne)
+API1(not)
+API1(neg)
+API1(redor)
+API1(redxor)
+API1(redand)
+API3(slice)
+API2(uext)
+API2(sext)
+API2(xor)
+API2(and)
+API2(or)
+API2(nand)
+API2(nor)
+API2(add)
+API2(uaddo)
+API2(saddo)
+API2(mul)
+API2(umulo)
+API2(smulo)
+API2(ult)
+API2(ulte)
+API2(slte)
+API2(slt)
+API2(ugt)
+API2(sgt)
+API2(ugte)
+API2(sgte)
+API2(sll)
+API2(srl)
+API2(sra)
+API2(rol)
+API2(ror)
+API2(roli)
+API2(rori)
+API2(sub)
+API2(usubo)
+API2(ssubo)
+API2(udiv)
+API2(sdiv)
+API2(sdivo)
+API2(urem)
+API2(srem)
+API2(smod)
+API2(concat)
+API2(read)
+API3(write)
+API3(cond)
+API1(inc)
+API1(dec)
+  
+API0(bool_sort)
 
 apireturn caml_boolector_var(value v_sort, value v_symbol){
   auto sort_s = Sort_s_value(v_sort);
@@ -269,8 +298,6 @@ apireturn caml_boolector_var(value v_sort, value v_symbol){
   auto node = boolector_var(sort_s.btor.get(), sort_s.dep, symbol);
   return alloc_dependent_internal(sort_s.btor, node);
 }
-
-API0(bool_sort);
 
 apireturn caml_boolector_bitvec_sort(value v_btor, value v_width){
   auto btor = Btor_value(v_btor);
