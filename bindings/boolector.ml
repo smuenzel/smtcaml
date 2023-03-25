@@ -1,5 +1,18 @@
 open! Base
 
+type fun_desc =
+  { return_type : string
+  ; parameter_count : int
+  } [@@deriving sexp]
+
+type api_registry_entry =
+  { wrapper_name : string
+  ; name : string
+  ; description : fun_desc
+  } [@@deriving sexp]
+
+external get_api_registry : unit -> api_registry_entry array = "caml_get_api_registry"
+
 type btor
 type sort
 type node

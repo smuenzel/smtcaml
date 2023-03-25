@@ -11,8 +11,112 @@
 #include <memory>
 #include <typeinfo>
 #include <functional>
+#include <cassert>
+#include <cstring>
 
-static int x __attribute((used, section(".caml_api_registry"))) = 1;
+#define apireturn extern "C" CAMLprim value
+
+template<typename T>
+struct always_false : std::false_type {};
+
+struct string_literal_v {
+  size_t size;
+  char value[];
+
+  constexpr string_literal_v(const char (&str)[]) {
+    auto size = strlen(str);
+    std::copy(str, str + size, value);
+  }
+};
+
+template <auto Size>
+struct string_literal {
+  size_t size = Size;
+  char value[Size];
+  constexpr string_literal(const char (&str)[Size]) {
+    std::copy(str, str + Size, value);
+  }
+};
+
+template<typename T>
+struct CamlApiTypename{
+  static_assert(always_false<T>::value , "You must specialize CamlApiTypename<> for your type");
+};
+
+#define DECL_API_TYPE(c_type, caml_type) \
+  template<> \
+  struct CamlApiTypename<c_type>{ \
+    static constexpr const char * name = #caml_type; \
+  } 
+
+DECL_API_TYPE(uint32_t,uint32_t);
+DECL_API_TYPE(bool,bool);
+DECL_API_TYPE(BoolectorNode*,node);
+DECL_API_TYPE(BoolectorSort,sort);
+
+struct CamlApiFunctionDescription {
+  const char * return_type;
+  size_t parameter_count;
+
+  template<typename R, typename... Ps>
+    constexpr CamlApiFunctionDescription(R (*fun)(Ps...))
+    : return_type(CamlApiTypename<R>::name), parameter_count(sizeof...(Ps))
+    {}
+
+  value to_value();
+};
+
+struct CamlApiRegistryEntry {
+  const char * wrapper_name;
+  const char * name;
+  CamlApiFunctionDescription description;
+
+  template<typename R, typename... Ps>
+  constexpr CamlApiRegistryEntry(const char * name, const char*wrapper_name, R (*fun)(Ps...))
+    : wrapper_name(wrapper_name), name(name), description(fun)
+  { }
+
+  value to_value();
+};
+
+value CamlApiFunctionDescription::to_value(){
+  CAMLparam0();
+  CAMLlocal3(v_ret, v_return_type, v_parameter_count);
+  v_return_type = caml_copy_string(this->return_type);
+  v_parameter_count = Val_long(this->parameter_count);
+  v_ret = caml_alloc_small(2,0);
+  Field(v_ret,0) = v_return_type;
+  Field(v_ret,1) = v_parameter_count;
+  CAMLreturn(v_ret);
+}
+
+value CamlApiRegistryEntry::to_value(){
+  CAMLparam0();
+  CAMLlocal4(v_ret,v_wrapper_name, v_name, v_description);
+  v_wrapper_name = caml_copy_string(this->wrapper_name);
+  v_name = caml_copy_string(this->name);
+  v_description = this->description.to_value();
+  v_ret = caml_alloc_small(3, 0);
+  Field(v_ret,0) = v_wrapper_name;
+  Field(v_ret,1) = v_name;
+  Field(v_ret,2) = v_description;
+  CAMLreturn(v_ret);
+}
+
+apireturn caml_get_api_registry(value){
+  CAMLparam0();
+  extern CamlApiRegistryEntry __start_caml_api_registry;
+  extern CamlApiRegistryEntry __stop_caml_api_registry;
+  auto start = &__start_caml_api_registry;
+  auto stop = &__stop_caml_api_registry;
+  size_t size = stop - start;
+  CAMLlocal1(ret);
+  ret = caml_alloc(size,0);
+  for(size_t i =0 ; i< size; i++){
+    Store_field(ret,i,start[i].to_value());
+  }
+  CAMLreturn(ret);
+}
 
 static void abort_callback(const char* msg){
   if(Caml_state == NULL) caml_acquire_runtime_system();
@@ -29,9 +133,6 @@ struct caml_boolector_btor {
   caml_boolector_btor(Btor* b) : btor(b,delete_btor){}
   caml_boolector_btor(std::shared_ptr<Btor>&btor) : btor(btor) {}
 };
-
-template<typename T>
-struct always_false : std::false_type {};
 
 template<typename T>
 struct remove_const_pointer { typedef T type; };
@@ -112,8 +213,6 @@ template<typename Container>
   , custom_compare_ext_default
   , custom_fixed_length_default
   };
-
-#define apireturn extern "C" CAMLprim value
 
 apireturn caml_boolector_new(value){
   boolector_set_abort(&abort_callback);
@@ -212,22 +311,31 @@ boolector_api3_implied(R (*mknod)(A0,A1,A2,A3), value v_p0, value v_p1, value v_
   return v_node;
 }
 
+#define REGISTER_API(APIF, WRAPPER) \
+  static inline const auto __caml_api_registry_var__##APIF \
+__attribute((used, section("caml_api_registry"))) = CamlApiRegistryEntry(#APIF,#WRAPPER,APIF);
+
+
 #define API0(APIF) \
+  REGISTER_API(boolector_##APIF, caml_boolector_##APIF); \
   apireturn caml_boolector_##APIF (value v_btor){\
     return boolector_api0(boolector_##APIF,v_btor);\
   }
 
 #define API1(APIF) \
+  REGISTER_API(boolector_##APIF, caml_boolector_##APIF); \
   apireturn caml_boolector_##APIF (value v_p0){\
     return boolector_api1_implied(boolector_##APIF,v_p0);\
   }
 
 #define API2(APIF) \
+  REGISTER_API(boolector_##APIF, caml_boolector_##APIF); \
   apireturn caml_boolector_##APIF (value v_p0, value v_p1){\
     return boolector_api2_implied(boolector_##APIF,v_p0, v_p1);\
   }
 
 #define API3(APIF) \
+  REGISTER_API(boolector_##APIF, caml_boolector_##APIF); \
   apireturn caml_boolector_##APIF (value v_p0, value v_p1, value v_p2){\
     return boolector_api3_implied(boolector_##APIF,v_p0, v_p1, v_p2);\
   }

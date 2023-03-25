@@ -2,6 +2,10 @@ open! Core
 
 let () =
   let open Smtcaml_bindings.Boolector in
+  print_s
+    [%message "registry"
+        (get_api_registry () : api_registry_entry array)
+    ];
   let btor = make () in
   set_solver btor Cadical;
   let opts = all_options btor in
