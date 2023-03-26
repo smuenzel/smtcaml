@@ -135,11 +135,20 @@ value list_to_caml(value (*convert)(T), const CamlLinkedList<cstring>* l){
     return Val_long(0);
   } else {
     CAMLparam0();
-    CAMLlocal1(v_l);
+    CAMLlocal3(v_l,v_ret,v_tmp);
     v_l = caml_alloc(2,0);
+    v_ret = v_l;
     Store_field(v_l, 0, convert(l->data));
-    Store_field(v_l, 1, list_to_caml(convert,l->next));
-    CAMLreturn(v_l);
+    Field(v_l,1) = Val_unit;
+    while(l->next){
+      l = l->next;
+      v_tmp = caml_alloc(2,0);
+      Store_field(v_l, 1, v_tmp);
+      v_l = v_tmp;
+      Store_field(v_l,0, convert(l->data));
+      Field(v_l,1) = Val_unit;
+    };
+    CAMLreturn(v_ret);
   }
 }
 

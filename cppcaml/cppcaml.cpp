@@ -1,9 +1,6 @@
 #include <cppcaml.h>
 using namespace CppCaml;
 
-static inline constexpr uint64_t __caml_api_registry_dummy
-__attribute((used, section("caml_api_registry"))) = 17;
-
 value ApiFunctionDescription::to_value(){
   CAMLparam0();
   CAMLlocal5(v_ret, v_return_type, v_parameter_count, v_parameters, v_it);
