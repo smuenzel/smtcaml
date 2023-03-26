@@ -28,10 +28,29 @@ struct remove_const_pointer { typedef T type; };
 template<typename T>
 struct remove_const_pointer<const T*> { typedef T* type; };
 
+template<> struct CppCaml::ValueWithContextProperties<BoolectorNode>{
+  typedef Btor Context;
+  static void delete_T(Context*context, BoolectorNode*t){
+    boolector_release(context,t);
+  }
+};
+
+typedef std::remove_pointer<BoolectorSort>::type BoolectorSortRaw;
+
+template<> struct CppCaml::ValueWithContextProperties<BoolectorSortRaw>{
+  typedef Btor Context;
+  static void delete_T(Context*context, BoolectorSortRaw*t){
+    boolector_release_sort(context,t);
+  }
+};
+
+CAML_REPRESENTATION(BoolectorNode, ContainerSharedPointer);
+CAML_REPRESENTATION(BoolectorSortRaw, ContainerSharedPointer);
+
 using caml_boolector_node =
-  CppCaml::ContainerWithContext<BoolectorNode,Btor,boolector_release>;
+  CppCaml::ContainerWithContext<BoolectorNode>;
 using caml_boolector_sort =
-  CppCaml::ContainerWithContext<std::remove_pointer<BoolectorSort>::type,Btor,boolector_release_sort>;
+  CppCaml::ContainerWithContext<std::remove_pointer<BoolectorSort>::type>;
 
 template<typename t_bt>
 struct caml_boolector_wrap {

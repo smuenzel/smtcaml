@@ -165,18 +165,58 @@ struct ContainerSharedPointer{
   auto get() { return this->pT.get(); }
 };
 
-template<typename T, typename Context, void (*delete_T)(Context*, T*)>
+enum class CamlRepresentationKind {
+    ContainerSharedPointer
+  , ContainerWithContext
+};
+
+template<typename T> struct CamlRepresentation{
+  static_assert(CppCaml::always_false<T>::value , "You must specialize CamlRepresentation for your type");
+};
+
+#define CAML_REPRESENTATION(cppvalue,repr) \
+  template<> struct CppCaml::CamlRepresentation<cppvalue> { \
+    static inline constexpr auto kind = CamlRepresentationKind::repr; \
+  }
+
+template<typename T> concept CamlRepresentable = requires {
+  CamlRepresentation<T>::kind;
+};
+
+template<typename T, CamlRepresentationKind kind> concept represented_as =
+  CamlRepresentable<T>
+  && CamlRepresentation<T>::kind == kind;
+
+template<typename T> struct ValueWithContextProperties {
+  static_assert(CppCaml::always_false<T>::value , "You must specialize ValueWithContextProperties<> for your type");
+};
+
+template<typename T> T T_value(value v){
+  static_assert(CppCaml::always_false<T>::value , "You must specialize T_value<> for your type");
+}
+
+template<typename T> concept ValueWithContext = requires (value v) {
+  typename ValueWithContextProperties<T>::Context;
+  ValueWithContextProperties<T>::delete_T;
+};
+
+template<typename T>
+  requires (ValueWithContext<T> && represented_as<T,CamlRepresentationKind::ContainerSharedPointer>)
 struct ContainerWithContext{
+  typedef typename ValueWithContextProperties<T>::Context Context;
+
   std::shared_ptr<Context> pContext;
   T* t;
 
   ContainerWithContext(std::shared_ptr<Context>& pContext, T* t)
     : pContext(pContext), t(t) { }
 
-  ~ContainerWithContext(){ delete_T(this->pContext.get(), this->t);}
+  ~ContainerWithContext(){
+    ValueWithContextProperties<T>::delete_T(this->pContext.get(), this->t);
+  }
 
   static inline value allocate(std::shared_ptr<Context>& context, T* t){
-    typedef ContainerWithContext<T,Context,delete_T> This;
+    typedef ContainerWithContext<T> This;
     value v_container =
       caml_alloc_custom(&ContainerOps<This>::value,sizeof(This),1,500000);
     new(&Custom_value<This>(v_container)) This(context, t);
@@ -184,8 +224,10 @@ struct ContainerWithContext{
   };
 };
 
-template<typename T> T T_value(value v){
-  static_assert(CppCaml::always_false<T>::value , "You must specialize T_value<> for your type");
-}
+template<ValueWithContext T>
+auto Context_value(value v) {
+  auto container = Custom_value<ContainerWithContext<T>>(v);
+  return container.pContext.get();
+};
 
 };
