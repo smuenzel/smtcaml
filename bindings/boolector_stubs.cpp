@@ -17,6 +17,15 @@ DECL_API_TYPE(BtorOption,btor_option);
 DECL_API_TYPE(void,unit);
 DECL_API_TYPE(solver_result,solver_result);
 
+typedef std::remove_pointer<BoolectorSort>::type BoolectorSortRaw;
+
+CAML_REPRESENTATION(Btor*, ContainerSharedPointer);
+CAML_REPRESENTATION(BoolectorNode*, ContainerWithContext);
+CAML_REPRESENTATION(BoolectorSortRaw*, ContainerWithContext);
+CAML_REPRESENTATION(BtorOption,Immediate);
+CAML_REPRESENTATION(uint32_t,Immediate);
+
+
 static void abort_callback(const char* msg){
   if(Caml_state == NULL) caml_acquire_runtime_system();
   caml_failwith(msg);
@@ -33,8 +42,6 @@ template<> struct CppCaml::ValueWithContextProperties<BoolectorNode>{
   }
 };
 
-typedef std::remove_pointer<BoolectorSort>::type BoolectorSortRaw;
-
 template<> struct CppCaml::ValueWithContextProperties<BoolectorSortRaw>{
   typedef Btor Context;
   static void delete_T(Context*context, BoolectorSortRaw*t){
@@ -42,48 +49,10 @@ template<> struct CppCaml::ValueWithContextProperties<BoolectorSortRaw>{
   }
 };
 
-CAML_REPRESENTATION(Btor*, ContainerSharedPointer);
-CAML_REPRESENTATION(BoolectorNode*, ContainerWithContext);
-CAML_REPRESENTATION(BoolectorSortRaw*, ContainerWithContext);
-CAML_REPRESENTATION(BtorOption,Immediate);
-CAML_REPRESENTATION(uint32_t,Immediate);
-
 using caml_boolector_btor = CppCaml::ContainerSharedPointer<Btor>;
 
 using caml_boolector_node =
   CppCaml::ContainerWithContext<BoolectorNode>;
-using caml_boolector_sort =
-  CppCaml::ContainerWithContext<std::remove_pointer<BoolectorSort>::type>;
-
-template<typename t_bt>
-struct caml_boolector_wrap {
-  static_assert(CppCaml::always_false<t_bt>::value , "You must specialize caml_boolector_wrap for your type");
-};
-
-template<> struct caml_boolector_wrap<BoolectorNode*> : caml_boolector_node { };
-template<> struct caml_boolector_wrap<BoolectorSort> : caml_boolector_sort { };
-
-
-static inline Btor * Btor_value(value v){
-  auto& s_btor = Custom_value<caml_boolector_btor>(v);
-  return s_btor.get();
-}
-
-static inline BoolectorNode *& Node_value(value v){
-  return Custom_value<caml_boolector_node>(v).t;
-}
-
-static inline caml_boolector_node& Node_s_value(value v){
-  return Custom_value<caml_boolector_node>(v);
-}
-
-static inline caml_boolector_sort& Sort_s_value(value v){
-  return Custom_value<caml_boolector_sort>(v);
-}
-
-static inline BoolectorSort& Sort_value(value v){
-  return Custom_value<caml_boolector_sort>(v).t;
-}
 
 template<> struct CppCaml::T_value_wrapper<const char*>{
   static inline const char * get(value v) { return String_val(v); }
