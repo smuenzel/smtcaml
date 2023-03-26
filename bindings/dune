@@ -1,19 +1,8 @@
 (library
   (name             smtcaml_bindings)
-  (libraries base)
-  (foreign_archives 
-    boolector_stubs
-    ../vendor/build/lib/boolector
-    ../vendor/build/lib/lgl
-    ../vendor/build/lib/cadical
-    ../vendor/build/lib/cryptominisat5
-    ../vendor/build/lib/btor2parser
-    ../vendor/build/lib/minisat
-    ../cppcaml/cppcaml
-    )
+  (libraries base boolector_stubs)
   (preprocess (pps ppx_jane))
   (modes            native)
-  (library_flags -cclib -Wl,-lstdc++ -cclib -Wl,-lgmp -cclib -Wl,-lboost_serialization)
   (no_dynlink)
   )
 
