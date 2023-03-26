@@ -1,7 +1,7 @@
 #include <cppcaml.h>
 using namespace CppCaml;
 
-value CamlApiFunctionDescription::to_value(){
+value ApiFunctionDescription::to_value(){
   CAMLparam0();
   CAMLlocal5(v_ret, v_return_type, v_parameter_count, v_parameters, v_it);
   CAMLlocal1(v_next);
@@ -15,7 +15,7 @@ value CamlApiFunctionDescription::to_value(){
   CAMLreturn(v_ret);
 }
 
-value CamlApiRegistryEntry::to_value(){
+value ApiRegistryEntry::to_value(){
   CAMLparam0();
   CAMLlocal4(v_ret,v_wrapper_name, v_name, v_description);
   v_wrapper_name = caml_copy_string(this->wrapper_name);
@@ -28,7 +28,7 @@ value CamlApiRegistryEntry::to_value(){
   CAMLreturn(v_ret);
 }
 
-value api_registry_entry_to_list(CamlApiRegistryEntry*start, CamlApiRegistryEntry*stop){
+value api_registry_entry_to_list(ApiRegistryEntry*start, ApiRegistryEntry*stop){
   uint64_t* idx = (uint64_t*)start;
   uint64_t* sstop = (uint64_t*)stop;
   while(idx < sstop && *idx != marker){
@@ -36,7 +36,7 @@ value api_registry_entry_to_list(CamlApiRegistryEntry*start, CamlApiRegistryEntr
   };
   if(idx >= sstop) return Val_long(0);
   else{
-    auto entry = (CamlApiRegistryEntry*)idx;
+    auto entry = (ApiRegistryEntry*)idx;
     CAMLparam0();
     CAMLlocal1(v_ret);
     v_ret = caml_alloc(2, 0);
@@ -47,10 +47,10 @@ value api_registry_entry_to_list(CamlApiRegistryEntry*start, CamlApiRegistryEntr
 }
 
 apireturn caml_get_api_registry(value){
-  extern CamlApiRegistryEntry __start_caml_api_registry;
-  extern CamlApiRegistryEntry __stop_caml_api_registry;
-  CamlApiRegistryEntry * start = &__start_caml_api_registry;
-  CamlApiRegistryEntry * stop = &__stop_caml_api_registry;
+  extern ApiRegistryEntry __start_caml_api_registry;
+  extern ApiRegistryEntry __stop_caml_api_registry;
+  ApiRegistryEntry * start = &__start_caml_api_registry;
+  ApiRegistryEntry * stop = &__stop_caml_api_registry;
   return api_registry_entry_to_list(start,stop);
 }
 

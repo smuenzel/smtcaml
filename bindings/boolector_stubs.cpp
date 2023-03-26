@@ -1,6 +1,8 @@
 #include <boolector/boolector.h>
 #include <cppcaml.h>
 
+using CppCaml::Custom_value;
+
 DECL_API_TYPE(uint32_t,uint32_t);
 DECL_API_TYPE(bool,bool);
 DECL_API_TYPE(BoolectorNode*,node);
@@ -56,11 +58,6 @@ struct caml_boolector_wrap {
 
 typedef caml_boolector_wrap<BoolectorNode*> caml_boolector_node;
 typedef caml_boolector_wrap<BoolectorSort> caml_boolector_sort;
-
-template<typename T> static inline T& Custom_value(value v){
-  return (*((T*)Data_custom_val(v)));
-}
-
 
 static inline Btor * Btor_value(value v){
   auto& s_btor = Custom_value<caml_boolector_btor>(v);
