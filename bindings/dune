@@ -2,6 +2,7 @@
   (name             smtcaml_bindings)
   (libraries base)
   (foreign_archives 
+    boolector_stubs
     ../vendor/build/lib/boolector
     ../vendor/build/lib/lgl
     ../vendor/build/lib/cadical
@@ -12,15 +13,36 @@
     )
   (preprocess (pps ppx_jane))
   (modes            native)
-  (library_flags -cclib -Wl,-lgmp -cclib -Wl,-lboost_serialization)
+  (library_flags -cclib -Wl,-lstdc++ -cclib -Wl,-lgmp -cclib -Wl,-lboost_serialization)
   (no_dynlink)
-  (foreign_stubs
-    (language     cxx)
-    (names        boolector_stubs)
-    (flags :standard -Wall -std=c++20 -fdump-tree-gimple)
-    (include_dirs ../vendor/build/include ../cppcaml/include)))
+  )
+
+(foreign_library
+  (archive_name boolector_stubs)
+  (names boolector_stubs)
+  (language cxx)
+  (flags :standard -Wall -std=c++20 -fdump-tree-gimple)
+  (include_dirs ../vendor/build/include ../cppcaml/include)
+  )
+
+(library
+  (name boolector_stubs)
+  (modules)
+  (foreign_archives 
+    boolector_stubs
+    ../vendor/build/lib/boolector
+    ../vendor/build/lib/lgl
+    ../vendor/build/lib/cadical
+    ../vendor/build/lib/cryptominisat5
+    ../vendor/build/lib/btor2parser
+    ../vendor/build/lib/minisat
+    ../cppcaml/cppcaml
+    )
+  (modes            native)
+  (library_flags -linkall -cclib -Wl,-lstdc++ -cclib -Wl,-lgmp -cclib -Wl,-lboost_serialization)
+  )
 
 (cinaps
   (files boolector.ml)
-  (libraries core)
+  (libraries core cppcaml_lib boolector_stubs)
   )

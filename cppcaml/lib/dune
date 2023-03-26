@@ -1,0 +1,5 @@
+(library
+  (name cppcaml_lib)
+  (libraries base)
+  (preprocess (pps ppx_jane))
+  )

@@ -2,5 +2,5 @@
 (executable
   (name test_bindings)
   (preprocess (pps ppx_jane))
-  (libraries core smtcaml_bindings)
+  (libraries core smtcaml_bindings cppcaml_lib)
   )

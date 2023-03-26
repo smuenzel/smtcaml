@@ -215,3 +215,6 @@ apireturn caml_boolector_sat(value v_btor){
 }
 REGISTER_API_CUSTOM(boolector_sat,caml_boolector_sat,solver_result,Btor*);
 
+apireturn caml_boolector_unit(value){
+  return Val_unit;
+}
