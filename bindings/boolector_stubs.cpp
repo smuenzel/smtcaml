@@ -28,18 +28,6 @@ struct remove_const_pointer { typedef T type; };
 template<typename T>
 struct remove_const_pointer<const T*> { typedef T* type; };
 
-template<typename t_bt> void release(Btor*, t_bt){
-  static_assert(CppCaml::always_false<t_bt>::value , "You must specialize release<> for your type");
-}
-
-template<> void release<BoolectorNode*>(Btor*btor, BoolectorNode*node){
-  boolector_release(btor,node);
-}
-
-template<> void release<BoolectorSort>(Btor*btor, BoolectorSort sort){
-  boolector_release_sort(btor,sort);
-}
-
 using caml_boolector_node =
   CppCaml::ContainerWithContext<BoolectorNode,Btor,boolector_release>;
 using caml_boolector_sort =
