@@ -28,7 +28,7 @@ type solver =
 
 external make : unit -> btor = "caml_boolector_new"
 
-external set_solver : btor -> string -> unit = "caml_boolector_set_solver" [@@noalloc]
+external set_solver : btor -> string -> unit = "caml_boolector_set_sat_solver" [@@noalloc]
 
 let set_solver btor (solver : solver) =
   Sexp.to_string ([%sexp_of: solver] solver)

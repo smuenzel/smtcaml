@@ -85,13 +85,6 @@ static inline BoolectorSort& Sort_value(value v){
   return Custom_value<caml_boolector_sort>(v).t;
 }
 
-apireturn caml_boolector_new(value){
-  boolector_set_abort(&abort_callback);
-  return caml_boolector_btor::allocate(boolector_new());
-}
-
-REGISTER_API(boolector_new,caml_boolector_new);
-
 template<> struct CppCaml::T_value_wrapper<const char*>{
   static inline const char * get(value v) { return String_val(v); }
 };
@@ -106,14 +99,6 @@ template<> struct CppCaml::ImmediateProperties<uint32_t> {
   static inline uint32_t of_value(value v) { return Long_val(v); }
 };
 
-apireturn caml_boolector_get_btor(value v_node){
-  auto&node = Custom_value<caml_boolector_node>(v_node);
-  auto btor = node.pContext;
-  value v_btor = caml_alloc_custom(&ContainerOps<caml_boolector_btor>::value,sizeof(caml_boolector_btor),1,10);
-  new(&Custom_value<caml_boolector_btor>(v_btor)) caml_boolector_btor(btor);
-  return v_btor;
-}
-REGISTER_API(boolector_get_btor, caml_boolector_get_btor);
 
 #define API1(APIF) \
   REGISTER_API(boolector_##APIF, caml_boolector_##APIF); \
@@ -218,6 +203,36 @@ API2I(array_sort);
 API1(print_stats);
 API1I(assert);
 
+API2(set_sat_solver);
+
+API1(first_opt);
+
+API2(has_opt);
+API2(next_opt);
+API2(get_opt_lng);
+API2(get_opt_desc);
+API2(get_opt_min);
+API2(get_opt_max);
+API2(get_opt_dflt);
+API2(get_opt);
+API3(set_opt);
+
+
+apireturn caml_boolector_new(value){
+  boolector_set_abort(&abort_callback);
+  return caml_boolector_btor::allocate(boolector_new());
+}
+REGISTER_API(boolector_new,caml_boolector_new);
+
+apireturn caml_boolector_get_btor(value v_node){
+  auto&node = Custom_value<caml_boolector_node>(v_node);
+  auto btor = node.pContext;
+  value v_btor = caml_alloc_custom(&ContainerOps<caml_boolector_btor>::value,sizeof(caml_boolector_btor),1,10);
+  new(&Custom_value<caml_boolector_btor>(v_btor)) caml_boolector_btor(btor);
+  return v_btor;
+}
+REGISTER_API(boolector_get_btor, caml_boolector_get_btor);
+
 apireturn caml_boolector_sat(value v_btor){
   /* acquire ownership before blocking section */
   auto s_btor = Custom_value<caml_boolector_btor>(v_btor).pT;
@@ -231,23 +246,4 @@ apireturn caml_boolector_sat(value v_btor){
   }
 }
 REGISTER_API_CUSTOM(boolector_sat,caml_boolector_sat,solver_result,Btor*);
-
-apireturn caml_boolector_set_solver(value v_btor, value v_solver){
-  auto btor = Btor_value(v_btor);
-  auto s = String_val(v_solver);
-  boolector_set_sat_solver(btor,s);
-  return Val_unit;
-}
-
-API1(first_opt);
-
-API2(has_opt);
-API2(next_opt);
-API2(get_opt_lng);
-API2(get_opt_desc);
-API2(get_opt_min);
-API2(get_opt_max);
-API2(get_opt_dflt);
-API2(get_opt);
-API3(set_opt);
 
