@@ -5,6 +5,8 @@ using CppCaml::Custom_value;
 using CppCaml::ContainerOps;
 using CppCaml::T_value;
 
+struct solver_result;
+
 DECL_API_TYPE(uint32_t,uint32_t);
 DECL_API_TYPE(bool,bool);
 DECL_API_TYPE(BoolectorNode*,node);
@@ -13,6 +15,7 @@ DECL_API_TYPE(Btor*,btor);
 DECL_API_TYPE(const char*,string);
 DECL_API_TYPE(BtorOption,btor_option);
 DECL_API_TYPE(void,unit);
+DECL_API_TYPE(solver_result,solver_result);
 
 static void abort_callback(const char* msg){
   if(Caml_state == NULL) caml_acquire_runtime_system();
@@ -22,12 +25,6 @@ static void abort_callback(const char* msg){
 template<> struct CppCaml::SharedPointerProperties<Btor>{
   static void delete_T(Btor*b) { boolector_delete(b); }
 };
-
-template<typename T>
-struct remove_const_pointer { typedef T type; };
-
-template<typename T>
-struct remove_const_pointer<const T*> { typedef T* type; };
 
 template<> struct CppCaml::ValueWithContextProperties<BoolectorNode>{
   typedef Btor Context;
@@ -95,14 +92,6 @@ apireturn caml_boolector_new(value){
 
 REGISTER_API(boolector_new,caml_boolector_new);
 
-template<typename t_dep> struct t_dep_container { };
-template<> struct t_dep_container<BoolectorNode*> { typedef caml_boolector_node type; };
-template<> struct t_dep_container<BoolectorSort> { typedef caml_boolector_sort type; };
-
-template<typename T> concept is_dep_container = requires {
-  typename t_dep_container<T>::type;
-};
-
 template<> struct CppCaml::T_value_wrapper<const char*>{
   static inline const char * get(value v) { return String_val(v); }
 };
@@ -116,19 +105,6 @@ template<> struct CppCaml::ImmediateProperties<uint32_t> {
   static inline value to_value(uint32_t b) { return Val_long(b); }
   static inline uint32_t of_value(value v) { return Long_val(v); }
 };
-
-template<typename t_dep> 
-static inline value alloc_dependent_internal(std::shared_ptr<Btor>& btor, t_dep dep){
-  typedef typename t_dep_container<t_dep>::type Container;
-  return Container::allocate(btor, dep);
-}
-
-template<typename t_dep>
-static inline value alloc_dependent(value v_btor, t_dep dep){
-  typedef typename t_dep_container<t_dep>::type Container;
-  auto& s_btor = Custom_value<caml_boolector_btor>(v_btor);
-  return Container::allocate(s_btor.pT, dep);
-}
 
 apireturn caml_boolector_get_btor(value v_node){
   auto&node = Custom_value<caml_boolector_node>(v_node);
@@ -254,6 +230,7 @@ apireturn caml_boolector_sat(value v_btor){
     default: return Val_int(0);
   }
 }
+REGISTER_API_CUSTOM(boolector_sat,caml_boolector_sat,solver_result,Btor*);
 
 apireturn caml_boolector_set_solver(value v_btor, value v_solver){
   auto btor = Btor_value(v_btor);

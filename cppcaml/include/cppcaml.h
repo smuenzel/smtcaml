@@ -62,10 +62,18 @@ template<typename P, typename... Ps> struct Params<P, Ps...>{
 
 struct DropFirstArgument{};
 
+template<typename ...T> struct type_list {};
+
 struct ApiFunctionDescription {
   cstring return_type;
   const size_t parameter_count;
   const CamlLinkedList<cstring>* parameters;
+
+  template<typename R, typename... Ps>
+    constexpr ApiFunctionDescription(type_list<R,Ps...>)
+    : return_type(ApiTypename<R>::name), parameter_count(sizeof...(Ps))
+      , parameters(Params<Ps...>::p)
+    {}
 
   template<typename R, typename... Ps>
     constexpr ApiFunctionDescription(R (*fun)(Ps...))
@@ -99,6 +107,15 @@ struct ApiRegistryEntry {
     : q1(marker), wrapper_name(wrapper_name), name(name), description(fun)
   { }
 
+  template<typename R, typename... Ps>
+  constexpr ApiRegistryEntry
+   ( const char*name
+   , const char*wrapper_name
+   , type_list<R, Ps...> tl
+   )
+    : q1(marker), wrapper_name(wrapper_name), name(name), description(tl)
+  { }
+
   template<typename R, typename P0, typename... Ps>
   constexpr ApiRegistryEntry
    ( DropFirstArgument d
@@ -130,6 +147,11 @@ value list_to_caml(value (*convert)(T), const CamlLinkedList<cstring>* l){
   static inline constexpr auto __caml_api_registry_var__##APIF \
 __attribute((used, section("caml_api_registry"))) = \
     CppCaml::ApiRegistryEntry(#APIF,#WRAPPER,APIF);
+
+#define REGISTER_API_CUSTOM(APIF, WRAPPER,...) \
+  static inline constexpr auto __caml_api_registry_var__##APIF \
+__attribute((used, section("caml_api_registry"))) = \
+    CppCaml::ApiRegistryEntry(#APIF,#WRAPPER,CppCaml::type_list<__VA_ARGS__>());
 
 #define REGISTER_API_IMPLIED_FIRST(APIF, WRAPPER) \
   static inline constexpr auto __caml_api_registry_var__##APIF \
