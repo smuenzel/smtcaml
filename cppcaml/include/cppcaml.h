@@ -160,13 +160,12 @@ template<typename Container> struct ContainerOps {
 
 enum class CamlRepresentationKind {
   Immediate
+  , Value
   , ContainerSharedPointer
   , ContainerWithContext
 };
 
-template<typename T> struct CamlRepresentation{
-  static_assert(CppCaml::always_false<T>::value , "You must specialize CamlRepresentation for your type");
-};
+template<typename T> struct CamlRepresentation{};
 
 #define CAML_REPRESENTATION(cppvalue,repr) \
   template<> struct CppCaml::CamlRepresentation<cppvalue> { \
@@ -190,6 +189,9 @@ template<typename T> concept represented_as_ContainerSharedPointer =
 template<typename T> concept represented_as_Immediate =
   represented_as<T,CamlRepresentationKind::Immediate>;
 
+template<typename T> concept represented_as_Value =
+  represented_as<T,CamlRepresentationKind::Value>;
+
 template<typename T> struct ValueWithContextProperties {
   static_assert(CppCaml::always_false<T>::value , "You must specialize ValueWithContextProperties<> for your type");
 };
@@ -208,6 +210,34 @@ template<typename T> struct SharedPointerProperties {
 
 template<typename T> concept SharedPointer = requires (T*t) {
   SharedPointerProperties<T>::delete_T(t);
+};
+
+template<typename T> struct ImmediateProperties {
+  static_assert(CppCaml::always_false<T>::value , "You must specialize ImmediateProperties<> for your type");
+};
+
+template<> struct ImmediateProperties<bool> {
+  static inline value to_value(bool b) { return Val_bool(b); }
+  static inline bool of_value(value v) { return Bool_val(v); }
+};
+
+template<typename T> concept Immediate = requires (T t, value v) {
+  ImmediateProperties<T>::to_value(t);
+  ImmediateProperties<T>::of_value(v);
+};
+
+template<typename T> struct ValueProperties {
+  static_assert(CppCaml::always_false<T>::value , "You must specialize ValueProperties<> for your type");
+};
+
+template<> struct ValueProperties<const char *> {
+  static inline value to_value(const char * s) { return caml_copy_string(s?s:""); }
+  static inline const char * of_value(value v) { return String_val(v); }
+};
+
+template<typename T> concept Value = requires (T t, value v) {
+  ValueProperties<T>::to_value(t);
+  ValueProperties<T>::of_value(v);
 };
 
 template<typename T>
@@ -269,6 +299,13 @@ struct T_value_wrapper<T> {
   }
 };
 
+template<typename T>
+requires represented_as_Immediate<T>
+struct T_value_wrapper<T>{
+  static inline T get(value v) { return ImmediateProperties<T>::of_value(v); }
+};
+
+
 template<ValueWithContext T>
 auto Context_value(value v) {
   auto container = Custom_value<ContainerWithContext<T>>(v);
@@ -288,8 +325,8 @@ template<typename T_first, typename T_second> struct first_type { typedef T_firs
 
 template<typename R, typename A0, typename... As>
 requires 
-( CppCaml::represented_as_ContainerWithContext<R *>
-  && CppCaml::represented_as_ContainerSharedPointer<typename normalize_pointer_argument<A0>::type *>
+( represented_as_ContainerWithContext<R *>
+  && represented_as_ContainerSharedPointer<typename normalize_pointer_argument<A0>::type *>
   )
 inline value
 apiN(R* (*mknod)(A0, As...), value v_p0, typename first_type<value,As>::type... v_ps){
@@ -304,9 +341,38 @@ apiN(R* (*mknod)(A0, As...), value v_p0, typename first_type<value,As>::type... 
   return v_dep;
 }
 
+template<typename R, typename A0, typename... As>
+requires 
+( represented_as_Immediate<R>
+&&  represented_as_ContainerSharedPointer<typename normalize_pointer_argument<A0>::type *>
+)
+inline value
+apiN(R (*mknod)(A0, As...), value v_p0, typename first_type<value,As>::type... v_ps){
+  typedef typename normalize_pointer_argument<A0>::type A0raw;
+  auto&context_s = Custom_value<CppCaml::ContainerSharedPointer<A0raw>>(v_p0);
+  auto context = context_s.get();
+  auto ret = mknod(context,T_value<As>(v_ps)...);
+  return ImmediateProperties<R>::to_value(ret);
+}
+
+//TODO: Combine
+template<typename R, typename A0, typename... As>
+requires 
+( represented_as_Value<R>
+&&  represented_as_ContainerSharedPointer<typename normalize_pointer_argument<A0>::type *>
+)
+inline value
+apiN(R (*mknod)(A0, As...), value v_p0, typename first_type<value,As>::type... v_ps){
+  typedef typename normalize_pointer_argument<A0>::type A0raw;
+  auto&context_s = Custom_value<CppCaml::ContainerSharedPointer<A0raw>>(v_p0);
+  auto context = context_s.get();
+  auto ret = mknod(context,T_value<As>(v_ps)...);
+  return ValueProperties<R>::to_value(ret);
+}
+
 template<typename A0, typename... As>
 requires 
-  CppCaml::represented_as_ContainerSharedPointer<typename normalize_pointer_argument<A0>::type *>
+  represented_as_ContainerSharedPointer<typename normalize_pointer_argument<A0>::type *>
 inline value
 apiN(void (*mknod)(A0, As...), value v_p0, typename first_type<value,As>::type... v_ps){
   typedef typename normalize_pointer_argument<A0>::type A0raw;
@@ -316,10 +382,11 @@ apiN(void (*mknod)(A0, As...), value v_p0, typename first_type<value,As>::type..
   return Val_unit;
 }
 
+
 template<typename R, typename A0, typename A1, typename... As>
 requires 
-( CppCaml::represented_as_ContainerWithContext<R *>
-  && CppCaml::represented_as_ContainerWithContext<typename normalize_pointer_argument<A1>::type *>
+( represented_as_ContainerWithContext<R *>
+  && represented_as_ContainerWithContext<typename normalize_pointer_argument<A1>::type *>
   )
 inline value
 apiN_implied_context(R* (*mknod)(A0, A1, As...), value v_p0, typename first_type<value,As>::type... v_ps){
@@ -349,3 +416,9 @@ apiN_implied_context(void (*mknod)(A0, A1, As...), value v_p0, typename first_ty
 }
 
 };
+
+/////////////////////////////////////////////////////////////////////////////////////////
+///Default Representation
+
+CAML_REPRESENTATION(bool,Immediate);
+CAML_REPRESENTATION(const char*, Value);

@@ -48,6 +48,8 @@ template<> struct CppCaml::ValueWithContextProperties<BoolectorSortRaw>{
 CAML_REPRESENTATION(Btor*, ContainerSharedPointer);
 CAML_REPRESENTATION(BoolectorNode*, ContainerWithContext);
 CAML_REPRESENTATION(BoolectorSortRaw*, ContainerWithContext);
+CAML_REPRESENTATION(BtorOption,Immediate);
+CAML_REPRESENTATION(uint32_t,Immediate);
 
 using caml_boolector_btor = CppCaml::ContainerSharedPointer<Btor>;
 
@@ -101,12 +103,18 @@ template<typename T> concept is_dep_container = requires {
   typename t_dep_container<T>::type;
 };
 
-template<> struct CppCaml::T_value_wrapper<uint32_t>{
-  static inline uint32_t get(value v) { return Long_val(v); }
-};
-
 template<> struct CppCaml::T_value_wrapper<const char*>{
   static inline const char * get(value v) { return String_val(v); }
+};
+
+template<> struct CppCaml::ImmediateProperties<BtorOption> {
+  static inline value to_value(BtorOption b) { return Val_long(b); }
+  static inline BtorOption of_value(value v) { return (BtorOption)Long_val(v); }
+};
+
+template<> struct CppCaml::ImmediateProperties<uint32_t> {
+  static inline value to_value(uint32_t b) { return Val_long(b); }
+  static inline uint32_t of_value(value v) { return Long_val(v); }
 };
 
 template<typename t_dep> 
@@ -131,7 +139,7 @@ apireturn caml_boolector_get_btor(value v_node){
 }
 REGISTER_API(boolector_get_btor, caml_boolector_get_btor);
 
-#define API0(APIF) \
+#define API1(APIF) \
   REGISTER_API(boolector_##APIF, caml_boolector_##APIF); \
   apireturn caml_boolector_##APIF (value v_btor){\
     return CppCaml::apiN(boolector_##APIF,v_btor);\
@@ -141,6 +149,12 @@ REGISTER_API(boolector_get_btor, caml_boolector_get_btor);
   REGISTER_API(boolector_##APIF, caml_boolector_##APIF); \
   apireturn caml_boolector_##APIF (value v_p0, value v_p1){\
     return CppCaml::apiN(boolector_##APIF,v_p0,v_p1);\
+  }
+
+#define API3(APIF) \
+  REGISTER_API(boolector_##APIF, caml_boolector_##APIF); \
+  apireturn caml_boolector_##APIF (value v_p0, value v_p1, value v_p2){\
+    return CppCaml::apiN(boolector_##APIF,v_p0,v_p1,v_p2);\
   }
 
 #define API1I(APIF) \
@@ -162,8 +176,8 @@ REGISTER_API(boolector_get_btor, caml_boolector_get_btor);
   }
 
 API1I(get_sort)
-API0(false)
-API0(true)
+API1(false)
+API1(true)
 API2I(implies)
 API2I(iff)
 API2I(eq)
@@ -217,7 +231,7 @@ API3I(write)
 API3I(cond)
 API1I(inc)
 API1I(dec)
-API0(bool_sort)
+API1(bool_sort)
 
 API2I(var);
 
@@ -225,7 +239,7 @@ API2(bitvec_sort);
 
 API2I(array_sort);
 
-API0(print_stats);
+API1(print_stats);
 API1I(assert);
 
 apireturn caml_boolector_sat(value v_btor){
@@ -248,35 +262,15 @@ apireturn caml_boolector_set_solver(value v_btor, value v_solver){
   return Val_unit;
 }
 
-apireturn caml_boolector_first_opt(value v_btor){
-  auto btor = Btor_value(v_btor);
-  return Val_long(boolector_first_opt(btor));
-}
+API1(first_opt);
 
-#define OPTFUN(name, wrap) \
-apireturn caml_boolector_##name (value v_btor, value v_opt){\
-  auto btor = Btor_value(v_btor); \
-  auto opt = (BtorOption)Long_val(v_opt); \
-  auto out = boolector_##name (btor, opt); \
-  return wrap(out); \
-} \
-REGISTER_API(boolector_##name, caml_boolector_##name)
+API2(has_opt);
+API2(next_opt);
+API2(get_opt_lng);
+API2(get_opt_desc);
+API2(get_opt_min);
+API2(get_opt_max);
+API2(get_opt_dflt);
+API2(get_opt);
+API3(set_opt);
 
-inline value caml_copy_string_safe(const char * s) { return caml_copy_string(s?s:""); }
-
-OPTFUN(has_opt, Val_bool);
-OPTFUN(next_opt, Val_long);
-OPTFUN(get_opt_lng, caml_copy_string);
-OPTFUN(get_opt_desc, caml_copy_string_safe);
-OPTFUN(get_opt_min, Val_long);
-OPTFUN(get_opt_max, Val_long);
-OPTFUN(get_opt_dflt, Val_long);
-OPTFUN(get_opt, Val_long);
-
-apireturn caml_boolector_set_opt (value v_btor, value v_opt, value v_val){
-  auto btor = Btor_value(v_btor);
-  auto opt = (BtorOption)Long_val(v_opt);
-  boolector_set_opt (btor, opt, Long_val(v_val));
-  return Val_unit;
-}
-REGISTER_API(boolector_set_opt,caml_boolector_set_opt);
