@@ -138,12 +138,24 @@ template<typename T> static inline T& Custom_value(value v){
   return (*((T*)Data_custom_val(v)));
 }
 
-
 template<typename T, void (*delete_T)(T*)>
 struct ContainerSharedPointer{
   std::shared_ptr<T> pT;
   ContainerSharedPointer(T*p) : pT(p,delete_T) { }
   ContainerSharedPointer(std::shared_ptr<T>&pT) : pT(pT) { }
+
+  auto get() { return this->pT.get(); }
+};
+
+template<typename T, void (*delete_T)(T*), typename Context>
+struct ContainerWithContext{
+  std::shared_ptr<Context> pContext;
+  T* t;
+
+  ContainerWithContext(std::shared_ptr<Context>& pContext, T* t)
+    : pContext(pContext), t(t) { }
+
+  ~ContainerWithContext(){ delete_T(t);}
 };
 
 template<typename T> void finalize_custom(value v_custom){

@@ -19,12 +19,7 @@ void delete_btor(Btor*b){
   boolector_delete(b);
 }
 
-struct caml_boolector_btor {
-  std::shared_ptr<Btor> btor;
-
-  caml_boolector_btor(Btor* b) : btor(b,delete_btor){}
-  caml_boolector_btor(std::shared_ptr<Btor>&btor) : btor(btor) {}
-};
+using caml_boolector_btor = CppCaml::ContainerSharedPointer<Btor, delete_btor>;
 
 template<typename T>
 struct remove_const_pointer { typedef T type; };
@@ -62,7 +57,7 @@ typedef caml_boolector_wrap<BoolectorSort> caml_boolector_sort;
 
 static inline Btor * Btor_value(value v){
   auto& s_btor = Custom_value<caml_boolector_btor>(v);
-  return s_btor.btor.get();
+  return s_btor.get();
 }
 
 static inline BoolectorNode *& Node_value(value v){
@@ -296,7 +291,7 @@ apireturn caml_boolector_assert(value v_node){
 
 apireturn caml_boolector_sat(value v_btor){
   /* acquire ownership before blocking section */
-  auto s_btor = Custom_value<caml_boolector_btor>(v_btor).btor;
+  auto s_btor = Custom_value<caml_boolector_btor>(v_btor).pT;
   caml_enter_blocking_section();
   auto sat = boolector_sat(s_btor.get());
   caml_leave_blocking_section();
