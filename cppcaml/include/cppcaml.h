@@ -287,6 +287,14 @@ struct ContainerSharedPointer : private boost::noncopyable {
     new(&Custom_value<This>(v_T)) This(p);
     return v_T;
   };
+
+  static inline value allocate(std::shared_ptr<T>&pT){
+    typedef ContainerSharedPointer<T> This;
+    value v_T =
+      caml_alloc_custom(&ContainerOps<This>::value,sizeof(This),1,10);
+    new(&Custom_value<This>(v_T)) This(pT);
+    return v_T;
+  };
 };
 
 template<typename T> concept ValueWithContext = requires (value v) {

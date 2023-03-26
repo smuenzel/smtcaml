@@ -193,11 +193,7 @@ apireturn caml_boolector_new(value){
 REGISTER_API(boolector_new,caml_boolector_new);
 
 apireturn caml_boolector_get_btor(value v_node){
-  auto&node = Custom_value<caml_boolector_node>(v_node);
-  auto btor = node.pContext;
-  value v_btor = caml_alloc_custom(&ContainerOps<caml_boolector_btor>::value,sizeof(caml_boolector_btor),1,10);
-  new(&Custom_value<caml_boolector_btor>(v_btor)) caml_boolector_btor(btor);
-  return v_btor;
+  return caml_boolector_btor::allocate(Custom_value<caml_boolector_node>(v_node).pContext);
 }
 REGISTER_API(boolector_get_btor, caml_boolector_get_btor);
 
