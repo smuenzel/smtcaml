@@ -138,4 +138,29 @@ template<typename T> static inline T& Custom_value(value v){
   return (*((T*)Data_custom_val(v)));
 }
 
+
+template<typename T, void (*delete_T)(T*)>
+struct ContainerSharedPointer{
+  std::shared_ptr<T> pT;
+  ContainerSharedPointer(T*p) : pT(p,delete_T) { }
+  ContainerSharedPointer(std::shared_ptr<T>&pT) : pT(pT) { }
+};
+
+template<typename T> void finalize_custom(value v_custom){
+  Custom_value<T>(v_custom).~T();
+}
+
+template<typename Container> struct ContainerOps {
+  static inline struct custom_operations value =
+    { typeid(Container).name()
+    , &finalize_custom<Container>
+    , custom_compare_default
+    , custom_hash_default
+    , custom_serialize_default
+    , custom_deserialize_default
+    , custom_compare_ext_default
+    , custom_fixed_length_default
+    };
+};
+
 };

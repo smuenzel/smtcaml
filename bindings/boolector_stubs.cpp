@@ -2,6 +2,7 @@
 #include <cppcaml.h>
 
 using CppCaml::Custom_value;
+using CppCaml::ContainerOps;
 
 DECL_API_TYPE(uint32_t,uint32_t);
 DECL_API_TYPE(bool,bool);
@@ -80,29 +81,9 @@ static inline BoolectorSort& Sort_value(value v){
   return Custom_value<caml_boolector_sort>(v).dep;
 }
 
-template<typename T> void finalize_custom(value v_custom){
-  Custom_value<T>(v_custom).~T();
-}
-
-template<typename Container> struct container_ops {
-  static struct custom_operations value;
-};
-
-template<typename Container>
-  struct custom_operations container_ops<Container>::value =
-  { typeid(Container).name()
-  , &finalize_custom<Container>
-  , custom_compare_default
-  , custom_hash_default
-  , custom_serialize_default
-  , custom_deserialize_default
-  , custom_compare_ext_default
-  , custom_fixed_length_default
-  };
-
 apireturn caml_boolector_new(value){
   boolector_set_abort(&abort_callback);
-  value v_btor = caml_alloc_custom(&container_ops<caml_boolector_btor>::value,sizeof(caml_boolector_btor),1,10);
+  value v_btor = caml_alloc_custom(&ContainerOps<caml_boolector_btor>::value,sizeof(caml_boolector_btor),1,10);
   new(&Custom_value<caml_boolector_btor>(v_btor)) caml_boolector_btor(boolector_new());
   return v_btor;
 }
@@ -131,7 +112,7 @@ template<> uint32_t T_value<uint32_t>(value v){
 template<typename t_dep> 
 static inline value alloc_dependent_internal(std::shared_ptr<Btor>& btor, t_dep dep){
   typedef typename t_dep_container<t_dep>::type Container;
-  value v_container = caml_alloc_custom(&container_ops<Container>::value,sizeof(Container),1,500000);
+  value v_container = caml_alloc_custom(&ContainerOps<Container>::value,sizeof(Container),1,500000);
   new(&Custom_value<Container>(v_container)) Container(btor, dep);
   return v_container;
 }
@@ -146,7 +127,7 @@ static inline value alloc_dependent(value v_btor, t_dep dep){
 apireturn caml_boolector_get_btor(value v_node){
   auto node = Custom_value<caml_boolector_node>(v_node);
   auto btor = node.btor;
-  value v_btor = caml_alloc_custom(&container_ops<caml_boolector_btor>::value,sizeof(caml_boolector_btor),1,10);
+  value v_btor = caml_alloc_custom(&ContainerOps<caml_boolector_btor>::value,sizeof(caml_boolector_btor),1,10);
   new(&Custom_value<caml_boolector_btor>(v_btor)) caml_boolector_btor(btor);
   return v_btor;
 }
