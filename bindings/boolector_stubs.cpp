@@ -3,6 +3,7 @@
 
 using CppCaml::Custom_value;
 using CppCaml::ContainerOps;
+using CppCaml::T_value;
 
 DECL_API_TYPE(uint32_t,uint32_t);
 DECL_API_TYPE(bool,bool);
@@ -39,23 +40,19 @@ template<> void release<BoolectorSort>(Btor*btor, BoolectorSort sort){
   boolector_release_sort(btor,sort);
 }
 
+using caml_boolector_node =
+  CppCaml::ContainerWithContext<BoolectorNode,Btor,boolector_release>;
+using caml_boolector_sort =
+  CppCaml::ContainerWithContext<std::remove_pointer<BoolectorSort>::type,Btor,boolector_release_sort>;
+
 template<typename t_bt>
 struct caml_boolector_wrap {
-  std::shared_ptr<Btor> btor;
-  t_bt dep;
-
-  caml_boolector_wrap(std::shared_ptr<Btor>&btor, t_bt bt)
-    : btor(btor), dep(bt) { }
-
-  ~caml_boolector_wrap(){
-    release(this->btor.get(), this->dep);
-  }
+  static_assert(CppCaml::always_false<t_bt>::value , "You must specialize caml_boolector_wrap for your type");
 };
 
-using caml_boolector_node =
-  CppCaml::ContainerWithContext<BoolectorNode*,Btor,boolector_release>;
-using caml_boolector_sort =
-  CppCaml::ContainerWithContext<BoolectorSort,Btor,boolector_release_sort>;
+template<> struct caml_boolector_wrap<BoolectorNode*> : caml_boolector_node { };
+template<> struct caml_boolector_wrap<BoolectorSort> : caml_boolector_sort { };
+
 
 static inline Btor * Btor_value(value v){
   auto& s_btor = Custom_value<caml_boolector_btor>(v);
@@ -93,32 +90,26 @@ template<typename T> concept is_dep_container = requires {
   typename t_dep_container<T>::type;
 };
 
-template<typename T> T T_value(value v){
-  static_assert(CppCaml::always_false<T>::value , "You must specialize T_value<> for your type");
-}
-
 template<typename T> requires is_dep_container<T>
 T T_value(value v){
-  return Custom_value<caml_boolector_wrap<T>>(v).dep;
+  return Custom_value<caml_boolector_wrap<T>>(v).t;
 }
 
-template<> uint32_t T_value<uint32_t>(value v){
+template<> uint32_t CppCaml::T_value<uint32_t>(value v){
   return Long_val(v);
 }
 
 template<typename t_dep> 
 static inline value alloc_dependent_internal(std::shared_ptr<Btor>& btor, t_dep dep){
   typedef typename t_dep_container<t_dep>::type Container;
-  value v_container = caml_alloc_custom(&ContainerOps<Container>::value,sizeof(Container),1,500000);
-  new(&Custom_value<Container>(v_container)) Container(btor, dep);
-  return v_container;
+  return Container::allocate(btor, dep);
 }
 
 template<typename t_dep>
 static inline value alloc_dependent(value v_btor, t_dep dep){
   typedef typename t_dep_container<t_dep>::type Container;
-  auto& s_btor = Custom_value<Container>(v_btor);
-  return alloc_dependent_internal<t_dep>(s_btor.pContext, dep);
+  auto& s_btor = Custom_value<caml_boolector_btor>(v_btor);
+  return Container::allocate(s_btor.pT, dep);
 }
 
 apireturn caml_boolector_get_btor(value v_node){
@@ -139,39 +130,39 @@ template<typename F> inline value boolector_api0(F mkdep, value v_btor){
 template<typename R, typename A0, typename A1> inline value
 boolector_api1_implied(R (*mknod)(A0, A1), value v_p0){
   auto p0_s = Custom_value<caml_boolector_wrap<typename remove_const_pointer<A1>::type>>(v_p0);
-  auto p0 = p0_s.dep;
-  auto btor = p0_s.btor.get();
+  auto p0 = p0_s.t;
+  auto btor = p0_s.pContext.get();
   // we retrieve all the inner values before allocation, so we don't need to register
   // roots
   auto dep = mknod(btor,p0);
-  value v_dep = alloc_dependent_internal(p0_s.btor, dep);
+  value v_dep = alloc_dependent_internal(p0_s.pContext, dep);
   return v_dep;
 }
 
 template<typename R, typename A0, typename A1, typename A2> inline value
 boolector_api2_implied(R (*mknod)(A0,A1,A2), value v_p0, value v_p1){
   auto p0_s = Custom_value<caml_boolector_wrap<A1>>(v_p0);
-  auto p0 = p0_s.dep;
+  auto p0 = p0_s.t;
   auto p1 = T_value<A2>(v_p1);
-  auto btor = p0_s.btor.get();
+  auto btor = p0_s.pContext.get();
   // we retrieve all the inner values before allocation, so we don't need to register
   // roots
   auto node = mknod(btor,p0,p1);
-  value v_node = alloc_dependent_internal(p0_s.btor, node);
+  value v_node = alloc_dependent_internal(p0_s.pContext, node);
   return v_node;
 }
 
 template<typename R, typename A0, typename A1, typename A2, typename A3> inline value
 boolector_api3_implied(R (*mknod)(A0,A1,A2,A3), value v_p0, value v_p1, value v_p2){
   auto p0_s = Custom_value<caml_boolector_wrap<A1>>(v_p0);
-  auto p0 = p0_s.dep;
+  auto p0 = p0_s.t;
   auto p1 = T_value<A2>(v_p1);
   auto p2 = T_value<A3>(v_p2);
-  auto btor = p0_s.btor.get();
+  auto btor = p0_s.pContext.get();
   // we retrieve all the inner values before allocation, so we don't need to register
   // roots
   auto node = mknod(btor,p0,p1,p2);
-  value v_node = alloc_dependent_internal(p0_s.btor, node);
+  value v_node = alloc_dependent_internal(p0_s.pContext, node);
   return v_node;
 }
 

@@ -138,25 +138,6 @@ template<typename T> static inline T& Custom_value(value v){
   return (*((T*)Data_custom_val(v)));
 }
 
-template<typename T, void (*delete_T)(T*)>
-struct ContainerSharedPointer{
-  std::shared_ptr<T> pT;
-  ContainerSharedPointer(T*p) : pT(p,delete_T) { }
-  ContainerSharedPointer(std::shared_ptr<T>&pT) : pT(pT) { }
-
-  auto get() { return this->pT.get(); }
-};
-
-template<typename T, typename Context, void (*delete_T)(Context*, T)>
-struct ContainerWithContext{
-  std::shared_ptr<Context> pContext;
-  T t;
-
-  ContainerWithContext(std::shared_ptr<Context>& pContext, T t)
-    : pContext(pContext), t(t) { }
-
-  ~ContainerWithContext(){ delete_T(this->pContext.get(), this->t);}
-};
 
 template<typename T> void finalize_custom(value v_custom){
   Custom_value<T>(v_custom).~T();
@@ -174,5 +155,37 @@ template<typename Container> struct ContainerOps {
     , custom_fixed_length_default
     };
 };
+
+template<typename T, void (*delete_T)(T*)>
+struct ContainerSharedPointer{
+  std::shared_ptr<T> pT;
+  ContainerSharedPointer(T*p) : pT(p,delete_T) { }
+  ContainerSharedPointer(std::shared_ptr<T>&pT) : pT(pT) { }
+
+  auto get() { return this->pT.get(); }
+};
+
+template<typename T, typename Context, void (*delete_T)(Context*, T*)>
+struct ContainerWithContext{
+  std::shared_ptr<Context> pContext;
+  T* t;
+
+  ContainerWithContext(std::shared_ptr<Context>& pContext, T* t)
+    : pContext(pContext), t(t) { }
+
+  ~ContainerWithContext(){ delete_T(this->pContext.get(), this->t);}
+
+  static inline value allocate(std::shared_ptr<Context>& context, T* t){
+    typedef ContainerWithContext<T,Context,delete_T> This;
+    value v_container =
+      caml_alloc_custom(&ContainerOps<This>::value,sizeof(This),1,500000);
+    new(&Custom_value<This>(v_container)) This(context, t);
+    return v_container;
+  };
+};
+
+template<typename T> T T_value(value v){
+  static_assert(CppCaml::always_false<T>::value , "You must specialize T_value<> for your type");
+}
 
 };
