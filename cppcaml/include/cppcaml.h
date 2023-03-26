@@ -178,6 +178,9 @@ template<typename T, CamlRepresentationKind kind> concept represented_as =
   CamlRepresentable<T>
   && CamlRepresentation<T>::kind == kind;
 
+template<typename T> concept represented_as_ContainerWithContext =
+  represented_as<T,CamlRepresentationKind::ContainerWithContext>;
+
 template<typename T> struct ValueWithContextProperties {
   static_assert(CppCaml::always_false<T>::value , "You must specialize ValueWithContextProperties<> for your type");
 };
@@ -238,5 +241,29 @@ auto Context_value(value v) {
   auto container = Custom_value<ContainerWithContext<T>>(v);
   return container.pContext.get();
 };
+ 
+/////////////////////////////////////////////////////////////////////////////////////////
+/// calling of api functions
+///
+
+template<typename T> struct normalize_pointer_argument {
+  typedef typename std::remove_const<typename std::remove_pointer<T>::type>::type type;
+};
+
+template<typename R, typename A0, typename A1>
+requires CppCaml::represented_as_ContainerWithContext<R>
+inline value
+api1_implied_context(R* (*mknod)(A0, A1), value v_p0){
+  typedef typename normalize_pointer_argument<A1>::type A1raw;
+  auto p0_s = Custom_value<CppCaml::ContainerWithContext<A1raw>>(v_p0);
+  auto p0 = p0_s.t;
+  auto context = p0_s.pContext.get();
+  // we retrieve all the inner values before allocation,
+  // so we don't need to register roots
+  auto dep = mknod(context,p0);
+  typedef CppCaml::ContainerWithContext<R> Container;
+  value v_dep = Container::allocate(p0_s.pContext, dep);
+  return v_dep;
+}
 
 };

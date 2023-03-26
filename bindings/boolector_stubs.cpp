@@ -139,18 +139,6 @@ template<typename F> inline value boolector_api0(F mkdep, value v_btor){
   return v_dep;
 }
 
-template<typename R, typename A0, typename A1> inline value
-boolector_api1_implied(R (*mknod)(A0, A1), value v_p0){
-  auto p0_s = Custom_value<caml_boolector_wrap<typename remove_const_pointer<A1>::type>>(v_p0);
-  auto p0 = p0_s.t;
-  auto btor = p0_s.pContext.get();
-  // we retrieve all the inner values before allocation, so we don't need to register
-  // roots
-  auto dep = mknod(btor,p0);
-  value v_dep = alloc_dependent_internal(p0_s.pContext, dep);
-  return v_dep;
-}
-
 template<typename R, typename A0, typename A1, typename A2> inline value
 boolector_api2_implied(R (*mknod)(A0,A1,A2), value v_p0, value v_p1){
   auto p0_s = Custom_value<caml_boolector_wrap<A1>>(v_p0);
@@ -187,7 +175,7 @@ boolector_api3_implied(R (*mknod)(A0,A1,A2,A3), value v_p0, value v_p1, value v_
 #define API1(APIF) \
   REGISTER_API_IMPLIED_FIRST(boolector_##APIF, caml_boolector_##APIF); \
   apireturn caml_boolector_##APIF (value v_p0){\
-    return boolector_api1_implied(boolector_##APIF,v_p0);\
+    return CppCaml::api1_implied_context(boolector_##APIF,v_p0);\
   }
 
 #define API2(APIF) \
