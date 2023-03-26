@@ -16,14 +16,6 @@
 
 #define apireturn extern "C" CAMLprim value
 
-value caml_alloc_m(int line, mlsize_t s, tag_t t){
-  fprintf(stderr, "line=%i, size = %lu\n", line, s); 
-  fflush(stderr);
-  return caml_alloc(s,t);
-}
-
-#define caml_alloc(S,T) caml_alloc_m(__LINE__,S,T)
-
 template<typename T>
 struct always_false : std::false_type {};
 
@@ -162,8 +154,6 @@ value CamlApiRegistryEntry::to_value(){
 value api_registry_entry_to_list(CamlApiRegistryEntry*start, CamlApiRegistryEntry*stop){
   uint64_t* idx = (uint64_t*)start;
   uint64_t* sstop = (uint64_t*)stop;
-  fprintf(stderr, "start=%p, stop=%p\n", start,stop);
-  fflush(stderr);
   while(idx < sstop && *idx != marker){
     idx++;
   };
