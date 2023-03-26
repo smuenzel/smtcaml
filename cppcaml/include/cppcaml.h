@@ -185,12 +185,16 @@ template<typename T> struct ValueWithContextProperties {
   static_assert(CppCaml::always_false<T>::value , "You must specialize ValueWithContextProperties<> for your type");
 };
 
+template<typename T> struct T_value_wrapper{
+  static_assert(CppCaml::always_false<T>::value , "You must specialize T_value_wrapper<> for your type");
+};
+
 template<typename T> T T_value(value v){
-  static_assert(CppCaml::always_false<T>::value , "You must specialize T_value<> for your type");
+  return T_value_wrapper<T>::get(v);
 }
 
 template<typename T, void (*delete_T)(T*)>
-  requires represented_as<T,CamlRepresentationKind::ContainerSharedPointer>
+  requires represented_as<T*,CamlRepresentationKind::ContainerSharedPointer>
 struct ContainerSharedPointer{
   std::shared_ptr<T> pT;
   ContainerSharedPointer(T*p) : pT(p,delete_T) { }
@@ -213,7 +217,10 @@ template<typename T> concept ValueWithContext = requires (value v) {
 };
 
 template<typename T>
-  requires (ValueWithContext<T> && represented_as<T,CamlRepresentationKind::ContainerWithContext>)
+  requires (ValueWithContext<T>
+      && represented_as<T*,CamlRepresentationKind::ContainerWithContext>
+      && not std::is_pointer<T>::value
+      )
 struct ContainerWithContext{
   typedef typename ValueWithContextProperties<T>::Context Context;
 
@@ -236,6 +243,15 @@ struct ContainerWithContext{
   };
 };
 
+template<typename T>
+requires represented_as<T,CamlRepresentationKind::ContainerWithContext>
+struct T_value_wrapper<T> {
+  static inline T get(value v) {
+    typedef typename std::remove_pointer<T>::type Traw;
+    return Custom_value<ContainerWithContext<Traw>>(v).t;
+  }
+};
+
 template<ValueWithContext T>
 auto Context_value(value v) {
   auto container = Custom_value<ContainerWithContext<T>>(v);
@@ -251,7 +267,10 @@ template<typename T> struct normalize_pointer_argument {
 };
 
 template<typename R, typename A0, typename A1>
-requires CppCaml::represented_as_ContainerWithContext<R>
+requires 
+( CppCaml::represented_as_ContainerWithContext<R*>
+  && CppCaml::represented_as_ContainerWithContext<typename normalize_pointer_argument<A1>::type *>
+  )
 inline value
 api1_implied_context(R* (*mknod)(A0, A1), value v_p0){
   typedef typename normalize_pointer_argument<A1>::type A1raw;
@@ -261,6 +280,47 @@ api1_implied_context(R* (*mknod)(A0, A1), value v_p0){
   // we retrieve all the inner values before allocation,
   // so we don't need to register roots
   auto dep = mknod(context,p0);
+  typedef CppCaml::ContainerWithContext<R> Container;
+  value v_dep = Container::allocate(p0_s.pContext, dep);
+  return v_dep;
+}
+
+template<typename R, typename A0, typename A1, typename A2>
+requires 
+( CppCaml::represented_as_ContainerWithContext<R *>
+  && CppCaml::represented_as_ContainerWithContext<typename normalize_pointer_argument<A1>::type *>
+  )
+inline value
+api2_implied_context(R* (*mknod)(A0, A1, A2), value v_p0, value v_p1){
+  typedef typename normalize_pointer_argument<A1>::type A1raw;
+  auto p0_s = Custom_value<CppCaml::ContainerWithContext<A1raw>>(v_p0);
+  auto p0 = p0_s.t;
+  auto context = p0_s.pContext.get();
+  auto p1 = T_value<A2>(v_p1);
+  // we retrieve all the inner values before allocation,
+  // so we don't need to register roots
+  auto dep = mknod(context,p0,p1);
+  typedef CppCaml::ContainerWithContext<R> Container;
+  value v_dep = Container::allocate(p0_s.pContext, dep);
+  return v_dep;
+}
+
+template<typename R, typename A0, typename A1, typename A2, typename A3>
+requires 
+( CppCaml::represented_as_ContainerWithContext<R *>
+  && CppCaml::represented_as_ContainerWithContext<typename normalize_pointer_argument<A1>::type *>
+  )
+inline value
+api3_implied_context(R* (*mknod)(A0, A1, A2, A3), value v_p0, value v_p1, value v_p2){
+  typedef typename normalize_pointer_argument<A1>::type A1raw;
+  auto p0_s = Custom_value<CppCaml::ContainerWithContext<A1raw>>(v_p0);
+  auto p0 = p0_s.t;
+  auto context = p0_s.pContext.get();
+  auto p1 = T_value<A2>(v_p1);
+  auto p2 = T_value<A3>(v_p2);
+  // we retrieve all the inner values before allocation,
+  // so we don't need to register roots
+  auto dep = mknod(context,p0,p1,p2);
   typedef CppCaml::ContainerWithContext<R> Container;
   value v_dep = Container::allocate(p0_s.pContext, dep);
   return v_dep;
