@@ -374,7 +374,7 @@ apiN(R* (*mknod)(A0, As...), value v_p0, typename first_type<value,As>::type... 
 
 template<typename R, typename A0, typename... As>
 requires
-( represented_as_Immediate<R>
+( (represented_as_Immediate<R> || represented_as_Value<R>)
 &&  represented_as_ContainerSharedPointer<typename normalize_pointer_argument<A0>::type *>
 )
 inline value
@@ -383,22 +383,10 @@ apiN(R (*mknod)(A0, As...), value v_p0, typename first_type<value,As>::type... v
   auto&context_s = Custom_value<CppCaml::ContainerSharedPointer<A0raw>>(v_p0);
   auto context = context_s.get();
   auto ret = mknod(context,T_value<As>(v_ps)...);
-  return ImmediateProperties<R>::to_value(ret);
-}
-
-//TODO: Combine
-template<typename R, typename A0, typename... As>
-requires
-( represented_as_Value<R>
-&&  represented_as_ContainerSharedPointer<typename normalize_pointer_argument<A0>::type *>
-)
-inline value
-apiN(R (*mknod)(A0, As...), value v_p0, typename first_type<value,As>::type... v_ps){
-  typedef typename normalize_pointer_argument<A0>::type A0raw;
-  auto&context_s = Custom_value<CppCaml::ContainerSharedPointer<A0raw>>(v_p0);
-  auto context = context_s.get();
-  auto ret = mknod(context,T_value<As>(v_ps)...);
-  return ValueProperties<R>::to_value(ret);
+  if constexpr (represented_as_Immediate<R>)
+    return ImmediateProperties<R>::to_value(ret);
+  else
+    return ValueProperties<R>::to_value(ret);
 }
 
 template<typename A0, typename... As>
