@@ -16,6 +16,8 @@
 
 #define apireturn extern "C" CAMLprim value
 
+namespace CppCaml {
+
 template<typename T>
 struct always_false : std::false_type {};
 
@@ -29,7 +31,7 @@ template<typename T> struct CamlApiTypename<const T*> : CamlApiTypename<T*> {};
 
 #define DECL_API_TYPE(c_type, caml_type) \
   template<> \
-  struct CamlApiTypename<c_type>{ \
+  struct CppCaml::CamlApiTypename<c_type>{ \
     static constexpr const char * name = #caml_type; \
   } 
 
@@ -56,6 +58,8 @@ template<typename P, typename... Ps> struct Params<P, Ps...>{
   static inline constexpr const CamlLinkedList<cstring>* p = &pp;
 };
 
+struct DropFirstArgument{};
+
 struct CamlApiFunctionDescription {
   cstring return_type;
   const size_t parameter_count;
@@ -63,6 +67,12 @@ struct CamlApiFunctionDescription {
 
   template<typename R, typename... Ps>
     constexpr CamlApiFunctionDescription(R (*fun)(Ps...))
+    : return_type(CamlApiTypename<R>::name), parameter_count(sizeof...(Ps))
+      , parameters(Params<Ps...>::p)
+    {}
+
+  template<typename R, typename P0, typename... Ps>
+    constexpr CamlApiFunctionDescription(DropFirstArgument, R (*fun)(P0, Ps...))
     : return_type(CamlApiTypename<R>::name), parameter_count(sizeof...(Ps))
       , parameters(Params<Ps...>::p)
     {}
@@ -79,8 +89,22 @@ struct CamlApiRegistryEntry {
   CamlApiFunctionDescription description;
 
   template<typename R, typename... Ps>
-  constexpr CamlApiRegistryEntry(const char * name, const char*wrapper_name, R (*fun)(Ps...))
+  constexpr CamlApiRegistryEntry
+   ( const char*name
+   , const char*wrapper_name
+   , R (*fun)(Ps...)
+   )
     : q1(marker), wrapper_name(wrapper_name), name(name), description(fun)
+  { }
+
+  template<typename R, typename P0, typename... Ps>
+  constexpr CamlApiRegistryEntry
+   ( DropFirstArgument d
+   , const char*name
+   , const char*wrapper_name
+   , R (*fun)(P0, Ps...)
+   )
+    : q1(marker), wrapper_name(wrapper_name), name(name), description(d,fun)
   { }
 
   value to_value();
@@ -99,3 +123,15 @@ value list_to_caml(value (*convert)(T), const CamlLinkedList<cstring>* l){
     CAMLreturn(v_l);
   }
 }
+
+#define REGISTER_API(APIF, WRAPPER) \
+  static inline constexpr auto __caml_api_registry_var__##APIF \
+__attribute((used, section("caml_api_registry"))) = \
+    CppCaml::CamlApiRegistryEntry(#APIF,#WRAPPER,APIF);
+
+#define REGISTER_API_IMPLIED_FIRST(APIF, WRAPPER) \
+  static inline constexpr auto __caml_api_registry_var__##APIF \
+__attribute((used, section("caml_api_registry"))) = \
+    CppCaml::CamlApiRegistryEntry(CppCaml::DropFirstArgument(),#APIF,#WRAPPER,APIF);
+
+};

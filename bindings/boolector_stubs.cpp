@@ -30,7 +30,7 @@ template<typename T>
 struct remove_const_pointer<const T*> { typedef T* type; };
 
 template<typename t_bt> void release(Btor*, t_bt){
-  static_assert(always_false<t_bt>::value , "You must specialize release<> for your type");
+  static_assert(CppCaml::always_false<t_bt>::value , "You must specialize release<> for your type");
 }
 
 template<> void release<BoolectorNode*>(Btor*btor, BoolectorNode*node){
@@ -119,7 +119,7 @@ template<typename T> concept is_dep_container = requires {
 };
 
 template<typename T> T T_value(value v){
-  static_assert(always_false<T>::value , "You must specialize T_value<> for your type");
+  static_assert(CppCaml::always_false<T>::value , "You must specialize T_value<> for your type");
 }
 
 template<typename T> requires is_dep_container<T>
@@ -200,11 +200,6 @@ boolector_api3_implied(R (*mknod)(A0,A1,A2,A3), value v_p0, value v_p1, value v_
   return v_node;
 }
 
-#define REGISTER_API(APIF, WRAPPER) \
-  static inline constexpr auto __caml_api_registry_var__##APIF \
-__attribute((used, section("caml_api_registry"))) = CamlApiRegistryEntry(#APIF,#WRAPPER,APIF);
-
-
 #define API0(APIF) \
   REGISTER_API(boolector_##APIF, caml_boolector_##APIF); \
   apireturn caml_boolector_##APIF (value v_btor){\
@@ -212,19 +207,19 @@ __attribute((used, section("caml_api_registry"))) = CamlApiRegistryEntry(#APIF,#
   }
 
 #define API1(APIF) \
-  REGISTER_API(boolector_##APIF, caml_boolector_##APIF); \
+  REGISTER_API_IMPLIED_FIRST(boolector_##APIF, caml_boolector_##APIF); \
   apireturn caml_boolector_##APIF (value v_p0){\
     return boolector_api1_implied(boolector_##APIF,v_p0);\
   }
 
 #define API2(APIF) \
-  REGISTER_API(boolector_##APIF, caml_boolector_##APIF); \
+  REGISTER_API_IMPLIED_FIRST(boolector_##APIF, caml_boolector_##APIF); \
   apireturn caml_boolector_##APIF (value v_p0, value v_p1){\
     return boolector_api2_implied(boolector_##APIF,v_p0, v_p1);\
   }
 
 #define API3(APIF) \
-  REGISTER_API(boolector_##APIF, caml_boolector_##APIF); \
+  REGISTER_API_IMPLIED_FIRST(boolector_##APIF, caml_boolector_##APIF); \
   apireturn caml_boolector_##APIF (value v_p0, value v_p1, value v_p2){\
     return boolector_api3_implied(boolector_##APIF,v_p0, v_p1, v_p2);\
   }

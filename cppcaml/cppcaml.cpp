@@ -1,4 +1,5 @@
 #include <cppcaml.h>
+using namespace CppCaml;
 
 value CamlApiFunctionDescription::to_value(){
   CAMLparam0();
