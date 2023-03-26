@@ -26,11 +26,6 @@ CAML_REPRESENTATION(BtorOption,Immediate);
 CAML_REPRESENTATION(uint32_t,Immediate);
 
 
-static void abort_callback(const char* msg){
-  if(Caml_state == NULL) caml_acquire_runtime_system();
-  caml_failwith(msg);
-}
-
 template<> struct CppCaml::SharedPointerProperties<Btor>{
   static void delete_T(Btor*b) { boolector_delete(b); }
 };
@@ -186,6 +181,10 @@ API2(get_opt_dflt);
 API2(get_opt);
 API3(set_opt);
 
+static void abort_callback(const char* msg){
+  if(Caml_state == NULL) caml_acquire_runtime_system();
+  caml_failwith(msg);
+}
 
 apireturn caml_boolector_new(value){
   boolector_set_abort(&abort_callback);
