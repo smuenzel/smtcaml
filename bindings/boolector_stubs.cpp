@@ -119,7 +119,7 @@ static inline value alloc_dependent(value v_btor, t_dep dep){
 }
 
 apireturn caml_boolector_get_btor(value v_node){
-  auto node = Custom_value<caml_boolector_node>(v_node);
+  auto&node = Custom_value<caml_boolector_node>(v_node);
   auto btor = node.pContext;
   value v_btor = caml_alloc_custom(&ContainerOps<caml_boolector_btor>::value,sizeof(caml_boolector_btor),1,10);
   new(&Custom_value<caml_boolector_btor>(v_btor)) caml_boolector_btor(btor);
@@ -210,7 +210,7 @@ API1(dec)
 API0(bool_sort)
 
 apireturn caml_boolector_var(value v_sort, value v_symbol){
-  auto sort_s = Sort_s_value(v_sort);
+  auto&sort_s = Sort_s_value(v_sort);
   auto symbol = String_val(v_symbol);
   auto node = boolector_var(sort_s.pContext.get(), sort_s.t, symbol);
   return alloc_dependent_internal(sort_s.pContext, node);
@@ -227,7 +227,7 @@ apireturn caml_boolector_bitvec_sort(value v_btor, value v_width){
 REGISTER_API(boolector_bitvec_sort,caml_boolector_bitvec_sort);
 
 apireturn caml_boolector_array_sort(value v_index, value v_element){
-  auto index_s = Sort_s_value(v_index);
+  auto&index_s = Sort_s_value(v_index);
   auto element = Sort_value(v_element);
   auto sort = boolector_array_sort(index_s.pContext.get(), index_s.t, element);
   return alloc_dependent_internal(index_s.pContext, sort);
@@ -240,7 +240,7 @@ apireturn caml_boolector_print_stats(value v_btor){
 }
 
 apireturn caml_boolector_assert(value v_node){
-  auto node = Custom_value<caml_boolector_node>(v_node);
+  auto&node = Custom_value<caml_boolector_node>(v_node);
   boolector_assert(node.pContext.get(),node.t);
   return Val_unit;
 }
