@@ -360,13 +360,13 @@ requires
   && represented_as_ContainerSharedPointer<typename normalize_pointer_argument<A0>::type *>
   )
 inline value
-apiN(R* (*mknod)(A0, As...), value v_p0, typename first_type<value,As>::type... v_ps){
+apiN(R* (*fun)(A0, As...), value v_p0, typename first_type<value,As>::type... v_ps){
   typedef typename normalize_pointer_argument<A0>::type A0raw;
   auto&context_s = Custom_value<CppCaml::ContainerSharedPointer<A0raw>>(v_p0);
   auto context = context_s.get();
   // we retrieve all the inner values before allocation,
   // so we don't need to register roots
-  auto dep = mknod(context,T_value<As>(v_ps)...);
+  auto dep = fun(context,T_value<As>(v_ps)...);
   typedef CppCaml::ContainerWithContext<R> Container;
   value v_dep = Container::allocate(context_s.pT, dep);
   return v_dep;
@@ -378,11 +378,11 @@ requires
 &&  represented_as_ContainerSharedPointer<typename normalize_pointer_argument<A0>::type *>
 )
 inline value
-apiN(R (*mknod)(A0, As...), value v_p0, typename first_type<value,As>::type... v_ps){
+apiN(R (*fun)(A0, As...), value v_p0, typename first_type<value,As>::type... v_ps){
   typedef typename normalize_pointer_argument<A0>::type A0raw;
   auto&context_s = Custom_value<CppCaml::ContainerSharedPointer<A0raw>>(v_p0);
   auto context = context_s.get();
-  auto ret = mknod(context,T_value<As>(v_ps)...);
+  auto ret = fun(context,T_value<As>(v_ps)...);
   if constexpr (represented_as_Immediate<R>)
     return ImmediateProperties<R>::to_value(ret);
   else if constexpr (represented_as_Value<R>)
@@ -393,11 +393,11 @@ template<typename A0, typename... As>
 requires
   represented_as_ContainerSharedPointer<typename normalize_pointer_argument<A0>::type *>
 inline value
-apiN(void (*mknod)(A0, As...), value v_p0, typename first_type<value,As>::type... v_ps){
+apiN(void (*fun)(A0, As...), value v_p0, typename first_type<value,As>::type... v_ps){
   typedef typename normalize_pointer_argument<A0>::type A0raw;
   auto&context_s = Custom_value<CppCaml::ContainerSharedPointer<A0raw>>(v_p0);
   auto context = context_s.get();
-  mknod(context,T_value<As>(v_ps)...);
+  fun(context,T_value<As>(v_ps)...);
   return Val_unit;
 }
 
@@ -408,14 +408,14 @@ requires
   && represented_as_ContainerWithContext<typename normalize_pointer_argument<A1>::type *>
   )
 inline value
-apiN_implied_context(R* (*mknod)(A0, A1, As...), value v_p0, typename first_type<value,As>::type... v_ps){
+apiN_implied_context(R* (*fun)(A0, A1, As...), value v_p0, typename first_type<value,As>::type... v_ps){
   typedef typename normalize_pointer_argument<A1>::type A1raw;
   auto&p0_s = Custom_value<CppCaml::ContainerWithContext<A1raw>>(v_p0);
   auto p0 = p0_s.t;
   auto context = p0_s.pContext.get();
   // we retrieve all the inner values before allocation,
   // so we don't need to register roots
-  auto dep = mknod(context,p0,T_value<As>(v_ps)...);
+  auto dep = fun(context,p0,T_value<As>(v_ps)...);
   typedef CppCaml::ContainerWithContext<R> Container;
   value v_dep = Container::allocate(p0_s.pContext, dep);
   return v_dep;
@@ -425,12 +425,12 @@ template<typename A0, typename A1, typename... As>
 requires
   CppCaml::represented_as_ContainerWithContext<typename normalize_pointer_argument<A1>::type *>
 inline value
-apiN_implied_context(void (*mknod)(A0, A1, As...), value v_p0, typename first_type<value,As>::type... v_ps){
+apiN_implied_context(void (*fun)(A0, A1, As...), value v_p0, typename first_type<value,As>::type... v_ps){
   typedef typename normalize_pointer_argument<A1>::type A1raw;
   auto&p0_s = Custom_value<CppCaml::ContainerWithContext<A1raw>>(v_p0);
   auto p0 = p0_s.t;
   auto context = p0_s.pContext.get();
-  mknod(context,p0,T_value<As>(v_ps)...);
+  fun(context,p0,T_value<As>(v_ps)...);
   return Val_unit;
 }
 
