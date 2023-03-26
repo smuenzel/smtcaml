@@ -10,6 +10,9 @@ DECL_API_TYPE(bool,bool);
 DECL_API_TYPE(BoolectorNode*,node);
 DECL_API_TYPE(BoolectorSort,sort);
 DECL_API_TYPE(Btor*,btor);
+DECL_API_TYPE(const char*,string);
+DECL_API_TYPE(BtorOption,btor_option);
+DECL_API_TYPE(void,unit);
 
 static void abort_callback(const char* msg){
   if(Caml_state == NULL) caml_acquire_runtime_system();
@@ -19,8 +22,6 @@ static void abort_callback(const char* msg){
 void delete_btor(Btor*b){
   boolector_delete(b);
 }
-
-using caml_boolector_btor = CppCaml::ContainerSharedPointer<Btor, delete_btor>;
 
 template<typename T>
 struct remove_const_pointer { typedef T type; };
@@ -44,8 +45,11 @@ template<> struct CppCaml::ValueWithContextProperties<BoolectorSortRaw>{
   }
 };
 
-CAML_REPRESENTATION(BoolectorNode, ContainerSharedPointer);
-CAML_REPRESENTATION(BoolectorSortRaw, ContainerSharedPointer);
+CAML_REPRESENTATION(Btor, ContainerSharedPointer);
+CAML_REPRESENTATION(BoolectorNode, ContainerWithContext);
+CAML_REPRESENTATION(BoolectorSortRaw, ContainerWithContext);
+
+using caml_boolector_btor = CppCaml::ContainerSharedPointer<Btor, delete_btor>;
 
 using caml_boolector_node =
   CppCaml::ContainerWithContext<BoolectorNode>;
@@ -84,10 +88,10 @@ static inline BoolectorSort& Sort_value(value v){
 
 apireturn caml_boolector_new(value){
   boolector_set_abort(&abort_callback);
-  value v_btor = caml_alloc_custom(&ContainerOps<caml_boolector_btor>::value,sizeof(caml_boolector_btor),1,10);
-  new(&Custom_value<caml_boolector_btor>(v_btor)) caml_boolector_btor(boolector_new());
-  return v_btor;
+  return caml_boolector_btor::allocate(boolector_new());
 }
+
+REGISTER_API(boolector_new,caml_boolector_new);
 
 template<typename t_dep> struct t_dep_container { };
 template<> struct t_dep_container<BoolectorNode*> { typedef caml_boolector_node type; };
@@ -126,6 +130,7 @@ apireturn caml_boolector_get_btor(value v_node){
   new(&Custom_value<caml_boolector_btor>(v_btor)) caml_boolector_btor(btor);
   return v_btor;
 }
+REGISTER_API(boolector_get_btor, caml_boolector_get_btor);
 
 template<typename F> inline value boolector_api0(F mkdep, value v_btor){
   auto btor = Btor_value(v_btor);
@@ -261,6 +266,7 @@ apireturn caml_boolector_var(value v_sort, value v_symbol){
   auto node = boolector_var(sort_s.pContext.get(), sort_s.t, symbol);
   return alloc_dependent_internal(sort_s.pContext, node);
 }
+REGISTER_API_IMPLIED_FIRST(boolector_var,caml_boolector_var);
 
 apireturn caml_boolector_bitvec_sort(value v_btor, value v_width){
   auto btor = Btor_value(v_btor);
@@ -269,6 +275,7 @@ apireturn caml_boolector_bitvec_sort(value v_btor, value v_width){
   value v_dep = alloc_dependent<decltype(dep)>(v_btor, dep);
   return v_dep;
 }
+REGISTER_API(boolector_bitvec_sort,caml_boolector_bitvec_sort);
 
 apireturn caml_boolector_array_sort(value v_index, value v_element){
   auto index_s = Sort_s_value(v_index);
@@ -320,7 +327,8 @@ apireturn caml_boolector_##name (value v_btor, value v_opt){\
   auto opt = (BtorOption)Long_val(v_opt); \
   auto out = boolector_##name (btor, opt); \
   return wrap(out); \
-}
+} \
+REGISTER_API(boolector_##name, caml_boolector_##name)
 
 inline value caml_copy_string_safe(const char * s) { return caml_copy_string(s?s:""); }
 
@@ -339,3 +347,4 @@ apireturn caml_boolector_set_opt (value v_btor, value v_opt, value v_val){
   boolector_set_opt (btor, opt, Long_val(v_val));
   return Val_unit;
 }
+REGISTER_API(boolector_set_opt,caml_boolector_set_opt);

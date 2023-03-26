@@ -156,15 +156,6 @@ template<typename Container> struct ContainerOps {
     };
 };
 
-template<typename T, void (*delete_T)(T*)>
-struct ContainerSharedPointer{
-  std::shared_ptr<T> pT;
-  ContainerSharedPointer(T*p) : pT(p,delete_T) { }
-  ContainerSharedPointer(std::shared_ptr<T>&pT) : pT(pT) { }
-
-  auto get() { return this->pT.get(); }
-};
-
 enum class CamlRepresentationKind {
     ContainerSharedPointer
   , ContainerWithContext
@@ -195,13 +186,31 @@ template<typename T> T T_value(value v){
   static_assert(CppCaml::always_false<T>::value , "You must specialize T_value<> for your type");
 }
 
+template<typename T, void (*delete_T)(T*)>
+  requires represented_as<T,CamlRepresentationKind::ContainerSharedPointer>
+struct ContainerSharedPointer{
+  std::shared_ptr<T> pT;
+  ContainerSharedPointer(T*p) : pT(p,delete_T) { }
+  ContainerSharedPointer(std::shared_ptr<T>&pT) : pT(pT) { }
+
+  auto get() { return this->pT.get(); }
+
+  static inline value allocate(T *p){
+    typedef ContainerSharedPointer<T,delete_T> This;
+    value v_T =
+      caml_alloc_custom(&ContainerOps<This>::value,sizeof(This),1,10);
+    new(&Custom_value<This>(v_T)) This(p);
+    return v_T;
+  };
+};
+
 template<typename T> concept ValueWithContext = requires (value v) {
   typename ValueWithContextProperties<T>::Context;
   ValueWithContextProperties<T>::delete_T;
 };
 
 template<typename T>
-  requires (ValueWithContext<T> && represented_as<T,CamlRepresentationKind::ContainerSharedPointer>)
+  requires (ValueWithContext<T> && represented_as<T,CamlRepresentationKind::ContainerWithContext>)
 struct ContainerWithContext{
   typedef typename ValueWithContextProperties<T>::Context Context;
 
