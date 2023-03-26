@@ -143,19 +143,19 @@ template<typename F> inline value boolector_api0(F mkdep, value v_btor){
 #define API1(APIF) \
   REGISTER_API_IMPLIED_FIRST(boolector_##APIF, caml_boolector_##APIF); \
   apireturn caml_boolector_##APIF (value v_p0){\
-    return CppCaml::api1_implied_context(boolector_##APIF,v_p0);\
+    return CppCaml::apiN_implied_context(boolector_##APIF,v_p0);\
   }
 
 #define API2(APIF) \
   REGISTER_API_IMPLIED_FIRST(boolector_##APIF, caml_boolector_##APIF); \
   apireturn caml_boolector_##APIF (value v_p0, value v_p1){\
-    return CppCaml::api2_implied_context(boolector_##APIF,v_p0, v_p1);\
+    return CppCaml::apiN_implied_context(boolector_##APIF,v_p0, v_p1);\
   }
 
 #define API3(APIF) \
   REGISTER_API_IMPLIED_FIRST(boolector_##APIF, caml_boolector_##APIF); \
   apireturn caml_boolector_##APIF (value v_p0, value v_p1, value v_p2){\
-    return CppCaml::api3_implied_context(boolector_##APIF,v_p0, v_p1, v_p2);\
+    return CppCaml::apiN_implied_context(boolector_##APIF,v_p0, v_p1, v_p2);\
   }
 
 API1(get_sort)

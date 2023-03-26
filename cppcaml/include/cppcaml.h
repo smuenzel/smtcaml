@@ -266,61 +266,23 @@ template<typename T> struct normalize_pointer_argument {
   typedef typename std::remove_const<typename std::remove_pointer<T>::type>::type type;
 };
 
-template<typename R, typename A0, typename A1>
-requires 
-( CppCaml::represented_as_ContainerWithContext<R*>
-  && CppCaml::represented_as_ContainerWithContext<typename normalize_pointer_argument<A1>::type *>
-  )
-inline value
-api1_implied_context(R* (*mknod)(A0, A1), value v_p0){
-  typedef typename normalize_pointer_argument<A1>::type A1raw;
-  auto p0_s = Custom_value<CppCaml::ContainerWithContext<A1raw>>(v_p0);
-  auto p0 = p0_s.t;
-  auto context = p0_s.pContext.get();
-  // we retrieve all the inner values before allocation,
-  // so we don't need to register roots
-  auto dep = mknod(context,p0);
-  typedef CppCaml::ContainerWithContext<R> Container;
-  value v_dep = Container::allocate(p0_s.pContext, dep);
-  return v_dep;
-}
+// Needed so that we can expand the parameter pack. There must be a better way.....
+template<typename T_first, typename T_second> struct first_type { typedef T_first type; };
 
-template<typename R, typename A0, typename A1, typename A2>
+template<typename R, typename A0, typename A1, typename... As>
 requires 
 ( CppCaml::represented_as_ContainerWithContext<R *>
   && CppCaml::represented_as_ContainerWithContext<typename normalize_pointer_argument<A1>::type *>
   )
 inline value
-api2_implied_context(R* (*mknod)(A0, A1, A2), value v_p0, value v_p1){
+apiN_implied_context(R* (*mknod)(A0, A1, As...), value v_p0, typename first_type<value,As>::type... v_ps){
   typedef typename normalize_pointer_argument<A1>::type A1raw;
   auto p0_s = Custom_value<CppCaml::ContainerWithContext<A1raw>>(v_p0);
   auto p0 = p0_s.t;
   auto context = p0_s.pContext.get();
-  auto p1 = T_value<A2>(v_p1);
   // we retrieve all the inner values before allocation,
   // so we don't need to register roots
-  auto dep = mknod(context,p0,p1);
-  typedef CppCaml::ContainerWithContext<R> Container;
-  value v_dep = Container::allocate(p0_s.pContext, dep);
-  return v_dep;
-}
-
-template<typename R, typename A0, typename A1, typename A2, typename A3>
-requires 
-( CppCaml::represented_as_ContainerWithContext<R *>
-  && CppCaml::represented_as_ContainerWithContext<typename normalize_pointer_argument<A1>::type *>
-  )
-inline value
-api3_implied_context(R* (*mknod)(A0, A1, A2, A3), value v_p0, value v_p1, value v_p2){
-  typedef typename normalize_pointer_argument<A1>::type A1raw;
-  auto p0_s = Custom_value<CppCaml::ContainerWithContext<A1raw>>(v_p0);
-  auto p0 = p0_s.t;
-  auto context = p0_s.pContext.get();
-  auto p1 = T_value<A2>(v_p1);
-  auto p2 = T_value<A3>(v_p2);
-  // we retrieve all the inner values before allocation,
-  // so we don't need to register roots
-  auto dep = mknod(context,p0,p1,p2);
+  auto dep = mknod(context,p0,T_value<As>(v_ps)...);
   typedef CppCaml::ContainerWithContext<R> Container;
   value v_dep = Container::allocate(p0_s.pContext, dep);
   return v_dep;
