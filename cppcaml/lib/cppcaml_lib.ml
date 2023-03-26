@@ -38,14 +38,18 @@ let emit_entry
     {|external %s : %s = "%s"|} (modify name) (function_type description) wrapper_name;
   Stdlib.print_newline ()
 
-let emit_api ?registry ?(modify=Fn.id) () =
+let emit_api ?registry ?(filter=Fn.const true) ?(modify=Fn.id) () =
   let registry =
     match registry with
     | None -> get_api_registry ()
     | Some registry -> registry
   in
   Stdlib.print_newline ();
-  List.iter registry ~f:(emit_entry ~modify)
+  List.iter registry
+    ~f:(fun entry ->
+        if filter entry.name
+        then emit_entry ~modify entry
+      )
 
 let filter_keyword = function
   | "new" -> "new_"
