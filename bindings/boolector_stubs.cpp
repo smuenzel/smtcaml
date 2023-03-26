@@ -19,9 +19,9 @@ static void abort_callback(const char* msg){
   caml_failwith(msg);
 }
 
-void delete_btor(Btor*b){
-  boolector_delete(b);
-}
+template<> struct CppCaml::SharedPointerProperties<Btor>{
+  static void delete_T(Btor*b) { boolector_delete(b); }
+};
 
 template<typename T>
 struct remove_const_pointer { typedef T type; };
@@ -49,7 +49,7 @@ CAML_REPRESENTATION(Btor*, ContainerSharedPointer);
 CAML_REPRESENTATION(BoolectorNode*, ContainerWithContext);
 CAML_REPRESENTATION(BoolectorSortRaw*, ContainerWithContext);
 
-using caml_boolector_btor = CppCaml::ContainerSharedPointer<Btor, delete_btor>;
+using caml_boolector_btor = CppCaml::ContainerSharedPointer<Btor>;
 
 using caml_boolector_node =
   CppCaml::ContainerWithContext<BoolectorNode>;
@@ -127,17 +127,10 @@ apireturn caml_boolector_get_btor(value v_node){
 }
 REGISTER_API(boolector_get_btor, caml_boolector_get_btor);
 
-template<typename F> inline value boolector_api0(F mkdep, value v_btor){
-  auto btor = Btor_value(v_btor);
-  auto dep = mkdep(btor);
-  value v_dep = alloc_dependent<decltype(dep)>(v_btor, dep);
-  return v_dep;
-}
-
 #define API0(APIF) \
   REGISTER_API(boolector_##APIF, caml_boolector_##APIF); \
   apireturn caml_boolector_##APIF (value v_btor){\
-    return boolector_api0(boolector_##APIF,v_btor);\
+    return CppCaml::apiN(boolector_##APIF,v_btor);\
   }
 
 #define API1(APIF) \

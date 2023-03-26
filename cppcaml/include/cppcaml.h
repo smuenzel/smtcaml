@@ -181,6 +181,9 @@ template<typename T, CamlRepresentationKind kind> concept represented_as =
 template<typename T> concept represented_as_ContainerWithContext =
   represented_as<T,CamlRepresentationKind::ContainerWithContext>;
 
+template<typename T> concept represented_as_ContainerSharedPointer =
+  represented_as<T,CamlRepresentationKind::ContainerSharedPointer>;
+
 template<typename T> struct ValueWithContextProperties {
   static_assert(CppCaml::always_false<T>::value , "You must specialize ValueWithContextProperties<> for your type");
 };
@@ -193,17 +196,25 @@ template<typename T> T T_value(value v){
   return T_value_wrapper<T>::get(v);
 }
 
-template<typename T, void (*delete_T)(T*)>
+template<typename T> struct SharedPointerProperties {
+  static_assert(CppCaml::always_false<T>::value , "You must specialize SharedPointerProperties<> for your type");
+};
+
+template<typename T> concept SharedPointer = requires (T*t) {
+  SharedPointerProperties<T>::delete_T(t);
+};
+
+template<typename T>
   requires represented_as<T*,CamlRepresentationKind::ContainerSharedPointer>
 struct ContainerSharedPointer{
   std::shared_ptr<T> pT;
-  ContainerSharedPointer(T*p) : pT(p,delete_T) { }
+  ContainerSharedPointer(T*p) : pT(p,SharedPointerProperties<T>::delete_T) { }
   ContainerSharedPointer(std::shared_ptr<T>&pT) : pT(pT) { }
 
   auto get() { return this->pT.get(); }
 
   static inline value allocate(T *p){
-    typedef ContainerSharedPointer<T,delete_T> This;
+    typedef ContainerSharedPointer<T> This;
     value v_T =
       caml_alloc_custom(&ContainerOps<This>::value,sizeof(This),1,10);
     new(&Custom_value<This>(v_T)) This(p);
@@ -268,6 +279,24 @@ template<typename T> struct normalize_pointer_argument {
 
 // Needed so that we can expand the parameter pack. There must be a better way.....
 template<typename T_first, typename T_second> struct first_type { typedef T_first type; };
+
+template<typename R, typename A0, typename... As>
+requires 
+( CppCaml::represented_as_ContainerWithContext<R *>
+  && CppCaml::represented_as_ContainerSharedPointer<typename normalize_pointer_argument<A0>::type *>
+  )
+inline value
+apiN(R* (*mknod)(A0, As...), value v_p0, typename first_type<value,As>::type... v_ps){
+  typedef typename normalize_pointer_argument<A0>::type A0raw;
+  auto context_s = Custom_value<CppCaml::ContainerSharedPointer<A0raw>>(v_p0);
+  auto context = context_s.get();
+  // we retrieve all the inner values before allocation,
+  // so we don't need to register roots
+  auto dep = mknod(context,T_value<As>(v_ps)...);
+  typedef CppCaml::ContainerWithContext<R> Container;
+  value v_dep = Container::allocate(context_s.pT, dep);
+  return v_dep;
+}
 
 template<typename R, typename A0, typename A1, typename... As>
 requires 
