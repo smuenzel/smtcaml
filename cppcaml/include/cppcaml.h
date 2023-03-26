@@ -385,7 +385,7 @@ apiN(R (*mknod)(A0, As...), value v_p0, typename first_type<value,As>::type... v
   auto ret = mknod(context,T_value<As>(v_ps)...);
   if constexpr (represented_as_Immediate<R>)
     return ImmediateProperties<R>::to_value(ret);
-  else
+  else if constexpr (represented_as_Value<R>)
     return ValueProperties<R>::to_value(ret);
 }
 
