@@ -52,8 +52,10 @@ struct caml_boolector_wrap {
   }
 };
 
-typedef caml_boolector_wrap<BoolectorNode*> caml_boolector_node;
-typedef caml_boolector_wrap<BoolectorSort> caml_boolector_sort;
+using caml_boolector_node =
+  CppCaml::ContainerWithContext<BoolectorNode*,Btor,boolector_release>;
+using caml_boolector_sort =
+  CppCaml::ContainerWithContext<BoolectorSort,Btor,boolector_release_sort>;
 
 static inline Btor * Btor_value(value v){
   auto& s_btor = Custom_value<caml_boolector_btor>(v);
@@ -61,7 +63,7 @@ static inline Btor * Btor_value(value v){
 }
 
 static inline BoolectorNode *& Node_value(value v){
-  return Custom_value<caml_boolector_node>(v).dep;
+  return Custom_value<caml_boolector_node>(v).t;
 }
 
 static inline caml_boolector_node& Node_s_value(value v){
@@ -73,7 +75,7 @@ static inline caml_boolector_sort& Sort_s_value(value v){
 }
 
 static inline BoolectorSort& Sort_value(value v){
-  return Custom_value<caml_boolector_sort>(v).dep;
+  return Custom_value<caml_boolector_sort>(v).t;
 }
 
 apireturn caml_boolector_new(value){
@@ -116,12 +118,12 @@ template<typename t_dep>
 static inline value alloc_dependent(value v_btor, t_dep dep){
   typedef typename t_dep_container<t_dep>::type Container;
   auto& s_btor = Custom_value<Container>(v_btor);
-  return alloc_dependent_internal<t_dep>(s_btor.btor, dep);
+  return alloc_dependent_internal<t_dep>(s_btor.pContext, dep);
 }
 
 apireturn caml_boolector_get_btor(value v_node){
   auto node = Custom_value<caml_boolector_node>(v_node);
-  auto btor = node.btor;
+  auto btor = node.pContext;
   value v_btor = caml_alloc_custom(&ContainerOps<caml_boolector_btor>::value,sizeof(caml_boolector_btor),1,10);
   new(&Custom_value<caml_boolector_btor>(v_btor)) caml_boolector_btor(btor);
   return v_btor;
@@ -258,8 +260,8 @@ API0(bool_sort)
 apireturn caml_boolector_var(value v_sort, value v_symbol){
   auto sort_s = Sort_s_value(v_sort);
   auto symbol = String_val(v_symbol);
-  auto node = boolector_var(sort_s.btor.get(), sort_s.dep, symbol);
-  return alloc_dependent_internal(sort_s.btor, node);
+  auto node = boolector_var(sort_s.pContext.get(), sort_s.t, symbol);
+  return alloc_dependent_internal(sort_s.pContext, node);
 }
 
 apireturn caml_boolector_bitvec_sort(value v_btor, value v_width){
@@ -273,8 +275,8 @@ apireturn caml_boolector_bitvec_sort(value v_btor, value v_width){
 apireturn caml_boolector_array_sort(value v_index, value v_element){
   auto index_s = Sort_s_value(v_index);
   auto element = Sort_value(v_element);
-  auto sort = boolector_array_sort(index_s.btor.get(), index_s.dep, element);
-  return alloc_dependent_internal(index_s.btor, sort);
+  auto sort = boolector_array_sort(index_s.pContext.get(), index_s.t, element);
+  return alloc_dependent_internal(index_s.pContext, sort);
 }
 
 apireturn caml_boolector_print_stats(value v_btor){
@@ -285,7 +287,7 @@ apireturn caml_boolector_print_stats(value v_btor){
 
 apireturn caml_boolector_assert(value v_node){
   auto node = Custom_value<caml_boolector_node>(v_node);
-  boolector_assert(node.btor.get(),node.dep);
+  boolector_assert(node.pContext.get(),node.t);
   return Val_unit;
 }
 

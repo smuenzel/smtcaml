@@ -147,15 +147,15 @@ struct ContainerSharedPointer{
   auto get() { return this->pT.get(); }
 };
 
-template<typename T, void (*delete_T)(T*), typename Context>
+template<typename T, typename Context, void (*delete_T)(Context*, T)>
 struct ContainerWithContext{
   std::shared_ptr<Context> pContext;
-  T* t;
+  T t;
 
-  ContainerWithContext(std::shared_ptr<Context>& pContext, T* t)
+  ContainerWithContext(std::shared_ptr<Context>& pContext, T t)
     : pContext(pContext), t(t) { }
 
-  ~ContainerWithContext(){ delete_T(t);}
+  ~ContainerWithContext(){ delete_T(this->pContext.get(), this->t);}
 };
 
 template<typename T> void finalize_custom(value v_custom){
