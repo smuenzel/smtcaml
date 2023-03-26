@@ -8,6 +8,7 @@ using CppCaml::T_value;
 struct solver_result;
 
 DECL_API_TYPE(uint32_t,uint32_t);
+DECL_API_TYPE(int32_t,int32_t);
 DECL_API_TYPE(bool,bool);
 DECL_API_TYPE(BoolectorNode*,node);
 DECL_API_TYPE(BoolectorSort,sort);
@@ -23,6 +24,7 @@ CAML_REPRESENTATION(Btor*, ContainerSharedPointer);
 CAML_REPRESENTATION(BoolectorNode*, ContainerWithContext);
 CAML_REPRESENTATION(BoolectorSortRaw*, ContainerWithContext);
 CAML_REPRESENTATION(BtorOption,Immediate);
+CAML_REPRESENTATION(int32_t,Immediate);
 CAML_REPRESENTATION(uint32_t,Immediate);
 
 
@@ -62,6 +64,34 @@ template<> struct CppCaml::ImmediateProperties<uint32_t> {
   static inline value to_value(uint32_t b) { return Val_long(b); }
   static inline uint32_t of_value(value v) { return Long_val(v); }
 };
+
+template<> struct CppCaml::ImmediateProperties<int32_t> {
+  static inline value to_value(int32_t b) { return Val_long(b); }
+  static inline int32_t of_value(value v) { return Long_val(v); }
+};
+
+/*
+// Assume boolector manages memory
+template<> struct CppCaml::ValueProperties<BoolectorNode**> {
+  static inline value to_value(BoolectorNode**b){
+    CAMLparam0();
+    CAMLlocal2(v_ar,v_elt);
+    size_t size = 0;
+    auto i = b;
+    while(i){
+      size++;
+      i++;
+    };
+    v_ar = caml_alloc(size,0);
+    for(size_t i = 0; i < size; i++){
+
+    }
+    CAMLreturn(v_ar);
+  }
+
+  static inline uint32_t of_value(value v) { assert(false); }
+};
+*/
 
 
 #define API1(APIF) \
@@ -165,7 +195,16 @@ API2(bitvec_sort);
 API2I(array_sort);
 
 API1(print_stats);
+
+API2(push);
+API2(pop);
 API1I(assert);
+API1I(assume);
+API1I(failed);
+
+//API1(get_failed_assumptions);
+API1(fixate_assumptions);
+API1(reset_assumptions);
 
 API2(set_sat_solver);
 
@@ -197,11 +236,19 @@ apireturn caml_boolector_get_btor(value v_node){
 }
 REGISTER_API(boolector_get_btor, caml_boolector_get_btor);
 
-apireturn caml_boolector_sat(value v_btor){
+template<typename... Ps, size_t... Is>
+static inline int32_t call_sat_generic(int32_t (*inner_sat)(Btor*,Ps...), Btor*btor, std::tuple<Ps...> args, std::index_sequence<Is...> is){
+  return inner_sat(btor,std::get<Is>(args)...);
+}
+
+template<typename... Ps>
+static value sat_generic(int32_t (*inner_sat)(Btor*,Ps...), value v_btor, typename CppCaml::first_type<value,Ps>::type... v_ps){
   /* acquire ownership before blocking section */
   auto s_btor = Custom_value<caml_boolector_btor>(v_btor).pT;
+  auto index_sequence = std::index_sequence_for<Ps...>();
+  std::tuple p_ar{ T_value<Ps>(v_ps)... };
   caml_enter_blocking_section();
-  auto sat = boolector_sat(s_btor.get());
+  auto sat = call_sat_generic(inner_sat, s_btor.get(), p_ar, index_sequence);
   caml_leave_blocking_section();
   switch(sat){
     case BTOR_RESULT_SAT: return Val_int(1);
@@ -209,7 +256,16 @@ apireturn caml_boolector_sat(value v_btor){
     default: return Val_int(0);
   }
 }
+
+apireturn caml_boolector_sat(value v_btor){
+  return sat_generic(boolector_sat, v_btor);
+}
 REGISTER_API_CUSTOM(boolector_sat,caml_boolector_sat,solver_result,Btor*);
+
+apireturn caml_boolector_limited_sat(value v_btor, value lod_limit, value sat_limit){
+  return sat_generic(boolector_limited_sat,v_btor,lod_limit,sat_limit);
+}
+REGISTER_API_CUSTOM(boolector_limited_sat,caml_boolector_limited_sat,solver_result,Btor*,int32_t,int32_t);
 
 apireturn caml_boolector_unit(value){
   return Val_unit;

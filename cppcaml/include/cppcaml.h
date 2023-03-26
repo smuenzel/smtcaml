@@ -429,6 +429,24 @@ apiN_implied_context(R* (*fun)(A0, A1, As...), value v_p0, typename first_type<v
   return v_dep;
 }
 
+template<typename R, typename A0, typename A1, typename... As>
+requires
+( (represented_as_Immediate<R> || represented_as_Value<R>)
+  && represented_as_ContainerWithContext<typename normalize_pointer_argument<A1>::type *>
+  )
+inline value
+apiN_implied_context(R (*fun)(A0, A1, As...), value v_p0, typename first_type<value,As>::type... v_ps){
+  typedef typename normalize_pointer_argument<A1>::type A1raw;
+  auto&p0_s = Custom_value<CppCaml::ContainerWithContext<A1raw>>(v_p0);
+  auto p0 = p0_s.t;
+  auto context = p0_s.pContext.get();
+  auto ret = fun(context,p0,T_value<As>(v_ps)...);
+  if constexpr (represented_as_Immediate<R>)
+    return ImmediateProperties<R>::to_value(ret);
+  else if constexpr (represented_as_Value<R>)
+    return ValueProperties<R>::to_value(ret);
+}
+
 template<typename A0, typename A1, typename... As>
 requires
   CppCaml::represented_as_ContainerWithContext<typename normalize_pointer_argument<A1>::type *>

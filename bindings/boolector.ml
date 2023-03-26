@@ -13,6 +13,7 @@ type solver =
 [@@deriving sexp]
 
 type uint32_t = int
+type int32_t = int
 
 external make : unit -> btor = "caml_boolector_new"
 
@@ -43,6 +44,7 @@ type solver_result =
     emit_api ()
       ~modify
   *)
+external limited_sat : btor -> int32_t -> int32_t -> solver_result = "caml_boolector_limited_sat"
 external sat : btor -> solver_result = "caml_boolector_sat"
 external get_btor : node -> btor = "caml_boolector_get_btor"
 external new_ : unit -> btor = "caml_boolector_new"
@@ -57,7 +59,13 @@ external next_opt : btor -> btor_option -> btor_option = "caml_boolector_next_op
 external has_opt : btor -> btor_option -> bool = "caml_boolector_has_opt"
 external first_opt : btor -> btor_option = "caml_boolector_first_opt"
 external set_sat_solver : btor -> string -> unit = "caml_boolector_set_sat_solver"
+external reset_assumptions : btor -> unit = "caml_boolector_reset_assumptions"
+external fixate_assumptions : btor -> unit = "caml_boolector_fixate_assumptions"
+external failed : node -> bool = "caml_boolector_failed"
+external assume : node -> unit = "caml_boolector_assume"
 external assert_ : node -> unit = "caml_boolector_assert"
+external pop : btor -> uint32_t -> unit = "caml_boolector_pop"
+external push : btor -> uint32_t -> unit = "caml_boolector_push"
 external print_stats : btor -> unit = "caml_boolector_print_stats"
 external array_sort : sort -> sort -> sort = "caml_boolector_array_sort"
 external bitvec_sort : btor -> uint32_t -> sort = "caml_boolector_bitvec_sort"
