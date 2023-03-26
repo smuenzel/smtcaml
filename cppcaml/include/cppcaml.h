@@ -35,7 +35,7 @@ template<typename T> struct ApiTypename<const T*> : ApiTypename<T*> {};
   template<> \
   struct CppCaml::ApiTypename<c_type>{ \
     static constexpr const char * name = #caml_type; \
-  } 
+  }
 
 typedef const char* cstring;
 
@@ -44,7 +44,7 @@ struct CamlLinkedList{
   const T data;
   const CamlLinkedList<T>*next;
 
-  constexpr CamlLinkedList(T data, const CamlLinkedList<T>*next=nullptr) 
+  constexpr CamlLinkedList(T data, const CamlLinkedList<T>*next=nullptr)
     : data{data}, next{next} {}
 };
 
@@ -333,7 +333,7 @@ auto Context_value(value v) {
   auto container = Custom_value<ContainerWithContext<T>>(v);
   return container.pContext.get();
 };
- 
+
 /////////////////////////////////////////////////////////////////////////////////////////
 /// calling of api functions
 ///
@@ -346,7 +346,7 @@ template<typename T> struct normalize_pointer_argument {
 template<typename T_first, typename T_second> struct first_type { typedef T_first type; };
 
 template<typename R, typename A0, typename... As>
-requires 
+requires
 ( represented_as_ContainerWithContext<R *>
   && represented_as_ContainerSharedPointer<typename normalize_pointer_argument<A0>::type *>
   )
@@ -364,7 +364,7 @@ apiN(R* (*mknod)(A0, As...), value v_p0, typename first_type<value,As>::type... 
 }
 
 template<typename R, typename A0, typename... As>
-requires 
+requires
 ( represented_as_Immediate<R>
 &&  represented_as_ContainerSharedPointer<typename normalize_pointer_argument<A0>::type *>
 )
@@ -379,7 +379,7 @@ apiN(R (*mknod)(A0, As...), value v_p0, typename first_type<value,As>::type... v
 
 //TODO: Combine
 template<typename R, typename A0, typename... As>
-requires 
+requires
 ( represented_as_Value<R>
 &&  represented_as_ContainerSharedPointer<typename normalize_pointer_argument<A0>::type *>
 )
@@ -393,7 +393,7 @@ apiN(R (*mknod)(A0, As...), value v_p0, typename first_type<value,As>::type... v
 }
 
 template<typename A0, typename... As>
-requires 
+requires
   represented_as_ContainerSharedPointer<typename normalize_pointer_argument<A0>::type *>
 inline value
 apiN(void (*mknod)(A0, As...), value v_p0, typename first_type<value,As>::type... v_ps){
@@ -406,7 +406,7 @@ apiN(void (*mknod)(A0, As...), value v_p0, typename first_type<value,As>::type..
 
 
 template<typename R, typename A0, typename A1, typename... As>
-requires 
+requires
 ( represented_as_ContainerWithContext<R *>
   && represented_as_ContainerWithContext<typename normalize_pointer_argument<A1>::type *>
   )
@@ -425,7 +425,7 @@ apiN_implied_context(R* (*mknod)(A0, A1, As...), value v_p0, typename first_type
 }
 
 template<typename A0, typename A1, typename... As>
-requires 
+requires
   CppCaml::represented_as_ContainerWithContext<typename normalize_pointer_argument<A1>::type *>
 inline value
 apiN_implied_context(void (*mknod)(A0, A1, As...), value v_p0, typename first_type<value,As>::type... v_ps){

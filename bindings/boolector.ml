@@ -21,7 +21,7 @@ external set_solver : btor -> string -> unit = "caml_boolector_set_sat_solver" [
 let set_solver btor (solver : solver) =
   Sexp.to_string ([%sexp_of: solver] solver)
   |> String.lowercase
-  |> set_solver btor 
+  |> set_solver btor
 
 type solver_result =
   | Unknown

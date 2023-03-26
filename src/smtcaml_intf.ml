@@ -25,7 +25,7 @@ module type Specific_instance = sig
 
   type 'e t
   type packed = T : _ t -> packed
-  
+
   val create : unit -> packed
 
   val same_witness : 'e1 t -> 'e2 t -> ('e1, 'e2) Type_equal.t option
@@ -61,7 +61,7 @@ module type Bool_ops = sig
   type ('e, 'sort) expr
   type 'e t = ('e, Sort_kind.bool) expr
 
-  val constant : 'e instance -> bool -> 'e t 
+  val constant : 'e instance -> bool -> 'e t
   val false_val : 'e instance -> 'e t
   val true_val : 'e instance -> 'e t
 
