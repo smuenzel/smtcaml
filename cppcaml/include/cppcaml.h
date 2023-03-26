@@ -159,7 +159,8 @@ template<typename Container> struct ContainerOps {
 };
 
 enum class CamlRepresentationKind {
-    ContainerSharedPointer
+  Immediate
+  , ContainerSharedPointer
   , ContainerWithContext
 };
 
@@ -185,6 +186,9 @@ template<typename T> concept represented_as_ContainerWithContext =
 
 template<typename T> concept represented_as_ContainerSharedPointer =
   represented_as<T,CamlRepresentationKind::ContainerSharedPointer>;
+
+template<typename T> concept represented_as_Immediate =
+  represented_as<T,CamlRepresentationKind::Immediate>;
 
 template<typename T> struct ValueWithContextProperties {
   static_assert(CppCaml::always_false<T>::value , "You must specialize ValueWithContextProperties<> for your type");
@@ -300,6 +304,18 @@ apiN(R* (*mknod)(A0, As...), value v_p0, typename first_type<value,As>::type... 
   return v_dep;
 }
 
+template<typename A0, typename... As>
+requires 
+  CppCaml::represented_as_ContainerSharedPointer<typename normalize_pointer_argument<A0>::type *>
+inline value
+apiN(void (*mknod)(A0, As...), value v_p0, typename first_type<value,As>::type... v_ps){
+  typedef typename normalize_pointer_argument<A0>::type A0raw;
+  auto&context_s = Custom_value<CppCaml::ContainerSharedPointer<A0raw>>(v_p0);
+  auto context = context_s.get();
+  mknod(context,T_value<As>(v_ps)...);
+  return Val_unit;
+}
+
 template<typename R, typename A0, typename A1, typename... As>
 requires 
 ( CppCaml::represented_as_ContainerWithContext<R *>
@@ -317,6 +333,19 @@ apiN_implied_context(R* (*mknod)(A0, A1, As...), value v_p0, typename first_type
   typedef CppCaml::ContainerWithContext<R> Container;
   value v_dep = Container::allocate(p0_s.pContext, dep);
   return v_dep;
+}
+
+template<typename A0, typename A1, typename... As>
+requires 
+  CppCaml::represented_as_ContainerWithContext<typename normalize_pointer_argument<A1>::type *>
+inline value
+apiN_implied_context(void (*mknod)(A0, A1, As...), value v_p0, typename first_type<value,As>::type... v_ps){
+  typedef typename normalize_pointer_argument<A1>::type A1raw;
+  auto&p0_s = Custom_value<CppCaml::ContainerWithContext<A1raw>>(v_p0);
+  auto p0 = p0_s.t;
+  auto context = p0_s.pContext.get();
+  mknod(context,p0,T_value<As>(v_ps)...);
+  return Val_unit;
 }
 
 };

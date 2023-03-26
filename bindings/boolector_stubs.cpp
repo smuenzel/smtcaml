@@ -105,6 +105,10 @@ template<> struct CppCaml::T_value_wrapper<uint32_t>{
   static inline uint32_t get(value v) { return Long_val(v); }
 };
 
+template<> struct CppCaml::T_value_wrapper<const char*>{
+  static inline const char * get(value v) { return String_val(v); }
+};
+
 template<typename t_dep> 
 static inline value alloc_dependent_internal(std::shared_ptr<Btor>& btor, t_dep dep){
   typedef typename t_dep_container<t_dep>::type Container;
@@ -133,117 +137,96 @@ REGISTER_API(boolector_get_btor, caml_boolector_get_btor);
     return CppCaml::apiN(boolector_##APIF,v_btor);\
   }
 
-#define API1(APIF) \
+#define API2(APIF) \
+  REGISTER_API(boolector_##APIF, caml_boolector_##APIF); \
+  apireturn caml_boolector_##APIF (value v_p0, value v_p1){\
+    return CppCaml::apiN(boolector_##APIF,v_p0,v_p1);\
+  }
+
+#define API1I(APIF) \
   REGISTER_API_IMPLIED_FIRST(boolector_##APIF, caml_boolector_##APIF); \
   apireturn caml_boolector_##APIF (value v_p0){\
     return CppCaml::apiN_implied_context(boolector_##APIF,v_p0);\
   }
 
-#define API2(APIF) \
+#define API2I(APIF) \
   REGISTER_API_IMPLIED_FIRST(boolector_##APIF, caml_boolector_##APIF); \
   apireturn caml_boolector_##APIF (value v_p0, value v_p1){\
     return CppCaml::apiN_implied_context(boolector_##APIF,v_p0, v_p1);\
   }
 
-#define API3(APIF) \
+#define API3I(APIF) \
   REGISTER_API_IMPLIED_FIRST(boolector_##APIF, caml_boolector_##APIF); \
   apireturn caml_boolector_##APIF (value v_p0, value v_p1, value v_p2){\
     return CppCaml::apiN_implied_context(boolector_##APIF,v_p0, v_p1, v_p2);\
   }
 
-API1(get_sort)
+API1I(get_sort)
 API0(false)
 API0(true)
-API2(implies)
-API2(iff)
-API2(eq)
-API2(ne)
-API1(not)
-API1(neg)
-API1(redor)
-API1(redxor)
-API1(redand)
-API3(slice)
-API2(uext)
-API2(sext)
-API2(xor)
-API2(and)
-API2(or)
-API2(nand)
-API2(nor)
-API2(add)
-API2(uaddo)
-API2(saddo)
-API2(mul)
-API2(umulo)
-API2(smulo)
-API2(ult)
-API2(ulte)
-API2(slte)
-API2(slt)
-API2(ugt)
-API2(sgt)
-API2(ugte)
-API2(sgte)
-API2(sll)
-API2(srl)
-API2(sra)
-API2(rol)
-API2(ror)
-API2(roli)
-API2(rori)
-API2(sub)
-API2(usubo)
-API2(ssubo)
-API2(udiv)
-API2(sdiv)
-API2(sdivo)
-API2(urem)
-API2(srem)
-API2(smod)
-API2(concat)
-API2(read)
-API3(write)
-API3(cond)
-API1(inc)
-API1(dec)
+API2I(implies)
+API2I(iff)
+API2I(eq)
+API2I(ne)
+API1I(not)
+API1I(neg)
+API1I(redor)
+API1I(redxor)
+API1I(redand)
+API3I(slice)
+API2I(uext)
+API2I(sext)
+API2I(xor)
+API2I(and)
+API2I(or)
+API2I(nand)
+API2I(nor)
+API2I(add)
+API2I(uaddo)
+API2I(saddo)
+API2I(mul)
+API2I(umulo)
+API2I(smulo)
+API2I(ult)
+API2I(ulte)
+API2I(slte)
+API2I(slt)
+API2I(ugt)
+API2I(sgt)
+API2I(ugte)
+API2I(sgte)
+API2I(sll)
+API2I(srl)
+API2I(sra)
+API2I(rol)
+API2I(ror)
+API2I(roli)
+API2I(rori)
+API2I(sub)
+API2I(usubo)
+API2I(ssubo)
+API2I(udiv)
+API2I(sdiv)
+API2I(sdivo)
+API2I(urem)
+API2I(srem)
+API2I(smod)
+API2I(concat)
+API2I(read)
+API3I(write)
+API3I(cond)
+API1I(inc)
+API1I(dec)
 API0(bool_sort)
 
-apireturn caml_boolector_var(value v_sort, value v_symbol){
-  auto&sort_s = Sort_s_value(v_sort);
-  auto symbol = String_val(v_symbol);
-  auto node = boolector_var(sort_s.pContext.get(), sort_s.t, symbol);
-  return alloc_dependent_internal(sort_s.pContext, node);
-}
-REGISTER_API_IMPLIED_FIRST(boolector_var,caml_boolector_var);
+API2I(var);
 
-apireturn caml_boolector_bitvec_sort(value v_btor, value v_width){
-  auto btor = Btor_value(v_btor);
-  auto width = Int_val(v_width);
-  auto dep = boolector_bitvec_sort(btor, width);
-  value v_dep = alloc_dependent<decltype(dep)>(v_btor, dep);
-  return v_dep;
-}
-REGISTER_API(boolector_bitvec_sort,caml_boolector_bitvec_sort);
+API2(bitvec_sort);
 
-apireturn caml_boolector_array_sort(value v_index, value v_element){
-  auto&index_s = Sort_s_value(v_index);
-  auto element = Sort_value(v_element);
-  auto sort = boolector_array_sort(index_s.pContext.get(), index_s.t, element);
-  return alloc_dependent_internal(index_s.pContext, sort);
-}
+API2I(array_sort);
 
-apireturn caml_boolector_print_stats(value v_btor){
-  auto btor = Btor_value(v_btor);
-  boolector_print_stats(btor);
-  return Val_unit;
-}
-
-apireturn caml_boolector_assert(value v_node){
-  auto&node = Custom_value<caml_boolector_node>(v_node);
-  boolector_assert(node.pContext.get(),node.t);
-  return Val_unit;
-}
+API0(print_stats);
+API1I(assert);
 
 apireturn caml_boolector_sat(value v_btor){
   /* acquire ownership before blocking section */
