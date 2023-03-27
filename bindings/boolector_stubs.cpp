@@ -11,6 +11,7 @@ DECL_API_TYPE(uint32_t,uint32_t);
 DECL_API_TYPE(int32_t,int32_t);
 DECL_API_TYPE(bool,bool);
 DECL_API_TYPE(BoolectorNode*,node);
+DECL_API_TYPE(BoolectorNode**,node array);
 DECL_API_TYPE(BoolectorSort,sort);
 DECL_API_TYPE(Btor*,btor);
 DECL_API_TYPE(const char*,string);
@@ -26,6 +27,7 @@ CAML_REPRESENTATION(BoolectorSortRaw*, ContainerWithContext);
 CAML_REPRESENTATION(BtorOption,Immediate);
 CAML_REPRESENTATION(int32_t,Immediate);
 CAML_REPRESENTATION(uint32_t,Immediate);
+CAML_REPRESENTATION(BoolectorNode**, CustomWithContext);
 
 
 template<> struct CppCaml::SharedPointerProperties<Btor>{
@@ -70,29 +72,26 @@ template<> struct CppCaml::ImmediateProperties<int32_t> {
   static inline int32_t of_value(value v) { return Long_val(v); }
 };
 
-/*
-// Assume boolector manages memory
-template<> struct CppCaml::ValueProperties<BoolectorNode**> {
-  static inline value to_value(BoolectorNode**b){
+template<> struct CppCaml::CustomWithContextProperties<BoolectorNode**> {
+  typedef Btor Context;
+  static inline value to_value(std::shared_ptr<Context>&ctx, BoolectorNode** b) {
+    // Assume boolector manages memory
     CAMLparam0();
     CAMLlocal2(v_ar,v_elt);
     size_t size = 0;
     auto i = b;
-    while(i){
+    while(*i){
       size++;
       i++;
     };
     v_ar = caml_alloc(size,0);
     for(size_t i = 0; i < size; i++){
-
+      Store_field(v_ar,i, caml_boolector_node::allocate(ctx, b[i]));
     }
     CAMLreturn(v_ar);
   }
-
-  static inline uint32_t of_value(value v) { assert(false); }
+  static inline BoolectorNode** of_value(value v) { assert(false); }
 };
-*/
-
 
 #define API1(APIF) \
   REGISTER_API(boolector_##APIF, caml_boolector_##APIF); \
@@ -202,7 +201,7 @@ API1I(assert);
 API1I(assume);
 API1I(failed);
 
-//API1(get_failed_assumptions);
+API1(get_failed_assumptions);
 API1(fixate_assumptions);
 API1(reset_assumptions);
 
@@ -213,6 +212,7 @@ API1(first_opt);
 API2(has_opt);
 API2(next_opt);
 API2(get_opt_lng);
+API2(get_opt_shrt);
 API2(get_opt_desc);
 API2(get_opt_min);
 API2(get_opt_max);

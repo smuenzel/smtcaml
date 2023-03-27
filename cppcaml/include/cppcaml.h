@@ -192,6 +192,7 @@ template<typename Container> struct ContainerOps {
 enum class CamlRepresentationKind {
   Immediate
   , Value
+  , CustomWithContext
   , ContainerSharedPointer
   , ContainerWithContext
 };
@@ -223,12 +224,29 @@ template<typename T> concept represented_as_Immediate =
 template<typename T> concept represented_as_Value =
   represented_as<T,CamlRepresentationKind::Value>;
 
+template<typename T> concept represented_as_CustomWithContext =
+  represented_as<T,CamlRepresentationKind::CustomWithContext>;
+
+template<typename T> struct CustomWithContextProperties {
+  static_assert(CppCaml::always_false<T>::value ,
+      "You must specialize CustomWithContextProperties<> for your type");
+};
+
+template<typename T> concept CustomWithContext =
+requires (T t, value v, std::shared_ptr<typename CustomWithContextProperties<T>::Context>& ctx) {
+  typename CustomWithContextProperties<T>::Context;
+  CustomWithContextProperties<T>::to_value(ctx, t);
+  CustomWithContextProperties<T>::of_value(v);
+};
+
 template<typename T> struct ValueWithContextProperties {
-  static_assert(CppCaml::always_false<T>::value , "You must specialize ValueWithContextProperties<> for your type");
+  static_assert(CppCaml::always_false<T>::value ,
+      "You must specialize ValueWithContextProperties<> for your type");
 };
 
 template<typename T> struct T_value_wrapper{
-  static_assert(CppCaml::always_false<T>::value , "You must specialize T_value_wrapper<> for your type");
+  static_assert(CppCaml::always_false<T>::value,
+      "You must specialize T_value_wrapper<> for your type");
 };
 
 template<typename T> T T_value(value v){
@@ -236,7 +254,8 @@ template<typename T> T T_value(value v){
 }
 
 template<typename T> struct SharedPointerProperties {
-  static_assert(CppCaml::always_false<T>::value , "You must specialize SharedPointerProperties<> for your type");
+  static_assert(CppCaml::always_false<T>::value,
+      "You must specialize SharedPointerProperties<> for your type");
 };
 
 template<typename T> concept SharedPointer = requires (T*t) {
@@ -244,7 +263,8 @@ template<typename T> concept SharedPointer = requires (T*t) {
 };
 
 template<typename T> struct ImmediateProperties {
-  static_assert(CppCaml::always_false<T>::value , "You must specialize ImmediateProperties<> for your type");
+  static_assert(CppCaml::always_false<T>::value,
+      "You must specialize ImmediateProperties<> for your type");
 };
 
 template<> struct ImmediateProperties<bool> {
@@ -258,7 +278,8 @@ template<typename T> concept Immediate = requires (T t, value v) {
 };
 
 template<typename T> struct ValueProperties {
-  static_assert(CppCaml::always_false<T>::value , "You must specialize ValueProperties<> for your type");
+  static_assert(CppCaml::always_false<T>::value ,
+      "You must specialize ValueProperties<> for your type");
 };
 
 template<> struct ValueProperties<const char *> {
@@ -395,6 +416,21 @@ apiN(R (*fun)(A0, As...), value v_p0, typename first_type<value,As>::type... v_p
     return ImmediateProperties<R>::to_value(ret);
   else if constexpr (represented_as_Value<R>)
     return ValueProperties<R>::to_value(ret);
+}
+
+template<typename R, typename A0, typename... As>
+requires
+( represented_as_CustomWithContext<R>
+&& CustomWithContext<R>
+&&  represented_as_ContainerSharedPointer<typename normalize_pointer_argument<A0>::type *>
+)
+inline value
+apiN(R (*fun)(A0, As...), value v_p0, typename first_type<value,As>::type... v_ps){
+  typedef typename normalize_pointer_argument<A0>::type A0raw;
+  auto&context_s = Custom_value<CppCaml::ContainerSharedPointer<A0raw>>(v_p0);
+  auto context = context_s.get();
+  auto ret = fun(context,T_value<As>(v_ps)...);
+  return CustomWithContextProperties<R>::to_value(context_s.pT, ret);
 }
 
 template<typename A0, typename... As>

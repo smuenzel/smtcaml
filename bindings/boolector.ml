@@ -54,6 +54,7 @@ external get_opt_dflt : btor -> btor_option -> uint32_t = "caml_boolector_get_op
 external get_opt_max : btor -> btor_option -> uint32_t = "caml_boolector_get_opt_max"
 external get_opt_min : btor -> btor_option -> uint32_t = "caml_boolector_get_opt_min"
 external get_opt_desc : btor -> btor_option -> string = "caml_boolector_get_opt_desc"
+external get_opt_shrt : btor -> btor_option -> string = "caml_boolector_get_opt_shrt"
 external get_opt_lng : btor -> btor_option -> string = "caml_boolector_get_opt_lng"
 external next_opt : btor -> btor_option -> btor_option = "caml_boolector_next_opt"
 external has_opt : btor -> btor_option -> bool = "caml_boolector_has_opt"
@@ -61,6 +62,7 @@ external first_opt : btor -> btor_option = "caml_boolector_first_opt"
 external set_sat_solver : btor -> string -> unit = "caml_boolector_set_sat_solver"
 external reset_assumptions : btor -> unit = "caml_boolector_reset_assumptions"
 external fixate_assumptions : btor -> unit = "caml_boolector_fixate_assumptions"
+external get_failed_assumptions : btor -> node array = "caml_boolector_get_failed_assumptions"
 external failed : node -> bool = "caml_boolector_failed"
 external assume : node -> unit = "caml_boolector_assume"
 external assert_ : node -> unit = "caml_boolector_assert"
@@ -133,6 +135,7 @@ module BOption = struct
   type t =
     { b : (btor_option [@sexp.opaque])
     ; name_long : string
+    ; name_short : string
     ; description : string
     ; min : int
     ; max : int
@@ -142,6 +145,7 @@ module BOption = struct
   let create btor b =
     { b
     ; name_long = get_opt_lng btor b
+    ; name_short = get_opt_shrt btor b
     ; description = get_opt_desc btor b
     ; min = get_opt_min btor b
     ; max = get_opt_max btor b
