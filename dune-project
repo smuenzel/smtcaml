@@ -1,6 +1,6 @@
-(lang dune 3.7)
+(lang dune 3.8)
 (using ctypes 0.1)
-(using cinaps 1.0)
+(using cinaps 1.3)
 
 (name smtcaml)
 
