@@ -30,6 +30,7 @@ struct ApiTypename{
 
 template<typename T> struct ApiTypename<const T> : ApiTypename<T> {};
 template<typename T> struct ApiTypename<const T*> : ApiTypename<T*> {};
+template<typename T> struct ApiTypename<T&> : ApiTypename<T> {};
 
 #define DECL_API_TYPE(c_type, caml_type) \
   template<> \
@@ -87,6 +88,12 @@ struct ApiFunctionDescription {
       , parameters(Params<Ps...>::p)
     {}
 
+  template<class C, typename R, typename... Ps>
+    constexpr ApiFunctionDescription(R (C::*fun)(Ps...) const)
+    : return_type(ApiTypename<R>::name), parameter_count(sizeof...(Ps) + 1)
+      , parameters(Params<C*, Ps...>::p)
+    {}
+
   value to_value();
 };
 
@@ -126,6 +133,16 @@ struct ApiRegistryEntry {
     : q1(marker), wrapper_name(wrapper_name), name(name), description(d,fun)
   { }
 
+  template<class C, typename R, typename... Ps>
+  constexpr ApiRegistryEntry
+   ( const char*name
+   , const char*wrapper_name
+   , R (C::*fun)(Ps...) const
+   )
+    : q1(marker), wrapper_name(wrapper_name), name(name), description(fun)
+  { }
+
+
   value to_value();
 };
 
@@ -156,6 +173,11 @@ value list_to_caml(value (*convert)(T), const CamlLinkedList<cstring>* l){
   static inline constexpr auto __caml_api_registry_var__##APIF \
 __attribute((used, section("caml_api_registry"))) = \
     CppCaml::ApiRegistryEntry(#APIF,#WRAPPER,APIF);
+
+#define REGISTER_API_MEMBER(CLASS, APIF, WRAPPER) \
+  static inline constexpr auto __caml_api_registry_var__##CLASS ## _##APIF \
+__attribute((used, section("caml_api_registry"))) = \
+    CppCaml::ApiRegistryEntry(#APIF,#WRAPPER,&CLASS :: APIF);
 
 #define REGISTER_API_CUSTOM(APIF, WRAPPER,...) \
   static inline constexpr auto __caml_api_registry_var__##APIF \
@@ -254,7 +276,7 @@ template<typename T> struct T_value_wrapper{
       "You must specialize T_value_wrapper<> for your type");
 };
 
-template<typename T> T T_value(value v){
+template<typename T> std::remove_reference<T>::type T_value(value v){
   return T_value_wrapper<T>::get(v);
 }
 
@@ -290,6 +312,11 @@ template<typename T> struct ValueProperties {
 template<> struct ValueProperties<const char *> {
   static inline value to_value(const char * s) { return caml_copy_string(s?s:""); }
   static inline const char * of_value(value v) { return String_val(v); }
+};
+
+template<> struct ValueProperties<const std::string> {
+  static inline value to_value(const std::string s) { return caml_copy_string(s.c_str()); }
+  static inline const std::string of_value(value v) { return std::string(String_val(v)); }
 };
 
 template<typename T> concept Value = requires (T t, value v) {
@@ -370,6 +397,11 @@ struct T_value_wrapper<T>{
   static inline T get(value v) { return ImmediateProperties<T>::of_value(v); }
 };
 
+template<typename T>
+requires represented_as_Value<T>
+struct T_value_wrapper<T&>{
+  static inline T get(value v) { return ValueProperties<T>::of_value(v); }
+};
 
 template<ValueWithContext T>
 auto Context_value(value v) {
@@ -513,6 +545,20 @@ apiN_implied_context(void (*fun)(A0, A1, As...), value v_p0, typename first_type
   return Val_unit;
 }
 
+template<typename C, typename... As>
+requires
+(
+ represented_as_ContainerSharedPointer<C *>
+)
+inline value
+apiN_class(void (C::*fun)(As...) const, value v_c, typename first_type<value,As>::type... v_ps){
+  auto&context_s = Custom_value<CppCaml::ContainerSharedPointer<C>>(v_c);
+  auto context = context_s.get();
+
+  (context->*fun)(T_value<As>(v_ps)...);
+  return Val_unit;
+}
+
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -520,3 +566,4 @@ apiN_implied_context(void (*fun)(A0, A1, As...), value v_p0, typename first_type
 
 CAML_REPRESENTATION(bool,Immediate);
 CAML_REPRESENTATION(const char*, Value);
+CAML_REPRESENTATION(const std::string, Value);

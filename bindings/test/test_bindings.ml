@@ -1,6 +1,7 @@
 open! Core
 
 let () =
+  print_endline "Boolector";
   let open Smtcaml_bindings.Boolector in
   let api_registry = Cppcaml_lib.get_api_registry () in
   print_s
@@ -37,3 +38,10 @@ let () =
       (failed xa : bool)
       (failed xb : bool)
   ];
+  ()
+
+let () =
+  print_endline "CVC5";
+  let open Smtcaml_bindings.Cvc5 in
+  let _ = make_Solver () in
+  ()

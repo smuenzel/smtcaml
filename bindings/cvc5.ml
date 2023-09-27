@@ -16,6 +16,7 @@ type solver
     emit_api ()
       ~modify
   *)
-external make_Solver : unit -> solver = "caml_cvc5_new_Solver"
+external setOption : solver -> string -> string -> unit = "caml_cvc5__Solver__setOption"
+external make_Solver : unit -> solver = "caml_cvc5__Solver__operator_new"
 (*$*)
 
