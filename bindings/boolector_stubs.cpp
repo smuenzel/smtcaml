@@ -267,6 +267,11 @@ apireturn caml_boolector_limited_sat(value v_btor, value lod_limit, value sat_li
 }
 REGISTER_API_CUSTOM(boolector_limited_sat,caml_boolector_limited_sat,solver_result,Btor*,int32_t,int32_t);
 
+apireturn caml_boolector_bv_assignment(value v_p0){
+  return CppCaml::apiN_implied_context_free(boolector_bv_assignment,boolector_free_bv_assignment,v_p0);
+}
+REGISTER_API_CUSTOM(boolector_bv_assignment,caml_boolector_bv_assignment,const char *, BoolectorNode * );
+
 apireturn caml_boolector_unit(value){
   return Val_unit;
 }

@@ -16,3 +16,21 @@
 [submodule "vendor/vendor-boolector/minisat"]
 	path = vendor/vendor-boolector/minisat
 	url = git@github.com:smuenzel/minisat.git
+[submodule "vendor/z3i"]
+	path = vendor/z3i
+	url = git@github.com:smuenzel/ocaml_z3i
+[submodule "vendor/vendor-cvc5/cvc5"]
+	path = vendor/vendor-cvc5/cvc5
+	url = git@github.com:smuenzel/cvc5
+[submodule "vendor/vendor-cvc5/cadical"]
+	path = vendor/vendor-cvc5/cadical
+	url = git@github.com:smuenzel/cadical
+[submodule "vendor/vendor-cvc5/kissat"]
+	path = vendor/vendor-cvc5/kissat
+	url = git@github.com:smuenzel/kissat
+[submodule "vendor/vendor-cvc5/libpoly"]
+	path = vendor/vendor-cvc5/libpoly
+	url = git@github.com:smuenzel/libpoly
+[submodule "vendor/vendor-cvc5/symfpu"]
+	path = vendor/vendor-cvc5/symfpu
+	url = git@github.com:smuenzel/symfpu

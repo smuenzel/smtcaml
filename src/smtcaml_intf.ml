@@ -7,6 +7,107 @@ module Sort_kind = struct
 
 end
 
+module Solver_result = struct
+  type 'a t =
+    | Unsatisfiable
+    | Unknown of string
+    | Satisfiable of 'a
+  [@@deriving sexp]
+end
+
+module type Types = sig
+  type 'instance instance
+  type ('instance, 'sort) sort
+  type ('instance, 'sort) expr
+  type 'instance model
+end
+
+module type Op_types = sig
+  module Types : Types
+
+  type ('i, 's) unary = ('i, 's) Types.expr -> ('i, 's) Types.expr
+  type ('i, 's) binary = ('i, 's) Types.expr -> ('i, 's) unary
+end
+
+module Make_op_types (Types : Types) : Op_types with module Types := Types = struct
+  module rec T : Op_types with module Types := Types = T
+  include T
+end
+
+module type Backend_base = sig
+  module Types : Types
+
+  module Op_types : Op_types with module Types := Types
+
+  module Options : sig
+    type t [@@deriving sexp]
+  end
+
+  type 'instance t = 'instance Types.instance
+
+  module Packed : sig
+    type t = T : _ Types.instance -> t
+  end
+
+  module Sort : sig
+    type ('i, 's) t = ('i, 's) Types.sort
+  end
+
+  module Expr : sig
+    type ('i, 's) t = ('i, 's) Types.expr
+  end
+
+  module Model : sig
+    type 'i t' := 'i t
+    type 'i t = 'i Types.model
+
+    val eval_to_string : 'i t' -> 'i t -> ('i, 's) Expr.t -> string option
+  end
+
+  val create : ?options:Options.t -> unit -> Packed.t
+
+  val var : ('i,'s) Sort.t -> string -> ('i, 's) Expr.t
+
+  val check_current_and_get_model : 'i t -> 'i Model.t Solver_result.t
+end
+
+module type Bitvector = sig
+  module Types : Types
+  module Op_types : Op_types with module Types := Types
+
+  type m_sort := Sort_kind.bv
+
+  val sort_bitvector : 'i Types.instance -> int -> ('i, m_sort) Types.sort
+
+  module Bv : sig
+    val not : ('i, m_sort) Op_types.unary
+    val and_  : ('i, m_sort) Op_types.binary
+    val or_  : ('i, m_sort) Op_types.binary
+    val xor  : ('i, m_sort) Op_types.binary
+
+    (* val to_bool : ('i, m_sort) Types.expr -> ('i, Sort_kind.bool) Types.expr *)
+    val of_bool : ('i, Sort_kind.bool) Types.expr -> ('i, m_sort) Types.expr
+  end
+end
+
+module type Boolean = sig
+  module Types : Types
+  module Op_types : Op_types with module Types := Types
+
+  type m_sort := Sort_kind.bool
+
+  val sort_boolean : 'i Types.instance -> ('i, m_sort) Types.sort
+
+  val assert_ : ('i, m_sort) Types.expr -> unit
+
+  module Boolean : sig
+    val eq : ('i, 's) Types.expr -> ('i, 's) Types.expr -> ('i, m_sort) Types.expr
+    val neq : ('i, 's) Types.expr -> ('i, 's) Types.expr -> ('i, m_sort) Types.expr
+  end
+end
+
+(*
+
 module Backend = struct
   type boolector = [ `Boolector ]
 
@@ -78,3 +179,4 @@ end
 module type Bv_ops = sig
 
 end
+   *)

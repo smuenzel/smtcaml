@@ -44,6 +44,7 @@ type solver_result =
     emit_api ()
       ~modify
   *)
+external bv_assignment : node -> string = "caml_boolector_bv_assignment"
 external limited_sat : btor -> int32_t -> int32_t -> solver_result = "caml_boolector_limited_sat"
 external sat : btor -> solver_result = "caml_boolector_sat"
 external get_btor : node -> btor = "caml_boolector_get_btor"
@@ -160,10 +161,7 @@ let all_options btor =
   while
     let next = next_opt btor !current in
     if Stdlib.not (has_opt btor next)
-    then begin
-      Stdlib.Printf.printf "%i %i\n" (Stdlib.Obj.magic next) (List.length !acc);
-      false
-    end
+    then false 
     else begin
       acc := next :: !acc;
       current := next;

@@ -162,6 +162,11 @@ __attribute((used, section("caml_api_registry"))) = \
 __attribute((used, section("caml_api_registry"))) = \
     CppCaml::ApiRegistryEntry(#APIF,#WRAPPER,CppCaml::type_list<__VA_ARGS__>());
 
+#define REGISTER_API_CONSTRUCTOR(CLASS,WRAPPER) \
+  static inline constexpr auto __caml_api_registry_var__make_##CLASS \
+__attribute((used, section("caml_api_registry"))) = \
+    CppCaml::ApiRegistryEntry("make_" #CLASS,#WRAPPER,CppCaml::type_list<CLASS*>());
+
 #define REGISTER_API_IMPLIED_FIRST(APIF, WRAPPER) \
   static inline constexpr auto __caml_api_registry_var__##APIF \
 __attribute((used, section("caml_api_registry"))) = \
@@ -471,16 +476,28 @@ requires
   && represented_as_ContainerWithContext<typename normalize_pointer_argument<A1>::type *>
   )
 inline value
-apiN_implied_context(R (*fun)(A0, A1, As...), value v_p0, typename first_type<value,As>::type... v_ps){
+apiN_implied_context_free(R (*fun)(A0, A1, As...), void (*free_fun)(A0,R), value v_p0, typename first_type<value,As>::type... v_ps){
   typedef typename normalize_pointer_argument<A1>::type A1raw;
   auto&p0_s = Custom_value<CppCaml::ContainerWithContext<A1raw>>(v_p0);
   auto p0 = p0_s.t;
   auto context = p0_s.pContext.get();
   auto ret = fun(context,p0,T_value<As>(v_ps)...);
+  value v_ret;
   if constexpr (represented_as_Immediate<R>)
-    return ImmediateProperties<R>::to_value(ret);
+    v_ret = ImmediateProperties<R>::to_value(ret);
   else if constexpr (represented_as_Value<R>)
-    return ValueProperties<R>::to_value(ret);
+    v_ret = ValueProperties<R>::to_value(ret);
+  free_fun(context, ret);
+  return v_ret;
+}
+
+template<typename A0, typename A1>
+static void dummy_free_fun(A0, A1){}
+
+template<typename R, typename A0, typename A1, typename... As>
+inline value
+apiN_implied_context(R (*fun)(A0, A1, As...), value v_p0, typename first_type<value,As>::type... v_ps){
+  return apiN_implied_context_free(fun, dummy_free_fun, v_p0, v_ps...);
 }
 
 template<typename A0, typename A1, typename... As>

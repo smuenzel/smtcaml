@@ -1,6 +1,6 @@
 (library
   (name             smtcaml_bindings)
-  (libraries base boolector_stubs)
+  (libraries base boolector_stubs cvc5_stubs)
   (preprocess (pps ppx_jane))
   (modes            native)
   (no_dynlink)
@@ -10,21 +10,55 @@
   (archive_name boolector_stubs)
   (names boolector_stubs)
   (language cxx)
-  (flags :standard -Wall -std=c++20 -fdump-tree-gimple -fdump-ipa-all)
+  (flags :standard -Wall -std=c++20)
   (include_dirs ../vendor/build/include ../cppcaml/include)
+  )
+
+(foreign_library
+  (archive_name cvc5_stubs)
+  (names cvc5_stubs)
+  (language cxx)
+  (flags :standard -Wall -std=c++20)
+  (include_dirs ../vendor/build/include ../cppcaml/include)
+  )
+
+(library
+  (name smt_shared_stubs)
+  (modules)
+  (modes            native)
+  (foreign_archives 
+    ../vendor/build/lib/cryptominisat5
+    ../vendor/build/lib/cadical
+    )
+  (library_flags -linkall -cclib -Wl,-lstdc++ -cclib -Wl,-lgmp -cclib -Wl,-lboost_serialization)
   )
 
 (library
   (name boolector_stubs)
   (modules)
+  (libraries smt_shared_stubs)
   (foreign_archives 
     boolector_stubs
     ../vendor/build/lib/boolector
     ../vendor/build/lib/lgl
-    ../vendor/build/lib/cadical
-    ../vendor/build/lib/cryptominisat5
     ../vendor/build/lib/btor2parser
     ../vendor/build/lib/minisat
+    ../cppcaml/cppcaml
+    )
+  (modes            native)
+  (library_flags -linkall -cclib -Wl,-lstdc++ -cclib -Wl,-lgmp -cclib -Wl,-lboost_serialization)
+  )
+
+(library
+  (name cvc5_stubs)
+  (modules)
+  (libraries smt_shared_stubs)
+  (foreign_archives 
+    cvc5_stubs
+    ../vendor/build/lib/cvc5
+    ../vendor/build/lib/poly
+    ../vendor/build/lib/polyxx
+    ../vendor/build/lib/kissat
     ../cppcaml/cppcaml
     )
   (modes            native)
@@ -34,4 +68,9 @@
 (cinaps
   (files boolector.ml)
   (libraries core cppcaml_lib boolector_stubs)
+  )
+
+(cinaps
+  (files cvc5.ml)
+  (libraries core cppcaml_lib cvc5_stubs)
   )
