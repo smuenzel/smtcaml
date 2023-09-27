@@ -17,6 +17,7 @@ type solver
       ~modify
   *)
 external setOption : solver -> string -> string -> unit = "caml_cvc5__Solver__setOption"
+external getBooleanSort : solver -> sort = "caml_cvc5__Solver__getBooleanSort"
 external make_Solver : unit -> solver = "caml_cvc5__Solver__operator_new"
 (*$*)
 

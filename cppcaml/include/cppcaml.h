@@ -222,6 +222,7 @@ enum class CamlRepresentationKind {
   , CustomWithContext
   , ContainerSharedPointer
   , ContainerWithContext
+  , InlinedWithContext
 };
 
 template<typename T> struct CamlRepresentation{};
@@ -241,6 +242,9 @@ template<typename T, CamlRepresentationKind kind> concept represented_as =
 
 template<typename T> concept represented_as_ContainerWithContext =
   represented_as<T,CamlRepresentationKind::ContainerWithContext>;
+
+template<typename T> concept represented_as_InlinedWithContext =
+  represented_as<T,CamlRepresentationKind::InlinedWithContext>;
 
 template<typename T> concept represented_as_ContainerSharedPointer =
   represented_as<T,CamlRepresentationKind::ContainerSharedPointer>;
@@ -383,7 +387,29 @@ struct ContainerWithContext : private boost::noncopyable {
 };
 
 template<typename T>
-requires represented_as<T,CamlRepresentationKind::ContainerWithContext>
+  requires (ValueWithContext<T>
+      && represented_as<T,CamlRepresentationKind::InlinedWithContext>
+      )
+struct InlinedWithContext : private boost::noncopyable {
+  typedef typename ValueWithContextProperties<T>::Context Context;
+
+  std::shared_ptr<Context> pContext;
+  T t;
+
+  InlinedWithContext(std::shared_ptr<Context>& pContext, T&&t)
+    : pContext(pContext), t(t) { }
+
+  static inline value allocate(std::shared_ptr<Context>& context, T&& t){
+    typedef InlinedWithContext<T> This;
+    value v_container =
+      caml_alloc_custom(&ContainerOps<This>::value,sizeof(This),1,500000);
+    new(&Custom_value<This>(v_container)) This(context, std::move(t));
+    return v_container;
+  };
+};
+
+template<typename T>
+requires represented_as_ContainerWithContext<T>
 struct T_value_wrapper<T> {
   static inline T get(value v) {
     typedef typename std::remove_pointer<T>::type Traw;
@@ -557,6 +583,42 @@ apiN_class(void (C::*fun)(As...) const, value v_c, typename first_type<value,As>
 
   (context->*fun)(T_value<As>(v_ps)...);
   return Val_unit;
+}
+
+template<typename C, typename R, typename... As>
+requires
+(
+ represented_as_ContainerSharedPointer<C *>
+ && (represented_as_Immediate<R> || represented_as_Value<R>)
+)
+inline value
+apiN_class(R (C::*fun)(As...) const, value v_c, typename first_type<value,As>::type... v_ps){
+  auto&context_s = Custom_value<CppCaml::ContainerSharedPointer<C>>(v_c);
+  auto context = context_s.get();
+
+  auto ret = (context->*fun)(T_value<As>(v_ps)...);
+  if constexpr (represented_as_Immediate<R>)
+    return ImmediateProperties<R>::to_value(ret);
+  else if constexpr (represented_as_Value<R>)
+    return ValueProperties<R>::to_value(ret);
+}
+
+template<typename C, typename R, typename... As>
+requires
+(
+ represented_as_ContainerSharedPointer<C *>
+ && represented_as_InlinedWithContext<R>
+)
+inline value
+apiN_class(R (C::*fun)(As...) const, value v_c, typename first_type<value,As>::type... v_ps){
+  auto&context_s = Custom_value<CppCaml::ContainerSharedPointer<C>>(v_c);
+  auto context = context_s.get();
+
+  auto dep = (context->*fun)(T_value<As>(v_ps)...);
+
+  typedef CppCaml::InlinedWithContext<R> Container;
+  value v_dep = Container::allocate(context_s.pT, std::move(dep));
+  return v_dep;
 }
 
 };
