@@ -1,6 +1,7 @@
 open! Base
 
 type solver
+type sort
 
 (*$ open! Core
   open Cppcaml_lib
@@ -16,8 +17,8 @@ type solver
     emit_api ()
       ~modify
   *)
-external setOption : solver -> string -> string -> unit = "caml_cvc5__Solver__setOption"
-external getBooleanSort : solver -> sort = "caml_cvc5__Solver__getBooleanSort"
+external solver__setOption : solver -> string -> string -> unit = "caml_cvc5__Solver__setOption"
+external solver__getBooleanSort : solver -> sort = "caml_cvc5__Solver__getBooleanSort"
 external make_Solver : unit -> solver = "caml_cvc5__Solver__operator_new"
 (*$*)
 

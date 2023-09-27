@@ -177,7 +177,7 @@ __attribute((used, section("caml_api_registry"))) = \
 #define REGISTER_API_MEMBER(CLASS, APIF, WRAPPER) \
   static inline constexpr auto __caml_api_registry_var__##CLASS ## _##APIF \
 __attribute((used, section("caml_api_registry"))) = \
-    CppCaml::ApiRegistryEntry(#APIF,#WRAPPER,&CLASS :: APIF);
+    CppCaml::ApiRegistryEntry(#CLASS "__" #APIF,#WRAPPER,&CLASS :: APIF);
 
 #define REGISTER_API_CUSTOM(APIF, WRAPPER,...) \
   static inline constexpr auto __caml_api_registry_var__##APIF \

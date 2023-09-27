@@ -35,7 +35,11 @@ let emit_entry
     }
   =
   Stdlib.Printf.printf
-    {|external %s : %s = "%s"|} (modify name) (function_type description) wrapper_name;
+    {|external %s : %s = "%s"|}
+    (String.uncapitalize (modify name))
+    (function_type description)
+    wrapper_name
+  ;
   Stdlib.print_newline ()
 
 let emit_api ?registry ?(filter=Fn.const true) ?(modify=Fn.id) () =
