@@ -49,6 +49,15 @@ let check_current_and_get_model t : _ Smtcaml_intf.Solver_result.t =
   then Unknown "Null"
   else Unknown "Unknown"
 
+let sort_boolean t = C.solver__getBooleanSort t
+let assert_ expr = C.solver__assertFormula expr
+
+module Boolean = struct
+  (* CR smuenzel: C.term__get_context allocates a new context!!! *)
+  let eq e0 e1 = C.solver__mkTerm__kind (C.term__get_context e0) EQUAL [| e0; e1 |]
+  let neq e0 e1 = C.solver__mkTerm__kind (C.term__get_context e0) DISTINCT [| e0; e1 |]
+end
+
 module Types = struct
   type 'i instance = 'i t
   type _ model = unit

@@ -330,6 +330,12 @@ __attribute((used, section("caml_api_registry"))) = \
 // Function Autogen
 /////////////////////////////////////
 
+#define API_GET_CONTEXT(APIPREFIX, TYPE, CTYPE) \
+  REGISTER_API_CUSTOM(TYPE ##__get_context, caml_ ##APIPREFIX ##__##TYPE ## __get_context, typename CppCaml::InlinedWithContext<CTYPE>::Context*,CTYPE); \
+  apireturn caml_ ##APIPREFIX ##__##TYPE ## __get_context(value v){ \
+    return CppCaml::get_context_caml<CTYPE>(v); \
+  }
+
 #define APIM0_(APIPREFIX, CLASS,APIF) \
   REGISTER_API_MEMBER(CLASS,APIF, caml_ ##APIPREFIX ##__##CLASS ## __##APIF); \
   apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF(value v_c){ \
@@ -348,6 +354,12 @@ __attribute((used, section("caml_api_registry"))) = \
     return CppCaml::apiN_class(&CLASS :: APIF, v_c, v_p0, v_p1); \
   }
 
+#define APIM1_IMPLIED_(APIPREFIX, CLASS,APIF) \
+  REGISTER_API_MEMBER_IMPLIED(CLASS,APIF, caml_ ##APIPREFIX ##__##CLASS ## __##APIF); \
+  apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF(value v_p0){ \
+    return CppCaml::apiN_class_implied(&CLASS :: APIF, v_p0); \
+  }
+
 #define APIM2_IMPLIED_(APIPREFIX, CLASS,APIF) \
   REGISTER_API_MEMBER_IMPLIED(CLASS,APIF, caml_ ##APIPREFIX ##__##CLASS ## __##APIF); \
   apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF(value v_p0, value v_p1){ \
@@ -364,6 +376,12 @@ __attribute((used, section("caml_api_registry"))) = \
   REGISTER_API_MEMBER_OVERLOAD(CLASS,APIF,SUFFIX, caml_ ##APIPREFIX ##__##CLASS ## __##APIF ## __overload__ ##SUFFIX, __VA_ARGS__); \
   apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF ## __overload__ ##SUFFIX (value v_c, value v_p0, value v_p1){ \
     return CppCaml::apiN_class(CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(),&CLASS :: APIF), v_c, v_p0, v_p1); \
+  }
+
+#define APIM2_OVERLOAD_IMPLIED_(APIPREFIX, CLASS,APIF,SUFFIX,...) \
+  REGISTER_API_MEMBER_OVERLOAD(CLASS,APIF,SUFFIX, caml_ ##APIPREFIX ##__##CLASS ## __##APIF ## __overload__ ##SUFFIX, __VA_ARGS__); \
+  apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF ## __overload__ ##SUFFIX (value v_p0, value v_p1){ \
+    return CppCaml::apiN_class_implied(CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(),&CLASS :: APIF), v_p0, v_p1); \
   }
 
 #define APIM3_OVERLOAD_(APIPREFIX, CLASS,APIF,SUFFIX,...) \
@@ -696,6 +714,16 @@ auto Context_value(value v) {
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
+template<typename T>
+requires represented_as_InlinedWithContext<T>
+value get_context_caml(value v){
+  typedef CppCaml::InlinedWithContext<T> Inlined;
+  auto&context_s = Custom_value<CppCaml::InlinedWithContext<T>>(v);
+  return ContainerSharedPointer<typename Inlined::Context>::allocate(context_s.pContext);
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////
+
 
 template<typename T>
 concept Returnable = requires {
@@ -740,8 +768,16 @@ concept CamlHasContext = requires (T a, CamlConversion<T>::RepresentationType ra
 /// calling of api functions
 ///
 
+template<typename X, template<typename> typename T, template<typename> typename... Ts> struct chain_remove{
+  typedef typename T<typename chain_remove<X, Ts...>::type>::type type;
+};
+
+template<typename X, template<typename> typename T> struct chain_remove<X,T>{
+  typedef typename T<X>::type type;
+};
+
 template<typename T> struct normalize_pointer_argument {
-  typedef typename std::remove_reference<typename std::remove_const<typename std::remove_pointer<T>::type>::type>::type type;
+  typedef chain_remove<T,std::remove_const,std::remove_reference,std::remove_const,std::remove_pointer>::type type;
 };
 
 // Needed so that we can expand the parameter pack. There must be a better way.....
@@ -912,7 +948,7 @@ apiN_class_implied(R (C::*fun)(A0, As...) const, value v_p0  ,typename first_typ
   auto&p0_s = Custom_value<CppCaml::InlinedWithContext<A0raw>>(v_p0);
   auto context = p0_s.pContext.get();
   
-  return call_wrap_class(context,fun,T_value<As>(v_ps)...);
+  return call_wrap_class(context,fun,T_value<A0>(v_p0),T_value<As>(v_ps)...);
 }
 
 template<typename C, typename R, typename A0, typename... As>

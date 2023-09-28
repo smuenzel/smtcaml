@@ -34,6 +34,7 @@ DECL_API_TYPE(SortKind,sortKind);
 CAML_REPRESENTATION(Solver*, ContainerSharedPointer);
 CAML_REPRESENTATION(Sort,InlinedWithContext);
 CAML_REPRESENTATION(Term,InlinedWithContext);
+CAML_REPRESENTATION(const Term&,InlinedWithContext);
 CAML_REPRESENTATION(Result,InlinedWithContext);
 CAML_REPRESENTATION(UnknownExplanation,Immediate);
 
@@ -421,9 +422,11 @@ REGISTER_API_CONSTRUCTOR(Solver,caml_cvc5__Solver__operator_new);
 #define APIM0(A,B) APIM0_(cvc5,A,B)
 #define APIM1(A,B) APIM1_(cvc5,A,B)
 #define APIM2(A,B) APIM2_(cvc5,A,B)
+#define APIM1_IMPLIED(A,B) APIM1_IMPLIED_(cvc5,A,B)
 #define APIM2_IMPLIED(A,B) APIM2_IMPLIED_(cvc5,A,B)
 #define APIM1_OVERLOAD(...) APIM1_OVERLOAD_(cvc5,__VA_ARGS__)
 #define APIM2_OVERLOAD(...) APIM2_OVERLOAD_(cvc5,__VA_ARGS__)
+#define APIM2_OVERLOAD_IMPLIED(...) APIM2_OVERLOAD_IMPLIED_(cvc5,__VA_ARGS__)
 #define APIM3_OVERLOAD(...) APIM3_OVERLOAD_(cvc5,__VA_ARGS__)
 
 APIM0(Solver,getBooleanSort)
@@ -452,6 +455,8 @@ APIM0(Solver,mkTrue)
 APIM0(Solver,mkFalse)
 APIM1(Solver,mkBoolean)
 
+APIM2_OVERLOAD(Solver,mkTerm,kind,Term,Kind,const std::vector<Term>&)
+
 APIM2(Solver,mkConstArray)
 
 APIM2_IMPLIED(Solver,mkConst)
@@ -459,7 +464,7 @@ APIM2(Solver,mkVar)
 
 APIM1(Solver,simplify)
 
-APIM1(Solver,assertFormula)
+APIM1_IMPLIED(Solver,assertFormula)
 APIM0(Solver,checkSat)
 
 APIM1_OVERLOAD(Solver,getValue,t,Term,const Term&)
@@ -484,6 +489,7 @@ APIM0(Result,isUnknown)
 APIM0(Result,toString)
 APIM0(Result,getUnknownExplanation)
 
+API_GET_CONTEXT(cvc5,Term,Term)
 APIM0(Term,toString)
 
 apireturn caml_cvc5_unit(value){

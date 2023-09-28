@@ -377,11 +377,12 @@ external solver__mkBitVector__u32_s_u32 : (* class Solver *) solver -> uint32_t 
 external solver__mkTrue : (* class Solver *) solver -> term = "caml_cvc5__Solver__mkTrue"
 external solver__mkFalse : (* class Solver *) solver -> term = "caml_cvc5__Solver__mkFalse"
 external solver__mkBoolean : (* class Solver *) solver -> bool -> term = "caml_cvc5__Solver__mkBoolean"
+external solver__mkTerm__kind : (* class Solver *) solver -> kind -> (term array) -> term = "caml_cvc5__Solver__mkTerm__overload__kind"
 external solver__mkConstArray : (* class Solver *) solver -> sort -> term -> term = "caml_cvc5__Solver__mkConstArray"
 external solver__mkConst : (* class Solver *) sort -> (string option) -> term = "caml_cvc5__Solver__mkConst"
 external solver__mkVar : (* class Solver *) solver -> sort -> (string option) -> term = "caml_cvc5__Solver__mkVar"
 external solver__simplify : (* class Solver *) solver -> term -> term = "caml_cvc5__Solver__simplify"
-external solver__assertFormula : (* class Solver *) solver -> term -> unit = "caml_cvc5__Solver__assertFormula"
+external solver__assertFormula : (* class Solver *) term -> unit = "caml_cvc5__Solver__assertFormula"
 external solver__checkSat : (* class Solver *) solver -> sat_result = "caml_cvc5__Solver__checkSat"
 external solver__getValue__t : (* class Solver *) solver -> term -> term = "caml_cvc5__Solver__getValue__overload__t"
 external solver__getValue__vt : (* class Solver *) solver -> (term array) -> (term array) = "caml_cvc5__Solver__getValue__overload__vt"
@@ -401,6 +402,7 @@ external result__isUnsat : (* class Result *) sat_result -> bool = "caml_cvc5__R
 external result__isUnknown : (* class Result *) sat_result -> bool = "caml_cvc5__Result__isUnknown"
 external result__toString : (* class Result *) sat_result -> string = "caml_cvc5__Result__toString"
 external result__getUnknownExplanation : (* class Result *) sat_result -> unknownExplanation = "caml_cvc5__Result__getUnknownExplanation"
+external term__get_context : term -> solver = "caml_cvc5__Term__get_context"
 external term__toString : (* class Term *) term -> string = "caml_cvc5__Term__toString"
 (*$*)
 
