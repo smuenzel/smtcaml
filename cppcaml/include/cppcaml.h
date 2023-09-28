@@ -35,22 +35,45 @@ template<typename T> struct ApiTypename<T&> : ApiTypename<T> {};
 
 /* https://stackoverflow.com/a/75619411
  */ 
-template<unsigned ...Len>
-constexpr auto cat(const char (&...strings)[Len]) {
-  constexpr unsigned N = (... + Len) - sizeof...(Len);
+template<size_t ...Len>
+constexpr auto cat(const std::array<char,Len>&...strings){
+  constexpr size_t N = (... + Len) - sizeof...(Len);
   std::array<char, N + 1> result = {};
   result[N] = '\0';
 
   auto it = result.begin();
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-value"
-  (void)((it = std::copy_n(strings, Len-1, it), 0), ...);
+  (void)((it = std::copy_n(strings.cbegin(), Len-1, it), 0), ...);
 #pragma GCC diagnostic pop
   return result;
 }
 
+using std::to_array;
+
+template<typename T, size_t L>
+constexpr const std::array<T,L>& to_array(const std::array<T,L>& a) { return a; }
+
+template<typename ...Ts>
+constexpr auto cat(const Ts&...strings){
+  return cat(to_array(strings)...);
+}
+
+template<typename T, size_t L>
+constexpr bool array_contains(const std::array<T,L>&a, const T& v){
+  auto begin = a.cbegin();
+  auto end = a.cend();
+  return (end != std::find(begin, end, v));
+}
+
 template<typename T> struct ApiTypename<std::vector<T> > {
-  static constexpr const auto name_array = cat(ApiTypename<T>::name_array," array");
+  static constexpr const auto name_array = cat("(", ApiTypename<T>::name_array," array)");
+  static constexpr auto name_len = name_array.size();
+  static constexpr const char * name = &name_array[0];
+};
+
+template<typename T0, typename T1> struct ApiTypename<std::pair<T0,T1> > {
+  static constexpr const auto name_array = cat("(", ApiTypename<T0>::name_array, "*", ApiTypename<T1>::name_array, ")");
   static constexpr auto name_len = name_array.size();
   static constexpr const char * name = &name_array[0];
 };
@@ -59,8 +82,8 @@ template<typename T> struct ApiTypename<std::vector<T> > {
   template<> \
   struct CppCaml::ApiTypename<c_type>{ \
     static constexpr auto name_len = std::char_traits<char>::length(#caml_type);\
-    static constexpr const char name_array[name_len+1] = #caml_type; \
-    static constexpr const char * name = name_array; \
+    static constexpr const std::array<char,name_len+1> name_array = std::to_array(#caml_type); \
+    static constexpr const char * name = &name_array[0]; \
   }
 
 typedef const char* cstring;
@@ -451,6 +474,21 @@ struct T_value_wrapper<const std::vector<T>&> {
     return std::vector<T>(begin, end);
   }
 };
+
+template<typename T0, typename T1>
+struct T_value_wrapper<std::pair<T0,T1>> {
+  static inline std::pair<T0,T1> get(value v) {
+    return std::make_pair(T_value_wrapper<T0>::get(Field(v,0)), T_value_wrapper<T1>::get(Field(v,1)));
+  }
+};
+
+template<>
+struct T_value_wrapper<std::string> {
+  static inline std::string get(value v) {
+    return std::string(String_val(v));
+  }
+};
+
 
 template<typename T>
 requires represented_as_ContainerWithContext<T>

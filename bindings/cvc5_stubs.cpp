@@ -82,6 +82,8 @@ APIM1(Solver,mkBitVectorSort)
 APIM2(Solver,mkFloatingPointSort)
 APIM1(Solver,mkFiniteFieldSort)
 APIM2(Solver,mkFunctionSort)
+APIM1(Solver,mkPredicateSort)
+APIM1(Solver,mkRecordSort)
 APIM2(Solver,setOption)
 
 APIM0(Sort,hasSymbol)
