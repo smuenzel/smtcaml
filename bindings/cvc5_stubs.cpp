@@ -51,10 +51,21 @@ REGISTER_API_CONSTRUCTOR(Solver,caml_cvc5__Solver__operator_new);
 
 
 APIM0(Solver,getBooleanSort)
+APIM0(Solver,getIntegerSort)
+APIM0(Solver,getRealSort)
+APIM0(Solver,getRegExpSort)
+APIM0(Solver,getRoundingModeSort)
+APIM0(Solver,getStringSort)
+APIM2(Solver,mkArraySort)
 APIM2(Solver,setOption)
 
-APIM0(Sort,isInstantiated)
+APIM0(Sort,hasSymbol)
+APIM0(Sort,getSymbol)
+APIM0(Sort,isNull)
 APIM0(Sort,isBoolean)
+APIM0(Sort,isInteger)
+APIM0(Sort,isReal)
+APIM0(Sort,isInstantiated)
 
 apireturn caml_cvc5_unit(value){
   return Val_unit;

@@ -323,6 +323,11 @@ template<> struct ValueProperties<const std::string> {
   static inline const std::string of_value(value v) { return std::string(String_val(v)); }
 };
 
+template<> struct ValueProperties<std::string> {
+  static inline value to_value(std::string s) { return caml_copy_string(s.c_str()); }
+  static inline std::string of_value(value v) { return std::string(String_val(v)); }
+};
+
 template<typename T> concept Value = requires (T t, value v) {
   ValueProperties<T>::to_value(t);
   ValueProperties<T>::of_value(v);
@@ -421,6 +426,14 @@ template<typename T>
 requires represented_as_InlinedWithContext<T>
 struct T_value_wrapper<T> {
   static inline T get(value v) {
+    return Custom_value<InlinedWithContext<T>>(v).t;
+  }
+};
+
+template<typename T>
+requires represented_as_InlinedWithContext<T>
+struct T_value_wrapper<const T&> {
+  static inline const T&get(value v) {
     return Custom_value<InlinedWithContext<T>>(v).t;
   }
 };
@@ -643,3 +656,4 @@ apiN_class(R (C::*fun)(As...) const, value v_c, typename first_type<value,As>::t
 CAML_REPRESENTATION(bool,Immediate);
 CAML_REPRESENTATION(const char*, Value);
 CAML_REPRESENTATION(const std::string, Value);
+CAML_REPRESENTATION(std::string, Value);

@@ -49,7 +49,7 @@ let emit_api ?registry ?(filter=Fn.const true) ?(modify=Fn.id) () =
     | Some registry -> registry
   in
   Stdlib.print_newline ();
-  List.iter registry
+  List.iter (List.rev registry)
     ~f:(fun entry ->
         if filter entry.name
         then emit_entry ~modify entry
