@@ -16,6 +16,7 @@
 #include <functional>
 #include <cassert>
 #include <cstring>
+#include <optional>
 
 #define apireturn extern "C" CAMLprim value
 
@@ -78,6 +79,12 @@ template<typename T0, typename T1> struct ApiTypename<std::pair<T0,T1> > {
   static constexpr const char * name = &name_array[0];
 };
 
+template<typename T> struct ApiTypename<std::optional<T> > {
+  static constexpr const auto name_array = cat("(", ApiTypename<T>::name_array," option)");
+  static constexpr auto name_len = name_array.size();
+  static constexpr const char * name = &name_array[0];
+};
+
 #define DECL_API_TYPE(c_type, caml_type) \
   template<> \
   struct CppCaml::ApiTypename<c_type>{ \
@@ -112,6 +119,16 @@ template<typename P, typename... Ps> struct Params<P, Ps...>{
 struct DropFirstArgument{};
 
 template<typename ...T> struct type_list {};
+
+template<class C, typename R, typename... Ps>
+constexpr auto resolveOverload(type_list<R,Ps...>, R (C::*fun)(Ps...)){
+  return fun;
+}
+
+template<class C, typename R, typename... Ps>
+constexpr auto resolveOverload(type_list<R,Ps...>, R (C::*fun)(Ps...) const){
+  return fun;
+}
 
 struct ApiFunctionDescription {
   cstring return_type;
@@ -226,6 +243,11 @@ __attribute((used, section("caml_api_registry"))) = \
   static inline constexpr auto __caml_api_registry_var__##CLASS ## _##APIF \
 __attribute((used, section("caml_api_registry"))) = \
     CppCaml::ApiRegistryEntry(#CLASS "__" #APIF,#WRAPPER,&CLASS :: APIF);
+
+#define REGISTER_API_MEMBER_OVERLOAD(CLASS, APIF, SUFFIX, WRAPPER, ...) \
+  static inline constexpr auto __caml_api_registry_var__##CLASS ## _##APIF ## _ ## SUFFIX \
+__attribute((used, section("caml_api_registry"))) = \
+    CppCaml::ApiRegistryEntry(#CLASS "__" #APIF "__" #SUFFIX,#WRAPPER,CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(), &CLASS :: APIF));
 
 #define REGISTER_API_CUSTOM(APIF, WRAPPER,...) \
   static inline constexpr auto __caml_api_registry_var__##APIF \
@@ -479,6 +501,14 @@ template<typename T0, typename T1>
 struct T_value_wrapper<std::pair<T0,T1>> {
   static inline std::pair<T0,T1> get(value v) {
     return std::make_pair(T_value_wrapper<T0>::get(Field(v,0)), T_value_wrapper<T1>::get(Field(v,1)));
+  }
+};
+
+template<typename T>
+struct T_value_wrapper<const std::optional<T>&> {
+  static inline std::optional<T> get(value v) {
+    if(Is_none(v)) return std :: nullopt;
+    else return T_value_wrapper<T>::get(Some_val(v));
   }
 };
 

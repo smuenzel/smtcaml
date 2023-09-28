@@ -2,9 +2,11 @@ open! Base
 
 type solver
 type sort
+type term
 
 type uint32_t = int
 type int32_t = int
+type uint64_t = int
 
 (*$ open! Core
   open Cppcaml_lib
@@ -34,6 +36,16 @@ external solver__mkFiniteFieldSort : solver -> string -> sort = "caml_cvc5__Solv
 external solver__mkFunctionSort : solver -> (sort array) -> sort -> sort = "caml_cvc5__Solver__mkFunctionSort"
 external solver__mkPredicateSort : solver -> (sort array) -> sort = "caml_cvc5__Solver__mkPredicateSort"
 external solver__mkRecordSort : solver -> ((string*sort) array) -> sort = "caml_cvc5__Solver__mkRecordSort"
+external solver__mkSetSort : solver -> sort -> sort = "caml_cvc5__Solver__mkSetSort"
+external solver__mkBagSort : solver -> sort -> sort = "caml_cvc5__Solver__mkBagSort"
+external solver__mkSequenceSort : solver -> sort -> sort = "caml_cvc5__Solver__mkSequenceSort"
+external solver__mkUninterpretedSort : solver -> (string option) -> sort = "caml_cvc5__Solver__mkUninterpretedSort"
+external solver__mkTupleSort : solver -> (sort array) -> sort = "caml_cvc5__Solver__mkTupleSort"
+external solver__mkBitVector__uint32_t__uint64_t : solver -> uint32_t -> uint64_t -> term = "caml_cvc5__Solver__mkBitVector__overload__uint32_t__uint64_t"
+external solver__mkBitVector__uint32_t__string__uint32_t : solver -> uint32_t -> string -> uint32_t -> term = "caml_cvc5__Solver__mkBitVector__overload__uint32_t__string__uint32_t"
+external solver__mkTrue : solver -> term = "caml_cvc5__Solver__mkTrue"
+external solver__mkFalse : solver -> term = "caml_cvc5__Solver__mkFalse"
+external solver__mkBoolean : solver -> bool -> term = "caml_cvc5__Solver__mkBoolean"
 external solver__setOption : solver -> string -> string -> unit = "caml_cvc5__Solver__setOption"
 external sort__hasSymbol : sort -> bool = "caml_cvc5__Sort__hasSymbol"
 external sort__getSymbol : sort -> string = "caml_cvc5__Sort__getSymbol"
