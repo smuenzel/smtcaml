@@ -855,6 +855,7 @@ template<> struct CppCaml::ImmediateProperties<ENUM_NAME> {\
   static inline ENUM_NAME of_value(value v) { \
     switch((Local)Long_val(v)) { \
       ENUM(CPPCAML_ENUM_REVERSE_CASE) \
+      default: assert(false); \
     } \
  \
   } \
