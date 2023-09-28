@@ -418,36 +418,11 @@ apireturn caml_cvc5__Solver__operator_new(value){
 }
 REGISTER_API_CONSTRUCTOR(Solver,caml_cvc5__Solver__operator_new);
 
-#define APIM0(CLASS,APIF) \
-  REGISTER_API_MEMBER(CLASS,APIF, caml_cvc5__##CLASS ## __##APIF); \
-  apireturn caml_cvc5__##CLASS ## __##APIF(value v_c){ \
-    return CppCaml::apiN_class(&CLASS :: APIF, v_c); \
-  }
-
-#define APIM1(CLASS,APIF) \
-  REGISTER_API_MEMBER(CLASS,APIF, caml_cvc5__##CLASS ## __##APIF); \
-  apireturn caml_cvc5__##CLASS ## __##APIF(value v_c, value v_p0){ \
-    return CppCaml::apiN_class(&CLASS :: APIF, v_c, v_p0); \
-  }
-
-#define APIM2(CLASS,APIF) \
-  REGISTER_API_MEMBER(CLASS,APIF, caml_cvc5__##CLASS ## __##APIF); \
-  apireturn caml_cvc5__##CLASS ## __##APIF(value v_c, value v_p0, value v_p1){ \
-    return CppCaml::apiN_class(&CLASS :: APIF, v_c, v_p0, v_p1); \
-  }
-
-#define APIM2_OVERLOAD(CLASS,APIF,SUFFIX,...) \
-  REGISTER_API_MEMBER_OVERLOAD(CLASS,APIF,SUFFIX, caml_cvc5__##CLASS ## __##APIF ## __overload__ ##SUFFIX, __VA_ARGS__); \
-  apireturn caml_cvc5__##CLASS ## __##APIF ## __overload__ ##SUFFIX (value v_c, value v_p0, value v_p1){ \
-    return CppCaml::apiN_class(CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(),&CLASS :: APIF), v_c, v_p0, v_p1); \
-  }
-
-#define APIM3_OVERLOAD(CLASS,APIF,SUFFIX,...) \
-  REGISTER_API_MEMBER_OVERLOAD(CLASS,APIF,SUFFIX, caml_cvc5__##CLASS ## __##APIF ## __overload__ ##SUFFIX, __VA_ARGS__); \
-  apireturn caml_cvc5__##CLASS ## __##APIF ## __overload__ ##SUFFIX (value v_c, value v_p0, value v_p1, value v_p2){ \
-    return CppCaml::apiN_class(CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(),&CLASS :: APIF), v_c, v_p0, v_p1, v_p2); \
-  }
-
+#define APIM0(A,B) APIM0_(cvc5,A,B)
+#define APIM1(A,B) APIM1_(cvc5,A,B)
+#define APIM2(A,B) APIM2_(cvc5,A,B)
+#define APIM2_OVERLOAD(...) APIM2_OVERLOAD_(cvc5,__VA_ARGS__)
+#define APIM3_OVERLOAD(...) APIM3_OVERLOAD_(cvc5,__VA_ARGS__)
 
 APIM0(Solver,getBooleanSort)
 APIM0(Solver,getIntegerSort)

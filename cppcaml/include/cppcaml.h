@@ -304,6 +304,41 @@ __attribute((used, section("caml_api_registry"))) = \
 __attribute((used, section("caml_api_registry"))) = \
     CppCaml::ApiRegistryEntry(CppCaml::DropFirstArgument(),#APIF,#WRAPPER,APIF);
 
+/////////////////////////////////////
+// Function Autogen
+/////////////////////////////////////
+
+#define APIM0_(APIPREFIX, CLASS,APIF) \
+  REGISTER_API_MEMBER(CLASS,APIF, caml_ ##APIPREFIX ##__##CLASS ## __##APIF); \
+  apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF(value v_c){ \
+    return CppCaml::apiN_class(&CLASS :: APIF, v_c); \
+  }
+
+#define APIM1_(APIPREFIX, CLASS,APIF) \
+  REGISTER_API_MEMBER(CLASS,APIF, caml_ ##APIPREFIX ##__##CLASS ## __##APIF); \
+  apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF(value v_c, value v_p0){ \
+    return CppCaml::apiN_class(&CLASS :: APIF, v_c, v_p0); \
+  }
+
+#define APIM2_(APIPREFIX, CLASS,APIF) \
+  REGISTER_API_MEMBER(CLASS,APIF, caml_ ##APIPREFIX ##__##CLASS ## __##APIF); \
+  apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF(value v_c, value v_p0, value v_p1){ \
+    return CppCaml::apiN_class(&CLASS :: APIF, v_c, v_p0, v_p1); \
+  }
+
+#define APIM2_OVERLOAD_(APIPREFIX, CLASS,APIF,SUFFIX,...) \
+  REGISTER_API_MEMBER_OVERLOAD(CLASS,APIF,SUFFIX, caml_ ##APIPREFIX ##__##CLASS ## __##APIF ## __overload__ ##SUFFIX, __VA_ARGS__); \
+  apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF ## __overload__ ##SUFFIX (value v_c, value v_p0, value v_p1){ \
+    return CppCaml::apiN_class(CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(),&CLASS :: APIF), v_c, v_p0, v_p1); \
+  }
+
+#define APIM3_OVERLOAD_(APIPREFIX, CLASS,APIF,SUFFIX,...) \
+  REGISTER_API_MEMBER_OVERLOAD(CLASS,APIF,SUFFIX, caml_ ##APIPREFIX ##__##CLASS ## __##APIF ## __overload__ ##SUFFIX, __VA_ARGS__); \
+  apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF ## __overload__ ##SUFFIX (value v_c, value v_p0, value v_p1, value v_p2){ \
+    return CppCaml::apiN_class(CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(),&CLASS :: APIF), v_c, v_p0, v_p1, v_p2); \
+  }
+/////////////////////////////////////
+
 template<typename T> static inline T& Custom_value(value v){
   return (*((T*)Data_custom_val(v)));
 }
