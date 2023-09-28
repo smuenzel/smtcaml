@@ -466,6 +466,7 @@ APIM1_OVERLOAD(Solver,getValue,t,Term,const Term&)
 APIM1_OVERLOAD(Solver,getValue,vt,std::vector<Term>,const std::vector<Term>&)
 
 APIM2(Solver,setOption)
+APIM1(Solver,getOption)
 
 APIM0(Sort,getKind)
 APIM0(Sort,hasSymbol)

@@ -386,6 +386,7 @@ external solver__checkSat : (* class Solver *) solver -> sat_result = "caml_cvc5
 external solver__getValue__t : (* class Solver *) solver -> term -> term = "caml_cvc5__Solver__getValue__overload__t"
 external solver__getValue__vt : (* class Solver *) solver -> (term array) -> (term array) = "caml_cvc5__Solver__getValue__overload__vt"
 external solver__setOption : (* class Solver *) solver -> string -> string -> unit = "caml_cvc5__Solver__setOption"
+external solver__getOption : (* class Solver *) solver -> string -> string = "caml_cvc5__Solver__getOption"
 external sort__getKind : (* class Sort *) sort -> sortKind = "caml_cvc5__Sort__getKind"
 external sort__hasSymbol : (* class Sort *) sort -> bool = "caml_cvc5__Sort__hasSymbol"
 external sort__getSymbol : (* class Sort *) sort -> string = "caml_cvc5__Sort__getSymbol"

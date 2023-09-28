@@ -31,6 +31,7 @@ end
 let create ?(options=()) () =
   let () = options in
   let t = C.make_Solver () in
+  C.solver__setOption t "produce-models" "true";
   Packed.T t
 
 let var sort name =
