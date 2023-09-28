@@ -33,6 +33,7 @@ struct ApiTypename{
 template<typename T> struct ApiTypename<const T> : ApiTypename<T> {};
 template<typename T> struct ApiTypename<const T*> : ApiTypename<T*> {};
 template<typename T> struct ApiTypename<T&> : ApiTypename<T> {};
+template<typename T> struct ApiTypename<const T&> : ApiTypename<T> {};
 
 /* https://stackoverflow.com/a/75619411
  */ 
@@ -159,6 +160,12 @@ struct ApiFunctionDescription {
       , parameters(Params<C*, Ps...>::p)
     {}
 
+  template<class C, typename R, typename... Ps>
+    constexpr ApiFunctionDescription(R (C::*fun)(Ps...))
+    : return_type(ApiTypename<R>::name), parameter_count(sizeof...(Ps) + 1)
+      , parameters(Params<C*, Ps...>::p)
+    {}
+
   value to_value();
 };
 
@@ -203,6 +210,15 @@ struct ApiRegistryEntry {
    ( const char*name
    , const char*wrapper_name
    , R (C::*fun)(Ps...) const
+   )
+    : q1(marker), wrapper_name(wrapper_name), name(name), description(fun)
+  { }
+
+  template<class C, typename R, typename... Ps>
+  constexpr ApiRegistryEntry
+   ( const char*name
+   , const char*wrapper_name
+   , R (C::*fun)(Ps...)
    )
     : q1(marker), wrapper_name(wrapper_name), name(name), description(fun)
   { }
@@ -745,6 +761,25 @@ requires
 )
 inline value
 apiN_class(R (C::*fun)(As...) const, value v_c, typename first_type<value,As>::type... v_ps){
+  auto&context_s = Custom_value<CppCaml::ContainerSharedPointer<C>>(v_c);
+  auto context = context_s.get();
+
+  auto dep = (context->*fun)(T_value<As>(v_ps)...);
+
+  typedef CppCaml::InlinedWithContext<R> Container;
+  value v_dep = Container::allocate(context_s.pT, std::move(dep));
+  return v_dep;
+}
+
+// CR smuenzel: only differs in const-ness....
+template<typename C, typename R, typename... As>
+requires
+(
+ represented_as_ContainerSharedPointer<C *>
+ && represented_as_InlinedWithContext<R>
+)
+inline value
+apiN_class(R (C::*fun)(As...), value v_c, typename first_type<value,As>::type... v_ps){
   auto&context_s = Custom_value<CppCaml::ContainerSharedPointer<C>>(v_c);
   auto context = context_s.get();
 

@@ -121,12 +121,19 @@ APIM1(Solver,mkSequenceSort)
 APIM1(Solver,mkUninterpretedSort)
 APIM1(Solver,mkTupleSort)
 
-APIM2_OVERLOAD(Solver,mkBitVector,uint32_t__uint64_t,Term,uint32_t,uint64_t)
-APIM3_OVERLOAD(Solver,mkBitVector,uint32_t__string__uint32_t,Term,uint32_t,const std::string&, uint32_t)
+APIM2_OVERLOAD(Solver,mkBitVector,u32_u64,Term,uint32_t,uint64_t)
+APIM3_OVERLOAD(Solver,mkBitVector,u32_s_u32,Term,uint32_t,const std::string&, uint32_t)
 
 APIM0(Solver,mkTrue)
 APIM0(Solver,mkFalse)
 APIM1(Solver,mkBoolean)
+
+APIM2(Solver,mkConstArray)
+
+APIM2(Solver,mkConst)
+APIM2(Solver,mkVar)
+
+APIM1(Solver,simplify)
 
 APIM2(Solver,setOption)
 
