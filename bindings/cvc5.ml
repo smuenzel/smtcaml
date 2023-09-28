@@ -3,6 +3,9 @@ open! Base
 type solver
 type sort
 
+type uint32_t = int
+type int32_t = int
+
 (*$ open! Core
   open Cppcaml_lib
   (* dune cinaps currently doesn't support adding link flags, and we need -linkall,
@@ -25,6 +28,10 @@ external solver__getRegExpSort : solver -> sort = "caml_cvc5__Solver__getRegExpS
 external solver__getRoundingModeSort : solver -> sort = "caml_cvc5__Solver__getRoundingModeSort"
 external solver__getStringSort : solver -> sort = "caml_cvc5__Solver__getStringSort"
 external solver__mkArraySort : solver -> sort -> sort -> sort = "caml_cvc5__Solver__mkArraySort"
+external solver__mkBitVectorSort : solver -> uint32_t -> sort = "caml_cvc5__Solver__mkBitVectorSort"
+external solver__mkFloatingPointSort : solver -> uint32_t -> uint32_t -> sort = "caml_cvc5__Solver__mkFloatingPointSort"
+external solver__mkFiniteFieldSort : solver -> string -> sort = "caml_cvc5__Solver__mkFiniteFieldSort"
+external solver__mkFunctionSort : solver -> sort array -> sort -> sort = "caml_cvc5__Solver__mkFunctionSort"
 external solver__setOption : solver -> string -> string -> unit = "caml_cvc5__Solver__setOption"
 external sort__hasSymbol : sort -> bool = "caml_cvc5__Sort__hasSymbol"
 external sort__getSymbol : sort -> string = "caml_cvc5__Sort__getSymbol"

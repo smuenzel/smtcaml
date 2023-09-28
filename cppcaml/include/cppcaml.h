@@ -9,6 +9,7 @@
 #include "caml/domain_state.h"
 
 #include <boost/core/noncopyable.hpp>
+#include <boost/iterator/transform_iterator.hpp>
 
 #include <memory>
 #include <typeinfo>
@@ -32,10 +33,34 @@ template<typename T> struct ApiTypename<const T> : ApiTypename<T> {};
 template<typename T> struct ApiTypename<const T*> : ApiTypename<T*> {};
 template<typename T> struct ApiTypename<T&> : ApiTypename<T> {};
 
+/* https://stackoverflow.com/a/75619411
+ */ 
+template<unsigned ...Len>
+constexpr auto cat(const char (&...strings)[Len]) {
+  constexpr unsigned N = (... + Len) - sizeof...(Len);
+  std::array<char, N + 1> result = {};
+  result[N] = '\0';
+
+  auto it = result.begin();
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-value"
+  (void)((it = std::copy_n(strings, Len-1, it), 0), ...);
+#pragma GCC diagnostic pop
+  return result;
+}
+
+template<typename T> struct ApiTypename<std::vector<T> > {
+  static constexpr const auto name_array = cat(ApiTypename<T>::name_array," array");
+  static constexpr auto name_len = name_array.size();
+  static constexpr const char * name = &name_array[0];
+};
+
 #define DECL_API_TYPE(c_type, caml_type) \
   template<> \
   struct CppCaml::ApiTypename<c_type>{ \
-    static constexpr const char * name = #caml_type; \
+    static constexpr auto name_len = std::char_traits<char>::length(#caml_type);\
+    static constexpr const char name_array[name_len+1] = #caml_type; \
+    static constexpr const char * name = name_array; \
   }
 
 typedef const char* cstring;
@@ -411,6 +436,20 @@ struct InlinedWithContext : private boost::noncopyable {
     new(&Custom_value<This>(v_container)) This(context, std::move(t));
     return v_container;
   };
+};
+
+template<typename T>
+struct T_value_wrapper<const std::vector<T>&> {
+  static inline std::vector<T> get(value v) {
+    auto len = Wosize_val(v);
+    auto f = [](value v){
+      return T_value_wrapper<T>::get(v);
+    };
+    auto begin = boost::make_transform_iterator(&Field(v, 0), f);
+    auto end = boost::make_transform_iterator(&Field(v, len), f);
+
+    return std::vector<T>(begin, end);
+  }
 };
 
 template<typename T>
