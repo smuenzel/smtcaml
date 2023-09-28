@@ -421,6 +421,7 @@ REGISTER_API_CONSTRUCTOR(Solver,caml_cvc5__Solver__operator_new);
 #define APIM0(A,B) APIM0_(cvc5,A,B)
 #define APIM1(A,B) APIM1_(cvc5,A,B)
 #define APIM2(A,B) APIM2_(cvc5,A,B)
+#define APIM2_IMPLIED(A,B) APIM2_IMPLIED_(cvc5,A,B)
 #define APIM2_OVERLOAD(...) APIM2_OVERLOAD_(cvc5,__VA_ARGS__)
 #define APIM3_OVERLOAD(...) APIM3_OVERLOAD_(cvc5,__VA_ARGS__)
 
@@ -452,7 +453,7 @@ APIM1(Solver,mkBoolean)
 
 APIM2(Solver,mkConstArray)
 
-APIM2(Solver,mkConst)
+APIM2_IMPLIED(Solver,mkConst)
 APIM2(Solver,mkVar)
 
 APIM1(Solver,simplify)

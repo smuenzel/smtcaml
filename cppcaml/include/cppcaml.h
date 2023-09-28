@@ -162,6 +162,12 @@ struct ApiFunctionDescription {
     {}
 
   template<class C, typename R, typename... Ps>
+    constexpr ApiFunctionDescription(DropFirstArgument, cstring c, R (C::*fun)(Ps...) const)
+    : return_type(ApiTypename<R>::name), parameter_count(sizeof...(Ps) + 1)
+      , parameters(Params<Ps...>::p), class_name(c)
+    {}
+
+  template<class C, typename R, typename... Ps>
     constexpr ApiFunctionDescription(cstring c, R (C::*fun)(Ps...))
     : return_type(ApiTypename<R>::name), parameter_count(sizeof...(Ps) + 1)
       , parameters(Params<C*, Ps...>::p), class_name(c)
@@ -247,6 +253,17 @@ struct ApiRegistryEntry {
     : q1(marker), wrapper_name(wrapper_name), name(name), description(class_name, fun)
   { }
 
+  template<class C, typename R, typename... Ps>
+  constexpr ApiRegistryEntry
+   ( DropFirstArgument d
+   , const char*name
+   , const char*wrapper_name
+   , const char*class_name
+   , R (C::*fun)(Ps...) const
+   )
+    : q1(marker), wrapper_name(wrapper_name), name(name), description(d, class_name, fun)
+  { }
+
 
   value to_value();
 };
@@ -283,6 +300,11 @@ __attribute((used, section("caml_api_registry"))) = \
   static inline constexpr auto __caml_api_registry_var__##CLASS ## _##APIF \
 __attribute((used, section("caml_api_registry"))) = \
     CppCaml::ApiRegistryEntry(#CLASS "__" #APIF,#WRAPPER,#CLASS, &CLASS :: APIF);
+
+#define REGISTER_API_MEMBER_IMPLIED(CLASS, APIF, WRAPPER) \
+  static inline constexpr auto __caml_api_registry_var__##CLASS ## _##APIF \
+__attribute((used, section("caml_api_registry"))) = \
+    CppCaml::ApiRegistryEntry(CppCaml::DropFirstArgument(), #CLASS "__" #APIF,#WRAPPER,#CLASS, &CLASS :: APIF);
 
 #define REGISTER_API_MEMBER_OVERLOAD(CLASS, APIF, SUFFIX, WRAPPER, ...) \
   static inline constexpr auto __caml_api_registry_var__##CLASS ## _##APIF ## _ ## SUFFIX \
@@ -324,6 +346,12 @@ __attribute((used, section("caml_api_registry"))) = \
   REGISTER_API_MEMBER(CLASS,APIF, caml_ ##APIPREFIX ##__##CLASS ## __##APIF); \
   apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF(value v_c, value v_p0, value v_p1){ \
     return CppCaml::apiN_class(&CLASS :: APIF, v_c, v_p0, v_p1); \
+  }
+
+#define APIM2_IMPLIED_(APIPREFIX, CLASS,APIF) \
+  REGISTER_API_MEMBER_IMPLIED(CLASS,APIF, caml_ ##APIPREFIX ##__##CLASS ## __##APIF); \
+  apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF(value v_p0, value v_p1){ \
+    return CppCaml::apiN_class_implied(&CLASS :: APIF, v_p0, v_p1); \
   }
 
 #define APIM2_OVERLOAD_(APIPREFIX, CLASS,APIF,SUFFIX,...) \
@@ -810,6 +838,46 @@ apiN_class(R (C::*fun)(As...) const, value v_c, typename first_type<value,As>::t
     return ImmediateProperties<R>::to_value(ret);
   else if constexpr (represented_as_Value<R>)
     return ValueProperties<R>::to_value(ret);
+}
+
+template<typename C, typename R, typename A0, typename... As>
+requires
+(
+ represented_as_InlinedWithContext<A0>
+ && (represented_as_Immediate<R> || represented_as_Value<R>)
+)
+inline value
+apiN_class_implied(R (C::*fun)(A0, As...) const, value v_p0  ,typename first_type<value,As>::type... v_ps){
+  typedef typename normalize_pointer_argument<A0>::type A0raw;
+  auto&p0_s = Custom_value<CppCaml::InlinedWithContext<A0raw>>(v_p0);
+  auto context = p0_s.pContext.get();
+  
+  auto ret = (context->*fun)(T_value<As>(v_ps)...);
+  if constexpr (represented_as_Immediate<R>)
+    return ImmediateProperties<R>::to_value(ret);
+  else if constexpr (represented_as_Value<R>)
+    return ValueProperties<R>::to_value(ret);
+}
+
+template<typename C, typename R, typename A0, typename... As>
+requires
+(
+ represented_as_InlinedWithContext<A0>
+ && represented_as_InlinedWithContext<R>
+)
+inline value
+// CR smuenzel: need to figure out const reference stuff....
+apiN_class_implied(R (C::*fun)(const A0&, As...) const, value v_p0  ,typename first_type<value,As>::type... v_ps){
+  typedef typename normalize_pointer_argument<A0>::type A0raw;
+  auto&p0_s = Custom_value<CppCaml::InlinedWithContext<A0raw>>(v_p0);
+  auto context_s = p0_s.pContext;
+  auto context = context_s.get();
+  
+  auto dep = (context->*fun)(T_value<A0>(v_p0), T_value<As>(v_ps)...);
+
+  typedef CppCaml::InlinedWithContext<R> Container;
+  value v_dep = Container::allocate(context_s, std::move(dep));
+  return v_dep;
 }
 
 template<typename C, typename R, typename... As>
