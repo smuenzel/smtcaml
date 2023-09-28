@@ -1,4 +1,4 @@
-open! Base
+open! Core
 
 type fun_desc =
   { return_type : string
@@ -13,7 +13,14 @@ type api_registry_entry =
   ; description : fun_desc
   } [@@deriving sexp]
 
+type api_enum_entry = 
+  { enum_name : string
+  ; member_name : string
+  ; value : int
+  } [@@deriving sexp]
+
 external get_api_registry : unit -> api_registry_entry list = "caml_get_api_registry"
+external get_api_enums : unit -> api_enum_entry list = "caml_get_api_enums"
 
 let function_type
     { return_type
@@ -68,3 +75,34 @@ let filter_keyword = function
   | "true" -> "true_"
   | "false" -> "false_"
   | s -> s
+
+let all_enums () =
+  let et = String.Table.create () in
+  get_api_enums ()
+  |> List.iter ~f:(fun entry ->
+      Hashtbl.add_multi et ~key:entry.enum_name ~data:(entry.value, entry.member_name)
+    );
+  Hashtbl.map et
+    ~f:(fun list ->
+        List.sort list ~compare:(fun (i0,_) (i1,_) -> Int.compare i0 i1)
+        |> List.mapi
+          ~f:(fun i (i', en) ->
+              assert (i = i');
+              en
+            )
+      )
+
+let emit_enum ~name ~entries =
+  Stdlib.Printf.printf "type %s =\n" (String.uncapitalize name);
+  List.iter entries
+    ~f:(fun e ->
+        Stdlib.Printf.printf "  | %s\n" e
+      );
+  Stdlib.Printf.printf "[@@deriving sexp]\n\n";
+  ()
+
+let emit_enums () =
+  Stdlib.print_newline ();
+  let enums = all_enums () in
+  Hashtbl.iteri enums ~f:(fun ~key:name ~data:entries -> emit_enum ~name ~entries)
+

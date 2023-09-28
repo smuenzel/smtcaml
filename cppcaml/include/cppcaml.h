@@ -172,6 +172,27 @@ struct ApiFunctionDescription {
 
 static constexpr const uint64_t marker = 0xe1176dafdeadbeefl;
 
+struct ApiEnumEntry {
+  const size_t q1;
+  const char * enumName;
+  const char * memberName;
+  const value memberValue;
+
+  constexpr ApiEnumEntry()
+    : q1(0), enumName(""), memberName(""), memberValue(0)
+  { }
+
+  constexpr ApiEnumEntry
+    ( const char*enumName
+    , const char*memberName
+    , const value memberValue
+    )
+    : q1(marker), enumName(enumName), memberName(memberName), memberValue(memberValue)
+    { }
+
+  value to_value();
+};
+
 struct ApiRegistryEntry {
   const size_t q1;
   const char * wrapper_name;
@@ -802,3 +823,40 @@ CAML_REPRESENTATION(bool,Immediate);
 CAML_REPRESENTATION(const char*, Value);
 CAML_REPRESENTATION(const std::string, Value);
 CAML_REPRESENTATION(std::string, Value);
+
+
+#define CPPCAML_ENUM_LOCAL(E,X) X,
+#define CPPCAML_ENUM_GLOBAL_V(E,X) \
+  static inline constexpr auto __caml_api_enum_var__## E ##_##X \
+  __attribute((used, section("caml_api_enum"))) = \
+  CppCaml::ApiEnumEntry(#E,#X,Val_long(Local::X));
+
+#define CPPCAML_ENUM_CASE(E,X) \
+  case E::X: return Val_long(Local::X);
+
+#define CPPCAML_ENUM_REVERSE_CASE(E,X) \
+  case Local::X : return E::X;
+
+#define MAKE_ENUM_IMMEDIATE_PROPERTIES(ENUM_NAME, ENUM, DEFAULT) \
+template<> struct CppCaml::ImmediateProperties<ENUM_NAME> {\
+  enum class Local { \
+    ENUM(CPPCAML_ENUM_LOCAL) \
+  }; \
+\
+  ENUM(CPPCAML_ENUM_GLOBAL_V) \
+\
+  static inline value to_value(ENUM_NAME b) {\
+    switch(b){\
+      ENUM(CPPCAML_ENUM_CASE)\
+      default: return Val_long(Local::DEFAULT);\
+    } \
+  } \
+  \
+  static inline ENUM_NAME of_value(value v) { \
+    switch((Local)Long_val(v)) { \
+      ENUM(CPPCAML_ENUM_REVERSE_CASE) \
+    } \
+ \
+  } \
+};
+

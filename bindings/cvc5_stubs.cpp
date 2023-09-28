@@ -24,7 +24,7 @@ DECL_API_TYPE(void,unit);
 DECL_API_TYPE(std::string,string);
 DECL_API_TYPE(Result,sat_result);
 DECL_API_TYPE(Result*,sat_result);
-DECL_API_TYPE(UnknownExplanation,unknown_explanation);
+DECL_API_TYPE(UnknownExplanation,unknownExplanation);
 
 
 CAML_REPRESENTATION(Solver*, ContainerSharedPointer);
@@ -53,10 +53,19 @@ template<> struct CppCaml::ImmediateProperties<int32_t> {
   static inline int32_t of_value(value v) { return Long_val(v); }
 };
 
-template<> struct CppCaml::ImmediateProperties<UnknownExplanation> {
-  static inline value to_value(UnknownExplanation b) { return Val_long(b); }
-  static inline UnknownExplanation of_value(value v) { return (UnknownExplanation)Long_val(v); }
-};
+#define ENUM_UnknownExplanation(F) \
+  F(UnknownExplanation,REQUIRES_FULL_CHECK) \
+  F(UnknownExplanation,INCOMPLETE) \
+  F(UnknownExplanation,TIMEOUT) \
+  F(UnknownExplanation,RESOURCEOUT) \
+  F(UnknownExplanation,MEMOUT) \
+  F(UnknownExplanation,INTERRUPTED) \
+  F(UnknownExplanation,UNSUPPORTED) \
+  F(UnknownExplanation,OTHER) \
+  F(UnknownExplanation,REQUIRES_CHECK_AGAIN) \
+  F(UnknownExplanation,UNKNOWN_REASON)
+
+MAKE_ENUM_IMMEDIATE_PROPERTIES(UnknownExplanation,ENUM_UnknownExplanation,UNKNOWN_REASON)
 
 template<> struct CppCaml::ValueWithContextProperties<Sort>{
   typedef Solver Context;

@@ -4,7 +4,6 @@ type solver
 type sort
 type term
 type sat_result
-type unknown_explanation
 
 type uint32_t = int
 type int32_t = int
@@ -15,7 +14,28 @@ type uint64_t = int
   (* dune cinaps currently doesn't support adding link flags, and we need -linkall,
      this is a workaround *)
   external unit_x : unit -> unit = "caml_cvc5_unit"
+    *)(*$*)
 
+(*$
+  let () =
+    emit_enums ()
+  *)
+type unknownExplanation =
+  | REQUIRES_FULL_CHECK
+  | INCOMPLETE
+  | TIMEOUT
+  | RESOURCEOUT
+  | MEMOUT
+  | INTERRUPTED
+  | UNSUPPORTED
+  | OTHER
+  | REQUIRES_CHECK_AGAIN
+  | UNKNOWN_REASON
+[@@deriving sexp]
+
+(*$*)
+
+(*$
   let () =
     let modify s =
       Option.value ~default:s (String.chop_prefix ~prefix:"cvc5_" s)
@@ -67,6 +87,7 @@ external result__isSat : (* class Result *) sat_result -> bool = "caml_cvc5__Res
 external result__isUnsat : (* class Result *) sat_result -> bool = "caml_cvc5__Result__isUnsat"
 external result__isUnknown : (* class Result *) sat_result -> bool = "caml_cvc5__Result__isUnknown"
 external result__toString : (* class Result *) sat_result -> string = "caml_cvc5__Result__toString"
-external result__getUnknownExplanation : (* class Result *) sat_result -> unknown_explanation = "caml_cvc5__Result__getUnknownExplanation"
+external result__getUnknownExplanation : (* class Result *) sat_result -> unknownExplanation = "caml_cvc5__Result__getUnknownExplanation"
 (*$*)
+
 
