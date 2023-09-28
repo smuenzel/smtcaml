@@ -27,6 +27,8 @@ DECL_API_TYPE(std::string,string);
 DECL_API_TYPE(Result,sat_result);
 DECL_API_TYPE(Result*,sat_result);
 DECL_API_TYPE(UnknownExplanation,unknownExplanation);
+DECL_API_TYPE(Kind,kind);
+DECL_API_TYPE(SortKind,sortKind);
 
 
 CAML_REPRESENTATION(Solver*, ContainerSharedPointer);
@@ -38,6 +40,9 @@ CAML_REPRESENTATION(UnknownExplanation,Immediate);
 CAML_REPRESENTATION(int32_t,Immediate);
 CAML_REPRESENTATION(uint32_t,Immediate);
 CAML_REPRESENTATION(uint64_t,Immediate);
+
+CAML_REPRESENTATION(Kind,Immediate);
+CAML_REPRESENTATION(SortKind,Immediate);
 
 template<> struct CppCaml::ImmediateProperties<uint32_t> {
   static inline value to_value(uint32_t b) { return Val_long(b); }
@@ -482,6 +487,7 @@ APIM0(Solver,checkSat)
 
 APIM2(Solver,setOption)
 
+APIM0(Sort,getKind)
 APIM0(Sort,hasSymbol)
 APIM0(Sort,getSymbol)
 APIM0(Sort,isNull)

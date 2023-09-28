@@ -384,6 +384,7 @@ external solver__simplify : (* class Solver *) solver -> term -> term = "caml_cv
 external solver__assertFormula : (* class Solver *) solver -> term -> unit = "caml_cvc5__Solver__assertFormula"
 external solver__checkSat : (* class Solver *) solver -> sat_result = "caml_cvc5__Solver__checkSat"
 external solver__setOption : (* class Solver *) solver -> string -> string -> unit = "caml_cvc5__Solver__setOption"
+external sort__getKind : (* class Sort *) sort -> sortKind = "caml_cvc5__Sort__getKind"
 external sort__hasSymbol : (* class Sort *) sort -> bool = "caml_cvc5__Sort__hasSymbol"
 external sort__getSymbol : (* class Sort *) sort -> string = "caml_cvc5__Sort__getSymbol"
 external sort__isNull : (* class Sort *) sort -> bool = "caml_cvc5__Sort__isNull"
