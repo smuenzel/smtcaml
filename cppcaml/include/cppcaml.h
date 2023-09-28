@@ -695,6 +695,48 @@ auto Context_value(value v) {
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////
+
+
+template<typename T>
+concept Returnable = requires {
+  [](T b){return b;};
+};
+
+// TODO
+template<typename T> class CamlConversion {
+  static_assert(CppCaml::always_false<T>::value,
+      "You must specialize CamlConversion<> for your type");
+};
+
+// TODO
+template<typename T>
+concept CamlConvertible = requires {
+  typename CamlConversion<T>::RepresentationType;
+};
+
+// TODO
+template<typename T>
+concept CamlOfValue = requires {
+  requires CamlConvertible<T>;
+  CamlConversion<T>::of_value;
+};
+
+// TODO
+template<typename T>
+concept CamlToValue = requires {
+  requires CamlConvertible<T>;
+  CamlConversion<T>::to_value;
+};
+
+// TODO
+template<typename T, typename C>
+concept CamlHasContext = requires (T a, CamlConversion<T>::RepresentationType ra) {
+  requires CamlConvertible<T>;
+  requires std::same_as<typename CamlConversion<T>::Context,C>;
+  { CamlConversion<T>::get_context(ra) } -> std::same_as<std::shared_ptr<C>&>;
+};
+
+/////////////////////////////////////////////////////////////////////////////////////////
 /// calling of api functions
 ///
 
@@ -725,7 +767,7 @@ apiN(R* (*fun)(A0, As...), value v_p0, typename first_type<value,As>::type... v_
 
 template<typename R, typename A0, typename... As>
 requires
-( (represented_as_Immediate<R> || represented_as_Value<R>)
+( (represented_as_Immediate<R> || represented_as_Value<R> || std::same_as<void,R>)
 &&  represented_as_ContainerSharedPointer<typename normalize_pointer_argument<A0>::type *>
 )
 inline value
@@ -733,11 +775,16 @@ apiN(R (*fun)(A0, As...), value v_p0, typename first_type<value,As>::type... v_p
   typedef typename normalize_pointer_argument<A0>::type A0raw;
   auto&context_s = Custom_value<CppCaml::ContainerSharedPointer<A0raw>>(v_p0);
   auto context = context_s.get();
-  auto ret = fun(context,T_value<As>(v_ps)...);
-  if constexpr (represented_as_Immediate<R>)
-    return ImmediateProperties<R>::to_value(ret);
-  else if constexpr (represented_as_Value<R>)
-    return ValueProperties<R>::to_value(ret);
+  if constexpr (std::same_as<void,R>) {
+    fun(context,T_value<As>(v_ps)...);
+    return Val_unit;
+  } else {
+    auto ret = fun(context,T_value<As>(v_ps)...);
+    if constexpr (represented_as_Immediate<R>)
+      return ImmediateProperties<R>::to_value(ret);
+    else if constexpr (represented_as_Value<R>)
+      return ValueProperties<R>::to_value(ret);
+  }
 }
 
 template<typename R, typename A0, typename... As>
@@ -754,19 +801,6 @@ apiN(R (*fun)(A0, As...), value v_p0, typename first_type<value,As>::type... v_p
   auto ret = fun(context,T_value<As>(v_ps)...);
   return CustomWithContextProperties<R>::to_value(context_s.pT, ret);
 }
-
-template<typename A0, typename... As>
-requires
-  represented_as_ContainerSharedPointer<typename normalize_pointer_argument<A0>::type *>
-inline value
-apiN(void (*fun)(A0, As...), value v_p0, typename first_type<value,As>::type... v_ps){
-  typedef typename normalize_pointer_argument<A0>::type A0raw;
-  auto&context_s = Custom_value<CppCaml::ContainerSharedPointer<A0raw>>(v_p0);
-  auto context = context_s.get();
-  fun(context,T_value<As>(v_ps)...);
-  return Val_unit;
-}
-
 
 template<typename R, typename A0, typename A1, typename... As>
 requires
@@ -830,25 +864,11 @@ apiN_implied_context(void (*fun)(A0, A1, As...), value v_p0, typename first_type
   return Val_unit;
 }
 
-template<typename C, typename... As>
-requires
-(
- represented_as_ContainerSharedPointer<C *>
-)
-inline value
-apiN_class(void (C::*fun)(As...) const, value v_c, typename first_type<value,As>::type... v_ps){
-  auto&context_s = Custom_value<CppCaml::ContainerSharedPointer<C>>(v_c);
-  auto context = context_s.get();
-
-  (context->*fun)(T_value<As>(v_ps)...);
-  return Val_unit;
-}
-
 template<typename C, typename R, typename... As>
 requires
 (
  (represented_as_ContainerSharedPointer<C*> || represented_as_InlinedWithContext<C>)
- && (represented_as_Immediate<R> || represented_as_Value<R>)
+ && (represented_as_Immediate<R> || represented_as_Value<R> || std::same_as<void, R>)
 )
 inline value
 apiN_class(R (C::*fun)(As...) const, value v_c, typename first_type<value,As>::type... v_ps){
@@ -861,11 +881,16 @@ apiN_class(R (C::*fun)(As...) const, value v_c, typename first_type<value,As>::t
     context = &context_s.t;
   }
 
-  auto ret = (context->*fun)(T_value<As>(v_ps)...);
-  if constexpr (represented_as_Immediate<R>)
-    return ImmediateProperties<R>::to_value(ret);
-  else if constexpr (represented_as_Value<R>)
-    return ValueProperties<R>::to_value(ret);
+  if constexpr (std::same_as<void,R>){
+    (context->*fun)(T_value<As>(v_ps)...);
+    return Val_unit;
+  } else {
+    auto ret = (context->*fun)(T_value<As>(v_ps)...);
+    if constexpr (represented_as_Immediate<R>)
+      return ImmediateProperties<R>::to_value(ret);
+    else if constexpr (represented_as_Value<R>)
+      return ValueProperties<R>::to_value(ret);
+  }
 }
 
 template<typename C, typename R, typename A0, typename... As>
