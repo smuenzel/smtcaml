@@ -4,6 +4,7 @@ type fun_desc =
   { return_type : string
   ; parameter_count : int
   ; parameters : string list
+  ; class_name : string option
   } [@@deriving sexp]
 
 type api_registry_entry =
@@ -18,6 +19,7 @@ let function_type
     { return_type
     ; parameter_count
     ; parameters
+    ; class_name
     }
   =
   let parameters =
@@ -25,7 +27,10 @@ let function_type
     then [ "unit" ]
     else parameters
   in
-  String.concat ~sep:" -> " (parameters @ [ return_type])
+  let r = String.concat ~sep:" -> " (parameters @ [ return_type]) in
+  match class_name with
+  | None -> r
+  | Some class_name -> Printf.sprintf "(* class %s *) %s" class_name r
 
 let emit_entry
     ~modify

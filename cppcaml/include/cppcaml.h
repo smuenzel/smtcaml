@@ -135,35 +135,36 @@ struct ApiFunctionDescription {
   cstring return_type;
   const size_t parameter_count;
   const CamlLinkedList<cstring>* parameters;
+  cstring class_name;
 
   template<typename R, typename... Ps>
     constexpr ApiFunctionDescription(type_list<R,Ps...>)
     : return_type(ApiTypename<R>::name), parameter_count(sizeof...(Ps))
-      , parameters(Params<Ps...>::p)
+      , parameters(Params<Ps...>::p), class_name()
     {}
 
   template<typename R, typename... Ps>
     constexpr ApiFunctionDescription(R (*fun)(Ps...))
     : return_type(ApiTypename<R>::name), parameter_count(sizeof...(Ps))
-      , parameters(Params<Ps...>::p)
+      , parameters(Params<Ps...>::p), class_name()
     {}
 
   template<typename R, typename P0, typename... Ps>
     constexpr ApiFunctionDescription(DropFirstArgument, R (*fun)(P0, Ps...))
     : return_type(ApiTypename<R>::name), parameter_count(sizeof...(Ps))
-      , parameters(Params<Ps...>::p)
+      , parameters(Params<Ps...>::p), class_name()
     {}
 
   template<class C, typename R, typename... Ps>
-    constexpr ApiFunctionDescription(R (C::*fun)(Ps...) const)
+    constexpr ApiFunctionDescription(cstring c, R (C::*fun)(Ps...) const)
     : return_type(ApiTypename<R>::name), parameter_count(sizeof...(Ps) + 1)
-      , parameters(Params<C*, Ps...>::p)
+      , parameters(Params<C*, Ps...>::p), class_name(c)
     {}
 
   template<class C, typename R, typename... Ps>
-    constexpr ApiFunctionDescription(R (C::*fun)(Ps...))
+    constexpr ApiFunctionDescription(cstring c, R (C::*fun)(Ps...))
     : return_type(ApiTypename<R>::name), parameter_count(sizeof...(Ps) + 1)
-      , parameters(Params<C*, Ps...>::p)
+      , parameters(Params<C*, Ps...>::p), class_name(c)
     {}
 
   value to_value();
@@ -209,18 +210,20 @@ struct ApiRegistryEntry {
   constexpr ApiRegistryEntry
    ( const char*name
    , const char*wrapper_name
+   , const char*class_name
    , R (C::*fun)(Ps...) const
    )
-    : q1(marker), wrapper_name(wrapper_name), name(name), description(fun)
+    : q1(marker), wrapper_name(wrapper_name), name(name), description(class_name, fun)
   { }
 
   template<class C, typename R, typename... Ps>
   constexpr ApiRegistryEntry
    ( const char*name
    , const char*wrapper_name
+   , const char*class_name
    , R (C::*fun)(Ps...)
    )
-    : q1(marker), wrapper_name(wrapper_name), name(name), description(fun)
+    : q1(marker), wrapper_name(wrapper_name), name(name), description(class_name, fun)
   { }
 
 
@@ -258,12 +261,12 @@ __attribute((used, section("caml_api_registry"))) = \
 #define REGISTER_API_MEMBER(CLASS, APIF, WRAPPER) \
   static inline constexpr auto __caml_api_registry_var__##CLASS ## _##APIF \
 __attribute((used, section("caml_api_registry"))) = \
-    CppCaml::ApiRegistryEntry(#CLASS "__" #APIF,#WRAPPER,&CLASS :: APIF);
+    CppCaml::ApiRegistryEntry(#CLASS "__" #APIF,#WRAPPER,#CLASS, &CLASS :: APIF);
 
 #define REGISTER_API_MEMBER_OVERLOAD(CLASS, APIF, SUFFIX, WRAPPER, ...) \
   static inline constexpr auto __caml_api_registry_var__##CLASS ## _##APIF ## _ ## SUFFIX \
 __attribute((used, section("caml_api_registry"))) = \
-    CppCaml::ApiRegistryEntry(#CLASS "__" #APIF "__" #SUFFIX,#WRAPPER,CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(), &CLASS :: APIF));
+    CppCaml::ApiRegistryEntry(#CLASS "__" #APIF "__" #SUFFIX,#WRAPPER,#CLASS, CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(), &CLASS :: APIF));
 
 #define REGISTER_API_CUSTOM(APIF, WRAPPER,...) \
   static inline constexpr auto __caml_api_registry_var__##APIF \
