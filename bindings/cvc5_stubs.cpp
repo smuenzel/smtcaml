@@ -8,6 +8,8 @@ using CppCaml::T_value;
 using Solver = cvc5::Solver;
 using Sort = cvc5::Sort;
 using Term = cvc5::Term;
+using Result = cvc5::Result;
+using UnknownExplanation = cvc5::UnknownExplanation;
 
 DECL_API_TYPE(uint32_t,uint32_t);
 DECL_API_TYPE(uint64_t,uint64_t);
@@ -20,10 +22,16 @@ DECL_API_TYPE(Term,term);
 DECL_API_TYPE(Term*,term);
 DECL_API_TYPE(void,unit);
 DECL_API_TYPE(std::string,string);
+DECL_API_TYPE(Result,sat_result);
+DECL_API_TYPE(Result*,sat_result);
+DECL_API_TYPE(UnknownExplanation,unknown_explanation);
+
 
 CAML_REPRESENTATION(Solver*, ContainerSharedPointer);
 CAML_REPRESENTATION(Sort,InlinedWithContext);
 CAML_REPRESENTATION(Term,InlinedWithContext);
+CAML_REPRESENTATION(Result,InlinedWithContext);
+CAML_REPRESENTATION(UnknownExplanation,Immediate);
 
 CAML_REPRESENTATION(int32_t,Immediate);
 CAML_REPRESENTATION(uint32_t,Immediate);
@@ -45,6 +53,11 @@ template<> struct CppCaml::ImmediateProperties<int32_t> {
   static inline int32_t of_value(value v) { return Long_val(v); }
 };
 
+template<> struct CppCaml::ImmediateProperties<UnknownExplanation> {
+  static inline value to_value(UnknownExplanation b) { return Val_long(b); }
+  static inline UnknownExplanation of_value(value v) { return (UnknownExplanation)Long_val(v); }
+};
+
 template<> struct CppCaml::ValueWithContextProperties<Sort>{
   typedef Solver Context;
   static void delete_T(Context*context, Sort*t){
@@ -55,6 +68,13 @@ template<> struct CppCaml::ValueWithContextProperties<Sort>{
 template<> struct CppCaml::ValueWithContextProperties<Term>{
   typedef Solver Context;
   static void delete_T(Context*context, Term*t){
+    delete t;
+  }
+};
+
+template<> struct CppCaml::ValueWithContextProperties<Result>{
+  typedef Solver Context;
+  static void delete_T(Context*context, Result*t){
     delete t;
   }
 };
@@ -135,6 +155,9 @@ APIM2(Solver,mkVar)
 
 APIM1(Solver,simplify)
 
+APIM1(Solver,assertFormula)
+APIM0(Solver,checkSat)
+
 APIM2(Solver,setOption)
 
 APIM0(Sort,hasSymbol)
@@ -144,6 +167,13 @@ APIM0(Sort,isBoolean)
 APIM0(Sort,isInteger)
 APIM0(Sort,isReal)
 APIM0(Sort,isInstantiated)
+
+APIM0(Result,isNull)
+APIM0(Result,isSat)
+APIM0(Result,isUnsat)
+APIM0(Result,isUnknown)
+APIM0(Result,toString)
+APIM0(Result,getUnknownExplanation)
 
 apireturn caml_cvc5_unit(value){
   return Val_unit;

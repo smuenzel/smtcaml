@@ -3,6 +3,8 @@ open! Base
 type solver
 type sort
 type term
+type sat_result
+type unknown_explanation
 
 type uint32_t = int
 type int32_t = int
@@ -50,6 +52,8 @@ external solver__mkConstArray : (* class Solver *) solver -> sort -> term -> ter
 external solver__mkConst : (* class Solver *) solver -> sort -> (string option) -> term = "caml_cvc5__Solver__mkConst"
 external solver__mkVar : (* class Solver *) solver -> sort -> (string option) -> term = "caml_cvc5__Solver__mkVar"
 external solver__simplify : (* class Solver *) solver -> term -> term = "caml_cvc5__Solver__simplify"
+external solver__assertFormula : (* class Solver *) solver -> term -> unit = "caml_cvc5__Solver__assertFormula"
+external solver__checkSat : (* class Solver *) solver -> sat_result = "caml_cvc5__Solver__checkSat"
 external solver__setOption : (* class Solver *) solver -> string -> string -> unit = "caml_cvc5__Solver__setOption"
 external sort__hasSymbol : (* class Sort *) sort -> bool = "caml_cvc5__Sort__hasSymbol"
 external sort__getSymbol : (* class Sort *) sort -> string = "caml_cvc5__Sort__getSymbol"
@@ -58,5 +62,11 @@ external sort__isBoolean : (* class Sort *) sort -> bool = "caml_cvc5__Sort__isB
 external sort__isInteger : (* class Sort *) sort -> bool = "caml_cvc5__Sort__isInteger"
 external sort__isReal : (* class Sort *) sort -> bool = "caml_cvc5__Sort__isReal"
 external sort__isInstantiated : (* class Sort *) sort -> bool = "caml_cvc5__Sort__isInstantiated"
+external result__isNull : (* class Result *) sat_result -> bool = "caml_cvc5__Result__isNull"
+external result__isSat : (* class Result *) sat_result -> bool = "caml_cvc5__Result__isSat"
+external result__isUnsat : (* class Result *) sat_result -> bool = "caml_cvc5__Result__isUnsat"
+external result__isUnknown : (* class Result *) sat_result -> bool = "caml_cvc5__Result__isUnknown"
+external result__toString : (* class Result *) sat_result -> string = "caml_cvc5__Result__toString"
+external result__getUnknownExplanation : (* class Result *) sat_result -> unknown_explanation = "caml_cvc5__Result__getUnknownExplanation"
 (*$*)
 
