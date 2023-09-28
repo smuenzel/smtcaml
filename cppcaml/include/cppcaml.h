@@ -418,6 +418,14 @@ struct T_value_wrapper<T> {
 };
 
 template<typename T>
+requires represented_as_InlinedWithContext<T>
+struct T_value_wrapper<T> {
+  static inline T get(value v) {
+    return Custom_value<InlinedWithContext<T>>(v).t;
+  }
+};
+
+template<typename T>
 requires represented_as_Immediate<T>
 struct T_value_wrapper<T>{
   static inline T get(value v) { return ImmediateProperties<T>::of_value(v); }
@@ -588,13 +596,19 @@ apiN_class(void (C::*fun)(As...) const, value v_c, typename first_type<value,As>
 template<typename C, typename R, typename... As>
 requires
 (
- represented_as_ContainerSharedPointer<C *>
+ (represented_as_ContainerSharedPointer<C*> || represented_as_InlinedWithContext<C>)
  && (represented_as_Immediate<R> || represented_as_Value<R>)
 )
 inline value
 apiN_class(R (C::*fun)(As...) const, value v_c, typename first_type<value,As>::type... v_ps){
-  auto&context_s = Custom_value<CppCaml::ContainerSharedPointer<C>>(v_c);
-  auto context = context_s.get();
+  C*context;
+  if constexpr (represented_as_ContainerSharedPointer<C*>){
+    auto&context_s = Custom_value<CppCaml::ContainerSharedPointer<C>>(v_c);
+    context = context_s.get();
+  } else if (represented_as_InlinedWithContext<C>){
+    auto&context_s = Custom_value<CppCaml::InlinedWithContext<C>>(v_c);
+    context = &context_s.t;
+  }
 
   auto ret = (context->*fun)(T_value<As>(v_ps)...);
   if constexpr (represented_as_Immediate<R>)

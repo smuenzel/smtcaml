@@ -10,8 +10,10 @@ using Sort = cvc5::Sort;
 
 DECL_API_TYPE(Solver*,solver);
 DECL_API_TYPE(Sort,sort);
+DECL_API_TYPE(Sort*,sort);
 DECL_API_TYPE(void,unit);
 DECL_API_TYPE(std::string,string);
+DECL_API_TYPE(bool,bool);
 
 CAML_REPRESENTATION(Solver*, ContainerSharedPointer);
 CAML_REPRESENTATION(Sort,InlinedWithContext);
@@ -50,6 +52,9 @@ REGISTER_API_CONSTRUCTOR(Solver,caml_cvc5__Solver__operator_new);
 
 APIM0(Solver,getBooleanSort)
 APIM2(Solver,setOption)
+
+APIM0(Sort,isInstantiated)
+APIM0(Sort,isBoolean)
 
 apireturn caml_cvc5_unit(value){
   return Val_unit;

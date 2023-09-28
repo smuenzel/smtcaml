@@ -17,6 +17,8 @@ type sort
     emit_api ()
       ~modify
   *)
+external sort__isBoolean : sort -> bool = "caml_cvc5__Sort__isBoolean"
+external sort__isInstantiated : sort -> bool = "caml_cvc5__Sort__isInstantiated"
 external solver__setOption : solver -> string -> string -> unit = "caml_cvc5__Solver__setOption"
 external solver__getBooleanSort : solver -> sort = "caml_cvc5__Solver__getBooleanSort"
 external make_Solver : unit -> solver = "caml_cvc5__Solver__operator_new"

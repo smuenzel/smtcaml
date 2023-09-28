@@ -43,5 +43,10 @@ let () =
 let () =
   print_endline "CVC5";
   let open Smtcaml_bindings.Cvc5 in
-  let _ = make_Solver () in
+  let s = make_Solver () in
+  let bool = solver__getBooleanSort s in
+  print_s [%message ""
+      (sort__isInstantiated bool : bool)
+      (sort__isBoolean bool : bool)
+  ];
   ()
