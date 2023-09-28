@@ -864,6 +864,22 @@ apiN_implied_context(void (*fun)(A0, A1, As...), value v_p0, typename first_type
   return Val_unit;
 }
 
+template<typename C, typename R, typename... Ps, typename... Psp>
+requires
+(represented_as_Immediate<R> || represented_as_Value<R> || std::same_as<void, R>)
+inline value call_wrap_class(C* c, R (C::*fun)(Ps...) const, Psp... params){
+  if constexpr (std::same_as<void,R>){
+    (c->*fun)(params...);
+    return Val_unit;
+  } else {
+    auto ret = (c->*fun)(params...);
+    if constexpr (represented_as_Immediate<R>)
+      return ImmediateProperties<R>::to_value(ret);
+    else if constexpr (represented_as_Value<R>)
+      return ValueProperties<R>::to_value(ret);
+  }
+}
+
 template<typename C, typename R, typename... As>
 requires
 (
@@ -881,23 +897,14 @@ apiN_class(R (C::*fun)(As...) const, value v_c, typename first_type<value,As>::t
     context = &context_s.t;
   }
 
-  if constexpr (std::same_as<void,R>){
-    (context->*fun)(T_value<As>(v_ps)...);
-    return Val_unit;
-  } else {
-    auto ret = (context->*fun)(T_value<As>(v_ps)...);
-    if constexpr (represented_as_Immediate<R>)
-      return ImmediateProperties<R>::to_value(ret);
-    else if constexpr (represented_as_Value<R>)
-      return ValueProperties<R>::to_value(ret);
-  }
+  return call_wrap_class(context,fun,T_value<As>(v_ps)...);
 }
 
 template<typename C, typename R, typename A0, typename... As>
 requires
 (
  represented_as_InlinedWithContext<A0>
- && (represented_as_Immediate<R> || represented_as_Value<R>)
+ && (represented_as_Immediate<R> || represented_as_Value<R> || std::same_as<void, R>)
 )
 inline value
 apiN_class_implied(R (C::*fun)(A0, As...) const, value v_p0  ,typename first_type<value,As>::type... v_ps){
@@ -905,11 +912,7 @@ apiN_class_implied(R (C::*fun)(A0, As...) const, value v_p0  ,typename first_typ
   auto&p0_s = Custom_value<CppCaml::InlinedWithContext<A0raw>>(v_p0);
   auto context = p0_s.pContext.get();
   
-  auto ret = (context->*fun)(T_value<As>(v_ps)...);
-  if constexpr (represented_as_Immediate<R>)
-    return ImmediateProperties<R>::to_value(ret);
-  else if constexpr (represented_as_Value<R>)
-    return ValueProperties<R>::to_value(ret);
+  return call_wrap_class(context,fun,T_value<As>(v_ps)...);
 }
 
 template<typename C, typename R, typename A0, typename... As>
