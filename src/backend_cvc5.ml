@@ -24,7 +24,8 @@ end
 module Model = struct
   type _ t = unit
 
-  let eval_to_string _ _ _ = None
+  let eval_to_string solver () term =
+    Some (C.term__toString (C.solver__getValue__t solver term))
 end
 
 let create ?(options=()) () =

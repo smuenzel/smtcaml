@@ -383,6 +383,8 @@ external solver__mkVar : (* class Solver *) solver -> sort -> (string option) ->
 external solver__simplify : (* class Solver *) solver -> term -> term = "caml_cvc5__Solver__simplify"
 external solver__assertFormula : (* class Solver *) solver -> term -> unit = "caml_cvc5__Solver__assertFormula"
 external solver__checkSat : (* class Solver *) solver -> sat_result = "caml_cvc5__Solver__checkSat"
+external solver__getValue__t : (* class Solver *) solver -> term -> term = "caml_cvc5__Solver__getValue__overload__t"
+external solver__getValue__vt : (* class Solver *) solver -> (term array) -> (term array) = "caml_cvc5__Solver__getValue__overload__vt"
 external solver__setOption : (* class Solver *) solver -> string -> string -> unit = "caml_cvc5__Solver__setOption"
 external sort__getKind : (* class Sort *) sort -> sortKind = "caml_cvc5__Sort__getKind"
 external sort__hasSymbol : (* class Sort *) sort -> bool = "caml_cvc5__Sort__hasSymbol"
@@ -398,6 +400,7 @@ external result__isUnsat : (* class Result *) sat_result -> bool = "caml_cvc5__R
 external result__isUnknown : (* class Result *) sat_result -> bool = "caml_cvc5__Result__isUnknown"
 external result__toString : (* class Result *) sat_result -> string = "caml_cvc5__Result__toString"
 external result__getUnknownExplanation : (* class Result *) sat_result -> unknownExplanation = "caml_cvc5__Result__getUnknownExplanation"
+external term__toString : (* class Term *) term -> string = "caml_cvc5__Term__toString"
 (*$*)
 
 

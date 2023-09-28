@@ -483,6 +483,8 @@ APIM0(Result,isUnknown)
 APIM0(Result,toString)
 APIM0(Result,getUnknownExplanation)
 
+APIM0(Term,toString)
+
 apireturn caml_cvc5_unit(value){
   return Val_unit;
 }
