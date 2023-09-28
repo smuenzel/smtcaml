@@ -671,7 +671,7 @@ auto Context_value(value v) {
 ///
 
 template<typename T> struct normalize_pointer_argument {
-  typedef typename std::remove_const<typename std::remove_pointer<T>::type>::type type;
+  typedef typename std::remove_reference<typename std::remove_const<typename std::remove_pointer<T>::type>::type>::type type;
 };
 
 // Needed so that we can expand the parameter pack. There must be a better way.....
