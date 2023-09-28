@@ -18,7 +18,7 @@
   (archive_name cvc5_stubs)
   (names cvc5_stubs)
   (language cxx)
-  (flags :standard -Wall -Wfatal-errors -std=c++23)
+  (flags :standard -Wall -std=c++23)
   (include_dirs ../vendor/build/include ../cppcaml/include)
   )
 

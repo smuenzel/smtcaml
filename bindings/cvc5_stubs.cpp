@@ -422,6 +422,7 @@ REGISTER_API_CONSTRUCTOR(Solver,caml_cvc5__Solver__operator_new);
 #define APIM1(A,B) APIM1_(cvc5,A,B)
 #define APIM2(A,B) APIM2_(cvc5,A,B)
 #define APIM2_IMPLIED(A,B) APIM2_IMPLIED_(cvc5,A,B)
+#define APIM1_OVERLOAD(...) APIM1_OVERLOAD_(cvc5,__VA_ARGS__)
 #define APIM2_OVERLOAD(...) APIM2_OVERLOAD_(cvc5,__VA_ARGS__)
 #define APIM3_OVERLOAD(...) APIM3_OVERLOAD_(cvc5,__VA_ARGS__)
 
@@ -460,6 +461,9 @@ APIM1(Solver,simplify)
 
 APIM1(Solver,assertFormula)
 APIM0(Solver,checkSat)
+
+APIM1_OVERLOAD(Solver,getValue,t,Term,const Term&)
+APIM1_OVERLOAD(Solver,getValue,vt,std::vector<Term>,const std::vector<Term>&)
 
 APIM2(Solver,setOption)
 

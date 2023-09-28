@@ -354,6 +354,12 @@ __attribute((used, section("caml_api_registry"))) = \
     return CppCaml::apiN_class_implied(&CLASS :: APIF, v_p0, v_p1); \
   }
 
+#define APIM1_OVERLOAD_(APIPREFIX, CLASS,APIF,SUFFIX,...) \
+  REGISTER_API_MEMBER_OVERLOAD(CLASS,APIF,SUFFIX, caml_ ##APIPREFIX ##__##CLASS ## __##APIF ## __overload__ ##SUFFIX, __VA_ARGS__); \
+  apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF ## __overload__ ##SUFFIX (value v_c, value v_p0){ \
+    return CppCaml::apiN_class(CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(),&CLASS :: APIF), v_c, v_p0); \
+  }
+
 #define APIM2_OVERLOAD_(APIPREFIX, CLASS,APIF,SUFFIX,...) \
   REGISTER_API_MEMBER_OVERLOAD(CLASS,APIF,SUFFIX, caml_ ##APIPREFIX ##__##CLASS ## __##APIF ## __overload__ ##SUFFIX, __VA_ARGS__); \
   apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF ## __overload__ ##SUFFIX (value v_c, value v_p0, value v_p1){ \
@@ -404,6 +410,10 @@ template<typename T> struct CamlRepresentation{};
   template<> struct CppCaml::CamlRepresentation<cppvalue> { \
     static inline constexpr auto kind = CamlRepresentationKind::repr; \
   }
+
+template<typename T> struct CamlRepresentation<std::vector<T>> {
+  static inline constexpr auto kind = CamlRepresentationKind::Value;
+};
 
 template<typename T> concept CamlRepresentable = requires {
   CamlRepresentation<T>::kind;
@@ -499,6 +509,24 @@ template<> struct ValueProperties<const std::string> {
 template<> struct ValueProperties<std::string> {
   static inline value to_value(std::string s) { return caml_copy_string(s.c_str()); }
   static inline std::string of_value(value v) { return std::string(String_val(v)); }
+};
+
+template<typename T> struct ValueProperties<std::vector<T>> {
+
+  static inline value to_value(const std::vector<T>&) {
+    return Val_none;
+  }
+
+  static inline std::vector<T> of_value(value v) { 
+    auto len = Wosize_val(v);
+    auto f = [](value v){
+      return T_value_wrapper<T>::get(v);
+    };
+    auto begin = boost::make_transform_iterator(&Field(v, 0), f);
+    auto end = boost::make_transform_iterator(&Field(v, len), f);
+
+    return std::vector<T>(begin, end);
+  }
 };
 
 template<typename T> concept Value = requires (T t, value v) {
