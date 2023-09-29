@@ -1113,6 +1113,48 @@ call_api_implied_first(R (*fun)(A0, A1, As...), value v1, typename first_type<va
   }
 }
 
+template<typename R, typename Rv = ReplaceVoid<R>::type, typename C, typename... As>
+requires
+( CamlToValue<Rv> && CamlOfValue<C*> && (CamlOfValue<As> && ...)
+  && CamlContextConstructible<Rv,C*>
+)
+inline value
+call_api_class(R (C::*fun)(As...), value c, typename first_type<value,As>::type... v_ps){
+  if constexpr(CamlHasContext<R>) {
+    typedef typename CamlConversion<Rv>::Context Context;
+    auto r0 = CamlConversion<C*>::of_value(c);
+    auto context = extract_context<Context,C*>(r0);
+    auto ret =
+      invoke_void
+        ( fun
+        , CamlConversion<C*>::get_underlying(r0)
+        , CamlConversion<As>::get_underlying(CamlConversion<As>::of_value(v_ps))...
+        );
+    auto v_ret = CamlConversion<Rv>::to_value(context, ret);
+    return v_ret;
+  } else {
+    auto ret =
+      invoke_void
+        ( fun
+        , CamlConversion<C*>::get_underlying(CamlConversion<C>::of_value(c))
+        , CamlConversion<As>::get_underlying(CamlConversion<As>::of_value(v_ps))...
+        );
+    auto v_ret = CamlConversion<Rv>::to_value(ret);
+    return v_ret;
+  }
+}
+
+template<typename C, typename R, typename... Args>
+auto inline class_function_no_const(R (C::*f)(Args...) const){
+  return (R (C::*)(Args...))(f);
+};
+
+template<typename R, typename Rv = ReplaceVoid<R>::type, typename C, typename... As>
+inline value
+call_api_class(R (C::*fun)(As...) const, value c, typename first_type<value,As>::type... v_ps){
+  return call_api_class(class_function_no_const(fun), c, v_ps...);
+};
+
 /////////////////////////////////////////////////////////////////////////////////////////
 /// calling of api functions
 ///

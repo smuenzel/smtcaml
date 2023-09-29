@@ -45,6 +45,25 @@ CAML_REPRESENTATION(uint64_t,Immediate);
 CAML_REPRESENTATION(Kind,Immediate);
 CAML_REPRESENTATION(SortKind,Immediate);
 
+/////////////////////////////////////////////////////////////////////////////////////////
+///
+template<> struct CppCaml::CamlConversionProperties<Sort>{
+  static constexpr auto representation_kind = CppCaml::CamlRepresentationKind::ContainerWithContext;
+  typedef Solver Context;
+};
+
+template<> struct CppCaml::CamlConversionProperties<Solver*>{
+  static constexpr auto representation_kind = CppCaml::CamlRepresentationKind::ContainerSharedPointer;
+};
+
+static_assert(CppCaml::CamlOfValue<Solver*>);
+
+value xxx(value v){
+  return CppCaml::call_api_class(&Solver::getBooleanSort,v);
+
+}
+/////////////////////////////////////////////////////////////////////////////////////////
+
 template<> struct CppCaml::ImmediateProperties<uint32_t> {
   static inline value to_value(uint32_t b) { return Val_long(b); }
   static inline uint32_t of_value(value v) { return Long_val(v); }
