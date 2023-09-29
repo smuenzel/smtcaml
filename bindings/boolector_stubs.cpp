@@ -52,8 +52,18 @@ template<> struct CppCaml::CamlConversionProperties<Btor*>{
 static_assert(CppCaml::CamlOfValue<Btor*>);
 
 
+static_assert(CppCaml::CamlToValue<CppCaml::Void>);
+
 value xxx(value v0, value v1, value v2){
   return CppCaml::call_api(boolector_and, v0, v1, v2);
+}
+
+value xxxi(value v1, value v2){
+  return CppCaml::call_api_implied_first(boolector_and, v1, v2);
+}
+
+value xxxi_assert(value v0, value v1){
+  return CppCaml::call_api(boolector_assert, v0, v1);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////

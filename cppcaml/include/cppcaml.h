@@ -845,9 +845,6 @@ template<typename A,typename B> concept same_as_or_reference = requires {
 template<typename T>
 concept CamlConvertible = requires {
   typename CamlConversion<T>::RepresentationType;
-  requires requires (CamlConversion<T>::RepresentationType& r){
-    { CamlConversion<T>::get_underlying(r) } -> same_as_or_reference<T>;
-  };
   requires std::same_as<decltype(CamlConversion<T>::allocates),const CamlAllocates>;
 };
 
@@ -855,6 +852,9 @@ concept CamlConvertible = requires {
 template<typename T>
 concept CamlOfValue = requires {
   requires CamlConvertible<T>;
+  requires requires (CamlConversion<T>::RepresentationType& r){
+    { CamlConversion<T>::get_underlying(r) } -> same_as_or_reference<T>;
+  };
   requires requires(value v) {
     { CamlConversion<T>::of_value(v) } -> same_as_or_reference<typename CamlConversion<T>::RepresentationType>;
   };
@@ -934,6 +934,14 @@ struct CamlConversion<T> {
    */
 };
 
+struct Void {};
+
+template<> struct CamlConversion<Void> {
+  typedef struct Void RepresentationType;
+  static const auto allocates = CamlAllocates::No_allocation;
+  static inline value to_value(Void) { return Val_unit; }
+};
+
 template<> struct CamlConversion<int> {
   typedef int RepresentationType;
   static const auto allocates = CamlAllocates::No_allocation;
@@ -1008,27 +1016,56 @@ std::shared_ptr<C>& extract_context(typename CamlConversion<T>::RepresentationTy
 }
 
 template<typename Construct, typename FromThis>
+concept CamlConstructible = requires {
+  requires requires
+    (CamlConversion<FromThis>::RepresentationType from){
+      extract_context<Construct,FromThis>(from);
+    };
+};
+
+template<typename Construct, typename FromThis>
 concept CamlContextConstructible = requires {
   requires CamlToValue<Construct>;
   requires
     ( CamlHasContext<Construct> 
-      && requires
-        (CamlConversion<FromThis>::RepresentationType from){
-          extract_context<typename CamlConversion<Construct>::Context,FromThis>(from);
-        }
+      && CamlConstructible<typename CamlConversion<Construct>::Context,FromThis>
     ) 
     || CamlToValueNoContext<Construct>;
 };
 
-template<typename R, typename A0, typename... As>
+// https://stackoverflow.com/a/51454205
+template<typename F, typename... Ps, typename Result = std::invoke_result_t<F,Ps...>>
+requires std::same_as<Result,void>
+inline Void invoke_void(F&& f, Ps&&... ps){
+  std::invoke(std::forward<F>(f), std::forward<Ps>(ps)...);
+  return {};
+};
+
+template<typename F, typename... Ps, typename Result = std::invoke_result_t<F,Ps...>>
+requires (!std::same_as<Result,void>)
+inline Result invoke_void(F&& f, Ps&&... ps){
+  return std::invoke(std::forward<F>(f), std::forward<Ps>(ps)...);
+};
+
+template<typename V>
+struct ReplaceVoid{
+  typedef V type;
+};
+
+template<>
+struct ReplaceVoid<void>{
+  typedef Void type;
+};
+
+template<typename R, typename Rv = ReplaceVoid<R>::type, typename A0, typename... As>
 requires
-( CamlToValue<R> && CamlOfValue<A0> && (CamlOfValue<As> && ...)
-  && CamlContextConstructible<R,A0>
+( CamlToValue<Rv> && CamlOfValue<A0> && (CamlOfValue<As> && ...)
+  && CamlContextConstructible<Rv,A0>
 )
 inline value
 call_api(R (*fun)(A0, As...), value v0, typename first_type<value,As>::type... v_ps){
   if constexpr(CamlHasContext<R>) {
-    typedef typename CamlConversion<R>::Context Context;
+    typedef typename CamlConversion<Rv>::Context Context;
     auto r0 = CamlConversion<A0>::of_value(v0);
     auto context = extract_context<Context,A0>(r0);
     auto ret =
@@ -1036,15 +1073,42 @@ call_api(R (*fun)(A0, As...), value v0, typename first_type<value,As>::type... v
         ( CamlConversion<A0>::get_underlying(r0)
         , CamlConversion<As>::get_underlying(CamlConversion<As>::of_value(v_ps))...
         );
-    auto v_ret = CamlConversion<R>::to_value(context, ret);
+    auto v_ret = CamlConversion<Rv>::to_value(context, ret);
     return v_ret;
   } else {
     auto ret =
-      (*fun)
-        ( CamlConversion<A0>::get_underlying(CamlConversion<A0>::of_value(v0))
+      invoke_void
+        ( fun
+        , CamlConversion<A0>::get_underlying(CamlConversion<A0>::of_value(v0))
         , CamlConversion<As>::get_underlying(CamlConversion<As>::of_value(v_ps))...
         );
-    auto v_ret = CamlConversion<R>::to_value(ret);
+    auto v_ret = CamlConversion<Rv>::to_value(ret);
+    return v_ret;
+  }
+}
+
+template<typename R, typename Rv = ReplaceVoid<R>::type, typename A0, typename A1, typename... As>
+requires
+( CamlToValue<Rv> && CamlOfValue<A1> && (CamlOfValue<As> && ...)
+  && CamlContextConstructible<Rv,A1>
+  && CamlConstructible<A0,A1>
+)
+inline value
+call_api_implied_first(R (*fun)(A0, A1, As...), value v1, typename first_type<value,As>::type... v_ps){
+  auto& r1 = CamlConversion<A1>::of_value(v1);
+  auto context = extract_context<typename std::remove_pointer<A0>::type,A1>(r1);
+  auto ret =
+    invoke_void
+      ( fun
+      , context.get()
+      , CamlConversion<A1>::get_underlying(r1)
+      , CamlConversion<As>::get_underlying(CamlConversion<As>::of_value(v_ps))...
+      );
+  if constexpr(CamlHasContext<Rv>) {
+    auto v_ret = CamlConversion<Rv>::to_value(context, ret);
+    return v_ret;
+  } else {
+    auto v_ret = CamlConversion<Rv>::to_value(ret);
     return v_ret;
   }
 }
