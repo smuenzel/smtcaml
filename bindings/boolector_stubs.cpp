@@ -30,6 +30,21 @@ CAML_REPRESENTATION(uint32_t,Immediate);
 CAML_REPRESENTATION(BoolectorNode**, CustomWithContext);
 
 
+////////////////////////////////////////////////////////////////////////////////////////
+
+template<> struct CppCaml::CamlConversionProperties<BoolectorNode*>{
+  static const auto representation_kind = CppCaml::CamlRepresentationKind::ContainerWithContext;
+  typedef Btor Context;
+  static void delete_T(Context*context, BoolectorNode*t){
+    boolector_release(context,t);
+  }
+};
+
+static_assert(CppCaml::CamlBidirectional<BoolectorNode*>);
+
+////////////////////////////////////////////////////////////////////////////////////////
+
+
 template<> struct CppCaml::SharedPointerProperties<Btor>{
   static void delete_T(Btor*b) { boolector_delete(b); }
 };

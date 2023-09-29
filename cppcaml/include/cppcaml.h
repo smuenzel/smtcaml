@@ -531,8 +531,17 @@ template<> struct ValueProperties<std::string> {
 
 template<typename T> struct ValueProperties<std::vector<T>> {
 
-  static inline value to_value(const std::vector<T>&) {
+  static inline value to_value(const std::vector<T>&vec) {
     return Val_none;
+    /*
+    CAMLparam0();
+    CAMLlocal1(v_ret);
+    v_ret = caml_alloc(vec.size(), 0);
+    for(size_t i = 0; i < vec.size(); i++){
+      Store_field(v_ret,i,ValueProperties<T>::to_value(vec[i]));
+    };
+    CAMLreturn(v_ret);
+    */
   }
 
   static inline std::vector<T> of_value(value v) { 
@@ -584,10 +593,12 @@ template<typename T> concept ValueWithContext = requires (value v) {
 };
 
 template<typename T>
+/*
   requires (ValueWithContext<T>
       && represented_as<T*,CamlRepresentationKind::ContainerWithContext>
       && not std::is_pointer<T>::value
       )
+      */
 struct ContainerWithContext : private boost::noncopyable {
   typedef typename ValueWithContextProperties<T>::Context Context;
 
@@ -724,7 +735,6 @@ value get_context_caml(value v){
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
-
 template<typename T>
 concept Returnable = requires {
   [](T b){return b;};
@@ -736,17 +746,96 @@ template<typename T> class CamlConversion {
       "You must specialize CamlConversion<> for your type");
 };
 
+template<typename T> class CamlConversionProperties {
+  /*
+  static_assert(CppCaml::always_false<T>::value,
+      "You must specialize CamlConversionProperties<> for your type");
+      */
+};
+
+enum class CamlAllocates {
+  No_allocation, Allocation
+};
+
+template<typename T, CamlRepresentationKind kind>
+concept PropertyRepresented = requires {
+  CamlConversionProperties<T>::representation_kind == kind;
+};
+
+template<typename T, typename C>
+concept PropertyContext =
+  std::same_as<typename CamlConversionProperties<T>::Context, C>;
+
+template<typename T>
+concept PropertyHasContext = requires {
+  typename CamlConversionProperties<T>::Context;
+};
+
+template<typename T>
+concept PropertyHasDeleterWithContext = requires {
+  requires PropertyHasContext<T>;
+  requires requires(CamlConversionProperties<T>::Context*c, T&t) {
+    CamlConversionProperties<T>::delete_T(c,t);
+  };
+};
+
+template<typename T>
+concept PropertyHasDeleter = requires {
+  requires requires(T&t) {
+    CamlConversionProperties<T>::delete_T(t);
+  };
+};
+
+template<typename T, typename C>
+struct ContextContainer : private boost::noncopyable {
+  typedef C Context;
+
+  std::shared_ptr<Context> pContext;
+  T t;
+
+  ContextContainer(std::shared_ptr<Context>& pContext, T&&t)
+    : pContext(pContext), t(t) { }
+
+  ~ContextContainer(){
+    if constexpr(PropertyHasDeleterWithContext<T>) {
+      CamlConversionProperties<T>::delete_T(pContext.get(),t);
+    } else if constexpr(PropertyHasDeleter<T>) {
+      CamlConversionProperties<T>::delete_T(t);
+    }
+  }
+
+  static inline value allocate(std::shared_ptr<Context>& context, T&& t){
+    typedef ContextContainer<T,C> This;
+    value v_container =
+      caml_alloc_custom(&ContainerOps<This>::value,sizeof(This),1,500000);
+    new(&Custom_value<This>(v_container)) This(context, std::move(t));
+    return v_container;
+  };
+};
+
+
+
 // TODO
 template<typename T>
 concept CamlConvertible = requires {
   typename CamlConversion<T>::RepresentationType;
+  requires requires (CamlConversion<T>::RepresentationType& r){
+    { CamlConversion<T>::get_underlying(r) } -> std::same_as<T&>;
+  };
+  requires std::same_as<decltype(CamlConversion<T>::allocates),const CamlAllocates>;
+};
+
+template<typename A,typename B> concept same_as_or_reference = requires {
+  requires std::same_as<A,B> || std::same_as<A,B&>;
 };
 
 // TODO
 template<typename T>
 concept CamlOfValue = requires {
   requires CamlConvertible<T>;
-  CamlConversion<T>::of_value;
+  requires requires(value v) {
+    { CamlConversion<T>::of_value(v) } -> same_as_or_reference<typename CamlConversion<T>::RepresentationType>;
+  };
 };
 
 // TODO
@@ -756,13 +845,98 @@ concept CamlToValue = requires {
   CamlConversion<T>::to_value;
 };
 
-// TODO
-template<typename T, typename C>
-concept CamlHasContext = requires (T a, CamlConversion<T>::RepresentationType ra) {
-  requires CamlConvertible<T>;
-  requires std::same_as<typename CamlConversion<T>::Context,C>;
-  { CamlConversion<T>::get_context(ra) } -> std::same_as<std::shared_ptr<C>&>;
+template<typename T>
+concept CamlBidirectional = requires {
+  requires CamlOfValue<T>;
+  requires CamlToValue<T>;
 };
+
+// TODO
+template<typename T>
+concept CamlHasContext = requires (T a, CamlConversion<T>::RepresentationType& ra) {
+  requires CamlConvertible<T>;
+  //requires std::same_as<typename CamlConversion<T>::Context,C>;
+  { CamlConversion<T>::get_context(ra) } -> std::same_as<std::shared_ptr<typename CamlConversion<T>::Context>&>;
+};
+
+template<typename T>
+requires 
+(PropertyRepresented<T,CamlRepresentationKind::ContainerWithContext>
+&& PropertyHasContext<T>)
+struct CamlConversion<T> {
+  typedef typename CamlConversionProperties<T>::Context Context;
+  typedef ContextContainer<T, Context> RepresentationType;
+  static const auto allocates = CamlAllocates::Allocation;
+
+  static inline std::shared_ptr<Context>& get_context(RepresentationType& r){
+    return r.pContext;
+  }
+
+  static inline T& get_underlying(RepresentationType& r){
+    return r.t;
+  }
+
+  static inline value to_value(std::shared_ptr<Context>&ctx, T&&t){
+    return RepresentationType::allocate(ctx, t);
+  }
+
+  static inline RepresentationType& of_value(value v){
+    return Custom_value<RepresentationType>(v);
+  }
+};
+
+
+template<> struct CamlConversion<int> {
+  typedef int RepresentationType;
+  static const auto allocates = CamlAllocates::No_allocation;
+
+  static inline value to_value(int x) { return Val_long(x); }
+  static inline RepresentationType of_value(value v) { return Long_val(v); }
+  static inline int&get_underlying(RepresentationType&r) { return r; }
+};
+static_assert(CamlBidirectional<int>);
+
+template<> struct CamlConversion<const char *> {
+  typedef const char * RepresentationType;
+  static const auto allocates = CamlAllocates::Allocation;
+
+  static inline value to_value(const char *x) { return caml_copy_string(x); }
+  static inline RepresentationType of_value(value v) { return String_val(v); }
+  static inline auto&get_underlying(RepresentationType&r) { return r; }
+};
+static_assert(CamlBidirectional<const char *>);
+
+template<> struct CamlConversion<std::string> {
+  typedef std::string RepresentationType;
+  static const auto allocates = CamlAllocates::Allocation;
+
+  static inline value to_value(const std::string&x) { return caml_copy_string(x.c_str()); }
+  static inline RepresentationType of_value(value v) { return String_val(v); }
+  static inline auto&get_underlying(RepresentationType&r) { return r; }
+};
+static_assert(CamlBidirectional<std::string>);
+
+template<> struct CamlConversionProperties<std::string>{
+  static constexpr bool allow_const = true;
+};
+
+template<typename T>
+concept PropertyAllowConst =
+  CamlConversionProperties<T>::allow_const == true;
+
+template<typename T> 
+requires PropertyAllowConst<T> && CamlBidirectional<T>
+struct CamlConversion<const T> {
+  typedef CamlConversion<T> N;
+  typedef const N::RepresentationType RepresentationType;
+  static const auto allocates = N::allocates;
+
+  static inline value to_value(const T&x) { return N::to_value(x); }
+  static inline RepresentationType of_value(value v) { return N::of_value(v); }
+  static inline auto&get_underlying(RepresentationType&r) { return r; }
+};
+
+static_assert(CamlBidirectional<const std::string>);
 
 /////////////////////////////////////////////////////////////////////////////////////////
 /// calling of api functions
