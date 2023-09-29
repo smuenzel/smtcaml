@@ -759,7 +759,7 @@ enum class CamlAllocates {
 
 template<typename T, CamlRepresentationKind kind>
 concept PropertyRepresented = requires {
-  CamlConversionProperties<T>::representation_kind == kind;
+  requires(CamlConversionProperties<T>::representation_kind == kind);
 };
 
 template<typename T, typename C>
@@ -786,6 +786,14 @@ concept PropertyHasDeleter = requires {
   };
 };
 
+template<typename T>
+requires PropertyHasDeleter<T>
+struct SimpleDeleter{
+  void operator()(T t){
+    CamlConversionProperties<T>::delete_T(t);
+  };
+};
+
 template<typename T, typename C>
 struct ContextContainer : private boost::noncopyable {
   typedef C Context;
@@ -804,7 +812,7 @@ struct ContextContainer : private boost::noncopyable {
     }
   }
 
-  static inline value allocate(std::shared_ptr<Context>& context, T&& t){
+  static inline value allocate(std::shared_ptr<Context>& context, T& t){
     typedef ContextContainer<T,C> This;
     value v_container =
       caml_alloc_custom(&ContainerOps<This>::value,sizeof(This),1,500000);
@@ -813,20 +821,34 @@ struct ContextContainer : private boost::noncopyable {
   };
 };
 
+template<typename T>
+struct SharedPointerContainer : private boost::noncopyable {
+  std::shared_ptr<T> t;
 
+  SharedPointerContainer(std::shared_ptr<T>&& t) : t(std::move(t)) {}
+
+  static inline value allocate(std::shared_ptr<T>&& t){
+    typedef SharedPointerContainer<T> This;
+    value v_container =
+      caml_alloc_custom(&ContainerOps<This>::value,sizeof(This),1,500000);
+    new(&Custom_value<This>(v_container)) This(std::move(t));
+    return v_container;
+  };
+};
+
+
+template<typename A,typename B> concept same_as_or_reference = requires {
+  requires std::same_as<A,B> || std::same_as<A,B&>;
+};
 
 // TODO
 template<typename T>
 concept CamlConvertible = requires {
   typename CamlConversion<T>::RepresentationType;
   requires requires (CamlConversion<T>::RepresentationType& r){
-    { CamlConversion<T>::get_underlying(r) } -> std::same_as<T&>;
+    { CamlConversion<T>::get_underlying(r) } -> same_as_or_reference<T>;
   };
   requires std::same_as<decltype(CamlConversion<T>::allocates),const CamlAllocates>;
-};
-
-template<typename A,typename B> concept same_as_or_reference = requires {
-  requires std::same_as<A,B> || std::same_as<A,B&>;
 };
 
 // TODO
@@ -846,6 +868,12 @@ concept CamlToValue = requires {
 };
 
 template<typename T>
+concept CamlToValueNoContext = requires {
+  requires CamlToValue<T>;
+  requires requires(T t){CamlConversion<T>::to_value(t);};
+};
+
+template<typename T>
 concept CamlBidirectional = requires {
   requires CamlOfValue<T>;
   requires CamlToValue<T>;
@@ -855,6 +883,7 @@ concept CamlBidirectional = requires {
 template<typename T>
 concept CamlHasContext = requires (T a, CamlConversion<T>::RepresentationType& ra) {
   requires CamlConvertible<T>;
+  typename CamlConversion<T>::Context;
   //requires std::same_as<typename CamlConversion<T>::Context,C>;
   { CamlConversion<T>::get_context(ra) } -> std::same_as<std::shared_ptr<typename CamlConversion<T>::Context>&>;
 };
@@ -876,7 +905,7 @@ struct CamlConversion<T> {
     return r.t;
   }
 
-  static inline value to_value(std::shared_ptr<Context>&ctx, T&&t){
+  static inline value to_value(std::shared_ptr<Context>&ctx, T&t){
     return RepresentationType::allocate(ctx, t);
   }
 
@@ -885,6 +914,25 @@ struct CamlConversion<T> {
   }
 };
 
+template<typename T> concept pointer = std::is_pointer_v<T>;
+
+template<typename T>
+requires
+(PropertyRepresented<T,CamlRepresentationKind::ContainerSharedPointer>
+ && std::is_pointer_v<T>)
+struct CamlConversion<T> {
+  typedef typename std::remove_pointer<T>::type Tnopointer;
+  typedef std::shared_ptr<Tnopointer> RepresentationType;
+  static const auto allocates = CamlAllocates::Allocation;
+
+  static inline T get_underlying(RepresentationType&r) { return r.get(); }
+  static inline RepresentationType& of_value(value v) {
+    return Custom_value<SharedPointerContainer<Tnopointer>>(v).t;
+  }
+  /* No [to_value] function, since the shared_ptr construction should be
+   * done manually to make sure it's right
+   */
+};
 
 template<> struct CamlConversion<int> {
   typedef int RepresentationType;
@@ -938,6 +986,69 @@ struct CamlConversion<const T> {
 
 static_assert(CamlBidirectional<const std::string>);
 
+// Needed so that we can expand the parameter pack. There must be a better way.....
+template<typename T_first, typename T_second> struct first_type { typedef T_first type; };
+
+template<typename C, typename T>
+requires CamlHasContext<T>
+std::shared_ptr<C>& extract_context(typename CamlConversion<T>::RepresentationType&t){
+  return CamlConversion<T>::get_context(t);
+}
+
+template<typename C, typename T>
+requires std::same_as<std::shared_ptr<C>,T>
+std::shared_ptr<C>& extract_context(typename CamlConversion<T>::RepresentationType&t){
+  return CamlConversion<T>::get_underlying(t);
+}
+
+template<typename C, typename T>
+requires std::same_as<std::shared_ptr<C>,typename CamlConversion<T>::RepresentationType>
+std::shared_ptr<C>& extract_context(typename CamlConversion<T>::RepresentationType&t){
+  return t;
+}
+
+template<typename Construct, typename FromThis>
+concept CamlContextConstructible = requires {
+  requires CamlToValue<Construct>;
+  requires
+    ( CamlHasContext<Construct> 
+      && requires
+        (CamlConversion<FromThis>::RepresentationType from){
+          extract_context<typename CamlConversion<Construct>::Context,FromThis>(from);
+        }
+    ) 
+    || CamlToValueNoContext<Construct>;
+};
+
+template<typename R, typename A0, typename... As>
+requires
+( CamlToValue<R> && CamlOfValue<A0> && (CamlOfValue<As> && ...)
+  && CamlContextConstructible<R,A0>
+)
+inline value
+call_api(R (*fun)(A0, As...), value v0, typename first_type<value,As>::type... v_ps){
+  if constexpr(CamlHasContext<R>) {
+    typedef typename CamlConversion<R>::Context Context;
+    auto r0 = CamlConversion<A0>::of_value(v0);
+    auto context = extract_context<Context,A0>(r0);
+    auto ret =
+      (*fun)
+        ( CamlConversion<A0>::get_underlying(r0)
+        , CamlConversion<As>::get_underlying(CamlConversion<As>::of_value(v_ps))...
+        );
+    auto v_ret = CamlConversion<R>::to_value(context, ret);
+    return v_ret;
+  } else {
+    auto ret =
+      (*fun)
+        ( CamlConversion<A0>::get_underlying(CamlConversion<A0>::of_value(v0))
+        , CamlConversion<As>::get_underlying(CamlConversion<As>::of_value(v_ps))...
+        );
+    auto v_ret = CamlConversion<R>::to_value(ret);
+    return v_ret;
+  }
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////
 /// calling of api functions
 ///
@@ -953,9 +1064,6 @@ template<typename X, template<typename> typename T> struct chain_remove<X,T>{
 template<typename T> struct normalize_pointer_argument {
   typedef chain_remove<T,std::remove_const,std::remove_reference,std::remove_const,std::remove_pointer>::type type;
 };
-
-// Needed so that we can expand the parameter pack. There must be a better way.....
-template<typename T_first, typename T_second> struct first_type { typedef T_first type; };
 
 template<typename R, typename A0, typename... As>
 requires
