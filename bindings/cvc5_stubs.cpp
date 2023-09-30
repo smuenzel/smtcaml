@@ -49,23 +49,42 @@ CAML_REPRESENTATION(SortKind,Immediate);
 ///
 template<> struct CppCaml::CamlConversionProperties<Sort>{
   static constexpr auto representation_kind = CppCaml::CamlRepresentationKind::ContainerWithContext;
-  static constexpr bool allow_const_ref = true;
   typedef Solver Context;
+
+  static void delete_T(Context*context, Sort&t){
+    delete &t;
+  }
+};
+
+template<> struct CppCaml::CamlConversionProperties<Term>{
+  static constexpr auto representation_kind = CppCaml::CamlRepresentationKind::ContainerWithContext;
+  typedef Solver Context;
+
+  static void delete_T(Context*context, Term&t){
+    delete &t;
+  }
+};
+
+template<> struct CppCaml::CamlConversionProperties<Result>{
+  static constexpr auto representation_kind = CppCaml::CamlRepresentationKind::ContainerWithContext;
+  typedef Solver Context;
+
+  static void delete_T(Context*context, Result&t){
+    delete &t;
+  }
 };
 
 template<> struct CppCaml::CamlConversionProperties<Solver*>{
   static constexpr auto representation_kind = CppCaml::CamlRepresentationKind::ContainerSharedPointer;
+
+  static void delete_T(Solver*&s){
+    delete s;
+  };
 };
 
 static_assert(CppCaml::CamlOfValue<Solver*>);
+static_assert(CppCaml::CamlBidirectional<Solver*>);
 
-value xxx(value v){
-  return CppCaml::call_api_class(&Solver::getBooleanSort,v);
-}
-
-value yyy(value v0, value v1){
-  return CppCaml::call_api_class_implied(&Solver::mkArraySort,v0,v1);
-}
 /////////////////////////////////////////////////////////////////////////////////////////
 
 template<> struct CppCaml::ImmediateProperties<uint32_t> {
@@ -442,11 +461,11 @@ apireturn caml_cvc5__Solver__operator_new(value){
 }
 REGISTER_API_CONSTRUCTOR(Solver,caml_cvc5__Solver__operator_new);
 
-#define APIM0(A,B) APIM0_(cvc5,A,B)
+#define APIM0(A,B) APIM0__(cvc5,A,B)
 #define APIM1(A,B) APIM1_(cvc5,A,B)
 #define APIM2(A,B) APIM2_(cvc5,A,B)
 #define APIM1_IMPLIED(A,B) APIM1_IMPLIED_(cvc5,A,B)
-#define APIM2_IMPLIED(A,B) APIM2_IMPLIED_(cvc5,A,B)
+#define APIM2_IMPLIED(A,B) APIM2_IMPLIED__(cvc5,A,B)
 #define APIM1_OVERLOAD(...) APIM1_OVERLOAD_(cvc5,__VA_ARGS__)
 #define APIM2_OVERLOAD(...) APIM2_OVERLOAD_(cvc5,__VA_ARGS__)
 #define APIM2_OVERLOAD_IMPLIED(...) APIM2_OVERLOAD_IMPLIED_(cvc5,__VA_ARGS__)

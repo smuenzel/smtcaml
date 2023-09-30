@@ -50,6 +50,7 @@ template<> struct CppCaml::CamlConversionProperties<Btor*>{
 };
 
 static_assert(CppCaml::CamlOfValue<Btor*>);
+static_assert(CppCaml::CamlBidirectional<Btor*>);
 
 
 static_assert(CppCaml::CamlToValue<CppCaml::Void>);
@@ -133,19 +134,19 @@ template<> struct CppCaml::CustomWithContextProperties<BoolectorNode**> {
 };
 
 #define API1(APIF) \
-  REGISTER_API(boolector_##APIF, caml_boolector_##APIF); \
+  REGISTER_API(boolector,boolector_##APIF, caml_boolector_##APIF); \
   apireturn caml_boolector_##APIF (value v_btor){\
     return CppCaml::apiN(boolector_##APIF,v_btor);\
   }
 
 #define API2(APIF) \
-  REGISTER_API(boolector_##APIF, caml_boolector_##APIF); \
+  REGISTER_API(boolector,boolector_##APIF, caml_boolector_##APIF); \
   apireturn caml_boolector_##APIF (value v_p0, value v_p1){\
     return CppCaml::apiN(boolector_##APIF,v_p0,v_p1);\
   }
 
 #define API3(APIF) \
-  REGISTER_API(boolector_##APIF, caml_boolector_##APIF); \
+  REGISTER_API(boolector,boolector_##APIF, caml_boolector_##APIF); \
   apireturn caml_boolector_##APIF (value v_p0, value v_p1, value v_p2){\
     return CppCaml::apiN(boolector_##APIF,v_p0,v_p1,v_p2);\
   }
@@ -268,12 +269,12 @@ apireturn caml_boolector_new(value){
   boolector_set_abort(&abort_callback);
   return caml_boolector_btor::allocate(boolector_new());
 }
-REGISTER_API(boolector_new,caml_boolector_new);
+REGISTER_API(boolector,boolector_new,caml_boolector_new);
 
 apireturn caml_boolector_get_btor(value v_node){
   return caml_boolector_btor::allocate(Custom_value<caml_boolector_node>(v_node).pContext);
 }
-REGISTER_API(boolector_get_btor, caml_boolector_get_btor);
+REGISTER_API(boolector,boolector_get_btor, caml_boolector_get_btor);
 
 template<typename... Ps, size_t... Is>
 static inline int32_t call_sat_generic(int32_t (*inner_sat)(Btor*,Ps...), Btor*btor, std::tuple<Ps...> args, std::index_sequence<Is...> is){
