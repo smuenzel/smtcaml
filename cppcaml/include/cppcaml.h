@@ -336,6 +336,18 @@ __attribute((used, section("caml_api_registry"))) = \
     return CppCaml::call_api_class(&CLASS :: APIF, v_c); \
   }
 
+#define APIM1__(APIPREFIX, CLASS,APIF) \
+  REGISTER_API_MEMBER(APIPREFIX,CLASS,APIF, caml_ ##APIPREFIX ##__##CLASS ## __##APIF); \
+  apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF(value v_c, value v_p0){ \
+    return CppCaml::call_api_class(&CLASS :: APIF, v_c, v_p0); \
+  }
+
+#define APIM2__(APIPREFIX, CLASS,APIF) \
+  REGISTER_API_MEMBER(APIPREFIX,CLASS,APIF, caml_ ##APIPREFIX ##__##CLASS ## __##APIF); \
+  apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF(value v_c, value v_p0,value v_p1){ \
+    return CppCaml::call_api_class(&CLASS :: APIF, v_c, v_p0, v_p1); \
+  }
+
 #define APIM2_IMPLIED__(APIPREFIX, CLASS,APIF) \
   REGISTER_API_MEMBER_IMPLIED(APIPREFIX,CLASS,APIF, caml_ ##APIPREFIX ##__##CLASS ## __##APIF); \
   apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF(value v_p0, value v_p1){ \
@@ -982,9 +994,19 @@ template<> struct CamlConversion<int> {
 
   static inline value to_value(int x) { return Val_long(x); }
   static inline RepresentationType of_value(value v) { return Long_val(v); }
-  static inline int&get_underlying(RepresentationType&r) { return r; }
+  static inline int get_underlying(RepresentationType r) { return r; }
 };
 static_assert(CamlBidirectional<int>);
+
+template<> struct CamlConversion<unsigned int> {
+  typedef unsigned int RepresentationType;
+  static const auto allocates = CamlAllocates::No_allocation;
+
+  static inline value to_value(unsigned int x) { return Val_long(x); }
+  static inline RepresentationType of_value(value v) { return Long_val(v); }
+  static inline unsigned int get_underlying(RepresentationType r) { return r; }
+};
+static_assert(CamlBidirectional<unsigned int>);
 
 template<> struct CamlConversion<bool> {
   typedef bool RepresentationType;
@@ -992,7 +1014,7 @@ template<> struct CamlConversion<bool> {
 
   static inline value to_value(bool x) { return Val_bool(x); }
   static inline RepresentationType of_value(value v) { return Bool_val(v); }
-  static inline bool&get_underlying(RepresentationType&r) { return r; }
+  static inline bool get_underlying(RepresentationType r) { return r; }
 };
 static_assert(CamlBidirectional<int>);
 
@@ -1012,7 +1034,7 @@ template<> struct CamlConversion<std::string> {
 
   static inline value to_value(const std::string&x) { return caml_copy_string(x.c_str()); }
   static inline RepresentationType of_value(value v) { return String_val(v); }
-  static inline auto&get_underlying(RepresentationType&r) { return r; }
+  static inline auto get_underlying(RepresentationType r) { return r; }
 };
 static_assert(CamlBidirectional<std::string>);
 
@@ -1053,8 +1075,69 @@ struct CamlConversion<std::optional<T>>{
     }
   }
 };
-
 static_assert(CamlBidirectional<std::optional<std::string>>);
+
+template<typename T>
+struct CamlConversion<std::vector<T>>{
+  typedef CamlConversion<T> N;
+  typedef std::vector<T> RepresentationType;
+  static const auto allocates = CamlAllocates::Allocation;
+
+  static inline value to_value(const std::vector<T>&vec) {
+    CAMLparam0();
+    CAMLlocal1(v_ret);
+    v_ret = caml_alloc(vec.size(), 0);
+    for(size_t i = 0; i < vec.size(); i++){
+      Store_field(v_ret,i,N::to_value(vec[i]));
+    };
+    CAMLreturn(v_ret);
+  }
+
+  static inline RepresentationType of_value(value v) { 
+    auto len = Wosize_val(v);
+    auto f = [](value v){
+      return N::get_underlying(N::of_value(v));
+    };
+    auto begin = boost::make_transform_iterator(&Field(v, 0), f);
+    auto end = boost::make_transform_iterator(&Field(v, len), f);
+
+    return std::vector<T>(begin, end);
+  }
+
+  static inline std::vector<T> get_underlying(RepresentationType r) { return r; }
+
+};
+static_assert(CamlBidirectional<std::vector<std::string>>);
+
+template<typename T0, typename T1>
+struct CamlConversion<std::pair<T0,T1>>{
+  typedef CamlConversion<T0> N0;
+  typedef CamlConversion<T1> N1;
+  static const auto allocates = CamlAllocates::Allocation;
+
+  static inline value to_value(std::pair<N0,N1>&p){
+    CAMLparam0();
+    CAMLlocal3(v_pair,v_first,v_second);
+    v_first = N0::to_value(p.first);
+    v_second = N1::to_value(p.second);
+    v_pair = caml_alloc_small(2,0);
+    Field(v_pair,0) = v_first;
+    Field(v_pair,1) = v_second;
+    CAMLreturn(v_pair);
+  }
+
+  typedef std::pair<T0,T1> RepresentationType;
+
+  static inline RepresentationType of_value(value v) {
+    return
+      std::make_pair
+      ( N0::get_underlying(N0::of_value(Field(v,0)))
+      , N1::get_underlying(N1::of_value(Field(v,1)))
+      );
+  }
+
+  static inline RepresentationType get_underlying(RepresentationType r) { return r; }
+};
 
 template<typename T>
 concept PropertyAllowConst = requires {
