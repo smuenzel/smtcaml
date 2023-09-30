@@ -52,7 +52,7 @@ let check_current_and_get_model t : _ Smtcaml_intf.Solver_result.t =
 let sort_boolean t = C.solver__getBooleanSort t
 let sort_bitvector t l = C.solver__mkBitVectorSort t l
 
-let assert_ expr = C.solver__assertFormula expr
+let assert_ _ expr = C.solver__assertFormula expr
 
 let get_term_context (t : C.term) : C.solver = Obj.magic t
 let get_sort_context (t : C.sort) : C.solver = Obj.magic t

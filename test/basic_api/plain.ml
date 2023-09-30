@@ -10,7 +10,7 @@ module Test(Smt : Interface_definitions.Bitvector_basic) = struct
     let c = Smt.var s "c" in
     let ac = Smt.Bv.add a c in
     let eq = Smt.Boolean.eq ac b in
-    Smt.assert_ eq;
+    Smt.assert_ t eq;
     match Smt.check_current_and_get_model t with
     | Unsatisfiable
     | Unknown _ as result ->
@@ -35,3 +35,9 @@ let%expect_test "cvc5" =
   [%expect {|
     (model
      ("Smt.Model.eval_to_string t model c" (#b00000000000000011000011010010011))) |}]
+
+let%expect_test "z3" =
+  let module T = Test(Backend_z3) in
+  T.run ();
+  [%expect {|
+    (model ("Smt.Model.eval_to_string t model c" (#x00018693))) |}]

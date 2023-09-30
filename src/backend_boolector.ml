@@ -58,7 +58,7 @@ let sort_boolean t =
 let var sort name =
   B.var sort name
 
-let assert_ expr =
+let assert_ _ expr =
   B.assert_ expr
 
 let check_current_and_get_model t : _ Smtcaml_intf.Solver_result.t =

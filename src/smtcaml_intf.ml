@@ -104,7 +104,7 @@ module type Boolean = sig
 
   val sort_boolean : 'i Types.instance -> ('i, m_sort) Types.sort
 
-  val assert_ : ('i, m_sort) Types.expr -> unit
+  val assert_ : 'i Types.instance -> ('i, m_sort) Types.expr -> unit
 
   module Boolean : sig
     module Numeral : sig
