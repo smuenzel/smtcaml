@@ -321,8 +321,8 @@ __attribute((used, section("caml_api_registry"))) = \
 __attribute((used, section("caml_api_registry"))) = \
     CppCaml::ApiRegistryEntry("make_" #CLASS,#WRAPPER,CppCaml::type_list<CLASS*>());
 
-#define REGISTER_API_IMPLIED_FIRST(APIF, WRAPPER) \
-  static inline constexpr auto __caml_api_registry_var__##APIF \
+#define REGISTER_API_IMPLIED_FIRST(APIPREFIX, APIF, WRAPPER) \
+  static inline constexpr auto __caml_api_registry_var__##APIPREFIX ## __ ##APIF \
 __attribute((used, section("caml_api_registry"))) = \
     CppCaml::ApiRegistryEntry(CppCaml::DropFirstArgument(),#APIF,#WRAPPER,APIF);
 
@@ -340,6 +340,36 @@ __attribute((used, section("caml_api_registry"))) = \
   REGISTER_API(APIPREFIX,APIF, caml_ ##APIPREFIX ##__##APIF); \
   apireturn caml_ ##APIPREFIX ## __##APIF(value v0){ \
     return CppCaml::call_api(APIF, v0); \
+  }
+
+#define API2__(APIPREFIX, APIF) \
+  REGISTER_API(APIPREFIX,APIF, caml_ ##APIPREFIX ##__##APIF); \
+  apireturn caml_ ##APIPREFIX ## __##APIF(value v0, value v1){ \
+    return CppCaml::call_api(APIF, v0, v1); \
+  }
+
+#define API1_IMPLIED__(APIPREFIX, APIF) \
+  REGISTER_API_IMPLIED_FIRST(APIPREFIX,APIF, caml_ ##APIPREFIX ##__##APIF); \
+  apireturn caml_ ##APIPREFIX ## __##APIF(value v0){ \
+    return CppCaml::call_api_implied_first(APIF, v0); \
+  }
+
+#define API2_IMPLIED__(APIPREFIX, APIF) \
+  REGISTER_API_IMPLIED_FIRST(APIPREFIX,APIF, caml_ ##APIPREFIX ##__##APIF); \
+  apireturn caml_ ##APIPREFIX ## __##APIF(value v0, value v1){ \
+    return CppCaml::call_api_implied_first(APIF, v0, v1); \
+  }
+
+#define API3_IMPLIED__(APIPREFIX, APIF) \
+  REGISTER_API_IMPLIED_FIRST(APIPREFIX,APIF, caml_ ##APIPREFIX ##__##APIF); \
+  apireturn caml_ ##APIPREFIX ## __##APIF(value v0, value v1, value v2){ \
+    return CppCaml::call_api_implied_first(APIF, v0, v1, v2); \
+  }
+
+#define API3__(APIPREFIX, APIF) \
+  REGISTER_API(APIPREFIX,APIF, caml_ ##APIPREFIX ##__##APIF); \
+  apireturn caml_ ##APIPREFIX ## __##APIF(value v0, value v1, value v2){ \
+    return CppCaml::call_api(APIF, v0, v1, v2); \
   }
 
 #define APIM0__(APIPREFIX, CLASS,APIF) \
@@ -1036,9 +1066,9 @@ template<> struct CamlConversion<const char *> {
   typedef const char * RepresentationType;
   static const auto allocates = CamlAllocates::Allocation;
 
-  static inline value to_value(const char *x) { return caml_copy_string(x); }
+  static inline value to_value(const char *x) { return caml_copy_string(x?x:""); }
   static inline RepresentationType of_value(value v) { return String_val(v); }
-  static inline auto&get_underlying(RepresentationType&r) { return r; }
+  static inline auto get_underlying(RepresentationType r) { return r; }
 };
 static_assert(CamlBidirectional<const char *>);
 
@@ -1307,8 +1337,15 @@ struct ReplaceVoid<void>{
   typedef Void type;
 };
 
+template<typename T> struct remove_pconst { typedef T type; };
+template<typename T> struct remove_pconst<const T*> { typedef T* type; };
+// const char* is special
+template<> struct remove_pconst<const char*> { typedef const char* type; };
 
-template<typename T> using NormalizeArgument = std::remove_const_t<std::remove_reference_t<T>>;
+template<typename T> using remove_pconst_t = typename remove_pconst<T>::type;
+
+template<typename T> using NormalizeArgument =
+  remove_pconst_t<std::remove_const_t<std::remove_reference_t<T>>>;
 
 template<typename T> using ConversionNormalized = CamlConversion<NormalizeArgument<T>>;
 

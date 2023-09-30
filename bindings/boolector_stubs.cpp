@@ -34,6 +34,7 @@ CAML_REPRESENTATION(BoolectorNode**, CustomWithContext);
 
 template<> struct CppCaml::CamlConversionProperties<BoolectorNode*>{
   static constexpr auto representation_kind = CppCaml::CamlRepresentationKind::ContainerWithContext;
+  static constexpr bool allow_const = true;
   typedef Btor Context;
   static void delete_T(Context*context, BoolectorNode*t){
     boolector_release(context,t);
@@ -153,42 +154,11 @@ template<> struct CppCaml::CustomWithContextProperties<BoolectorNode**> {
 };
 
 #define API1(APIF) API1__(_,boolector_##APIF)
-/*
-  REGISTER_API(boolector,boolector_##APIF, caml_boolector_##APIF); \
-  apireturn caml_boolector_##APIF (value v_btor){\
-    return CppCaml::apiN(boolector_##APIF,v_btor);\
-  }
-  */
-
-#define API2(APIF) \
-  REGISTER_API(boolector,boolector_##APIF, caml_boolector_##APIF); \
-  apireturn caml_boolector_##APIF (value v_p0, value v_p1){\
-    return CppCaml::apiN(boolector_##APIF,v_p0,v_p1);\
-  }
-
-#define API3(APIF) \
-  REGISTER_API(boolector,boolector_##APIF, caml_boolector_##APIF); \
-  apireturn caml_boolector_##APIF (value v_p0, value v_p1, value v_p2){\
-    return CppCaml::apiN(boolector_##APIF,v_p0,v_p1,v_p2);\
-  }
-
-#define API1I(APIF) \
-  REGISTER_API_IMPLIED_FIRST(boolector_##APIF, caml_boolector_##APIF); \
-  apireturn caml_boolector_##APIF (value v_p0){\
-    return CppCaml::apiN_implied_context(boolector_##APIF,v_p0);\
-  }
-
-#define API2I(APIF) \
-  REGISTER_API_IMPLIED_FIRST(boolector_##APIF, caml_boolector_##APIF); \
-  apireturn caml_boolector_##APIF (value v_p0, value v_p1){\
-    return CppCaml::apiN_implied_context(boolector_##APIF,v_p0, v_p1);\
-  }
-
-#define API3I(APIF) \
-  REGISTER_API_IMPLIED_FIRST(boolector_##APIF, caml_boolector_##APIF); \
-  apireturn caml_boolector_##APIF (value v_p0, value v_p1, value v_p2){\
-    return CppCaml::apiN_implied_context(boolector_##APIF,v_p0, v_p1, v_p2);\
-  }
+#define API2(APIF) API2__(_,boolector_##APIF)
+#define API3(APIF) API3__(_,boolector_##APIF)
+#define API1I(APIF) API1_IMPLIED__(_,boolector_##APIF);
+#define API2I(APIF) API2_IMPLIED__(_,boolector_##APIF);
+#define API3I(APIF) API3_IMPLIED__(_,boolector_##APIF);
 
 API1I(get_sort)
 API1(false)
