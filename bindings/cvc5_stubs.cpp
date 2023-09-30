@@ -3,7 +3,6 @@
 
 using CppCaml::Custom_value;
 using CppCaml::ContainerOps;
-using CppCaml::T_value;
 
 using Solver = cvc5::Solver;
 using Sort = cvc5::Sort;
@@ -72,22 +71,6 @@ static_assert(CppCaml::CamlBidirectional<Solver*>);
 static_assert(CppCaml::CamlOfValue<CppCaml::NormalizeArgument<const std::vector<Sort>&>>);
 
 /////////////////////////////////////////////////////////////////////////////////////////
-
-template<> struct CppCaml::ImmediateProperties<uint32_t> {
-  static inline value to_value(uint32_t b) { return Val_long(b); }
-  static inline uint32_t of_value(value v) { return Long_val(v); }
-};
-
-/* CR smuenzel: not full range*/
-template<> struct CppCaml::ImmediateProperties<uint64_t> {
-  static inline value to_value(uint64_t b) { return Val_long(b); }
-  static inline uint64_t of_value(value v) { return Long_val(v); }
-};
-
-template<> struct CppCaml::ImmediateProperties<int32_t> {
-  static inline value to_value(int32_t b) { return Val_long(b); }
-  static inline int32_t of_value(value v) { return Long_val(v); }
-};
 
 #define ENUM_UnknownExplanation(F) \
   F(UnknownExplanation,REQUIRES_FULL_CHECK) \
@@ -413,32 +396,6 @@ MAKE_ENUM_IMMEDIATE_PROPERTIES(UnknownExplanation,ENUM_UnknownExplanation,UNKNOW
 
 MAKE_ENUM_IMMEDIATE_PROPERTIES(Kind,ENUM_Kind,UNDEFINED_KIND)
 MAKE_ENUM_IMMEDIATE_PROPERTIES(SortKind,ENUM_SortKind,UNDEFINED_SORT_KIND)
-
-template<> struct CppCaml::ValueWithContextProperties<Sort>{
-  typedef Solver Context;
-  static void delete_T(Context*context, Sort*t){
-    delete t;
-  }
-};
-
-template<> struct CppCaml::ValueWithContextProperties<Term>{
-  typedef Solver Context;
-  static void delete_T(Context*context, Term*t){
-    delete t;
-  }
-};
-
-template<> struct CppCaml::ValueWithContextProperties<Result>{
-  typedef Solver Context;
-  static void delete_T(Context*context, Result*t){
-    delete t;
-  }
-};
-
-template<> struct CppCaml::SharedPointerProperties<Solver>{
-  static void delete_T(Solver*s) { delete s; }
-};
-
 
 Solver* new_Solver(){
   return new Solver();

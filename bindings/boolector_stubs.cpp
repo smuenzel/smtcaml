@@ -3,7 +3,6 @@
 
 using CppCaml::Custom_value;
 using CppCaml::ContainerOps;
-using CppCaml::T_value;
 
 struct solver_result;
 
