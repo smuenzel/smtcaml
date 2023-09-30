@@ -348,54 +348,29 @@ __attribute((used, section("caml_api_registry"))) = \
     return CppCaml::call_api_class(&CLASS :: APIF, v_c, v_p0, v_p1); \
   }
 
+#define APIM1_IMPLIED__(APIPREFIX, CLASS,APIF) \
+  REGISTER_API_MEMBER_IMPLIED(APIPREFIX,CLASS,APIF, caml_ ##APIPREFIX ##__##CLASS ## __##APIF); \
+  apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF(value v_p0){ \
+    return CppCaml::call_api_class_implied(&CLASS :: APIF, v_p0); \
+  }
+
 #define APIM2_IMPLIED__(APIPREFIX, CLASS,APIF) \
   REGISTER_API_MEMBER_IMPLIED(APIPREFIX,CLASS,APIF, caml_ ##APIPREFIX ##__##CLASS ## __##APIF); \
   apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF(value v_p0, value v_p1){ \
     return CppCaml::call_api_class_implied(&CLASS :: APIF, v_p0, v_p1); \
   }
 
-
-
+// TODO: remove
 #define API_GET_CONTEXT(APIPREFIX, TYPE, CTYPE) \
   REGISTER_API_CUSTOM(TYPE ##__get_context, caml_ ##APIPREFIX ##__##TYPE ## __get_context, typename CppCaml::InlinedWithContext<CTYPE>::Context*,CTYPE); \
   apireturn caml_ ##APIPREFIX ##__##TYPE ## __get_context(value v){ \
     return CppCaml::get_context_caml<CTYPE>(v); \
   }
 
-#define APIM0_(APIPREFIX, CLASS,APIF) \
-  REGISTER_API_MEMBER(APIPREFIX,CLASS,APIF, caml_ ##APIPREFIX ##__##CLASS ## __##APIF); \
-  apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF(value v_c){ \
-    return CppCaml::apiN_class(&CLASS :: APIF, v_c); \
-  }
-
-#define APIM1_(APIPREFIX, CLASS,APIF) \
-  REGISTER_API_MEMBER(APIPREFIX,CLASS,APIF, caml_ ##APIPREFIX ##__##CLASS ## __##APIF); \
-  apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF(value v_c, value v_p0){ \
-    return CppCaml::apiN_class(&CLASS :: APIF, v_c, v_p0); \
-  }
-
-#define APIM2_(APIPREFIX, CLASS,APIF) \
-  REGISTER_API_MEMBER(APIPREFIX,CLASS,APIF, caml_ ##APIPREFIX ##__##CLASS ## __##APIF); \
-  apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF(value v_c, value v_p0, value v_p1){ \
-    return CppCaml::apiN_class(&CLASS :: APIF, v_c, v_p0, v_p1); \
-  }
-
-#define APIM1_IMPLIED_(APIPREFIX, CLASS,APIF) \
-  REGISTER_API_MEMBER_IMPLIED(APIPREFIX,CLASS,APIF, caml_ ##APIPREFIX ##__##CLASS ## __##APIF); \
-  apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF(value v_p0){ \
-    return CppCaml::apiN_class_implied(&CLASS :: APIF, v_p0); \
-  }
-
-#define APIM2_IMPLIED_(APIPREFIX, CLASS,APIF) \
-  REGISTER_API_MEMBER_IMPLIED(APIPREFIX,CLASS,APIF, caml_ ##APIPREFIX ##__##CLASS ## __##APIF); \
-  apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF(value v_p0, value v_p1){ \
-    return CppCaml::apiN_class_implied(&CLASS :: APIF, v_p0, v_p1); \
-  }
-
 #define APIM1_OVERLOAD_(APIPREFIX, CLASS,APIF,SUFFIX,...) \
   REGISTER_API_MEMBER_OVERLOAD(APIPREFIX,CLASS,APIF,SUFFIX, caml_ ##APIPREFIX ##__##CLASS ## __##APIF ## __overload__ ##SUFFIX, __VA_ARGS__); \
   apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF ## __overload__ ##SUFFIX (value v_c, value v_p0){ \
-    return CppCaml::apiN_class(CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(),&CLASS :: APIF), v_c, v_p0); \
+    return CppCaml::call_api_class(CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(),&CLASS :: APIF), v_c, v_p0); \
   }
 
 #define APIM2_OVERLOAD_(APIPREFIX, CLASS,APIF,SUFFIX,...) \
@@ -798,6 +773,11 @@ concept PropertyHasContext = requires {
 };
 
 template<typename T>
+concept PropertyNoContext = requires {
+  requires(!PropertyHasContext<T>);
+};
+
+template<typename T>
 concept PropertyHasDeleterWithContext = requires {
   requires PropertyHasContext<T>;
   requires requires(CamlConversionProperties<T>::Context*c, T*t) {
@@ -884,30 +864,49 @@ concept CamlOfValue = requires {
 };
 
 template<typename T>
-concept CamlToValue = requires {
-  requires CamlConvertible<T>;
-  requires std::same_as<decltype(CamlConversion<T>::allocates),const CamlAllocates>;
-  CamlConversion<T>::to_value;
-};
-
-template<typename T>
-concept CamlToValueNoContext = requires {
-  requires CamlToValue<T>;
-  requires requires(T t){CamlConversion<T>::to_value(t);};
-};
-
-template<typename T>
-concept CamlBidirectional = requires {
-  requires CamlOfValue<T>;
-  requires CamlToValue<T>;
-};
-
-template<typename T>
 concept CamlHasContext = requires (T a, CamlConversion<T>::RepresentationType& ra) {
   requires CamlConvertible<T>;
   typename CamlConversion<T>::Context;
   //requires std::same_as<typename CamlConversion<T>::Context,C>;
   { CamlConversion<T>::get_context(ra) } -> std::same_as<std::shared_ptr<typename CamlConversion<T>::Context>&>;
+};
+
+template<typename T>
+concept CamlNoContext = requires {
+  requires(!CamlHasContext<T>);
+};
+
+template<typename T>
+concept CamlToValueBase = requires {
+  requires CamlConvertible<T>;
+  requires std::same_as<decltype(CamlConversion<T>::allocates),const CamlAllocates>;
+};
+
+template<typename T>
+concept CamlToValueNoContext = requires {
+  requires CamlToValueBase<T>;
+  requires requires(T t){CamlConversion<T>::to_value(t);};
+};
+
+template<typename T>
+concept CamlToValueContext = requires {
+  requires CamlToValueBase<T>;
+  requires CamlHasContext<T>;
+  requires requires(std::shared_ptr<typename CamlConversion<T>::Context> c, T t){CamlConversion<T>::to_value(c, t);};
+};
+
+template<typename T>
+concept CamlToValue = requires {
+  requires CamlConvertible<T>;
+  requires std::same_as<decltype(CamlConversion<T>::allocates),const CamlAllocates>;
+  requires (CamlToValueNoContext<T> || CamlToValueContext<T>);
+};
+
+
+template<typename T>
+concept CamlBidirectional = requires {
+  requires CamlOfValue<T>;
+  requires CamlToValue<T>;
 };
 
 template<typename T>
@@ -931,7 +930,7 @@ struct CamlConversion<T> {
     return RepresentationType::allocate(ctx, t);
   }
 
-  static inline RepresentationType& of_value(value v){
+  static inline RepresentationType&of_value(value v){
     return Custom_value<RepresentationType>(v);
   }
 };
@@ -1078,12 +1077,15 @@ struct CamlConversion<std::optional<T>>{
 static_assert(CamlBidirectional<std::optional<std::string>>);
 
 template<typename T>
+requires CamlNoContext<T>
 struct CamlConversion<std::vector<T>>{
   typedef CamlConversion<T> N;
   typedef std::vector<T> RepresentationType;
   static const auto allocates = CamlAllocates::Allocation;
 
-  static inline value to_value(const std::vector<T>&vec) {
+  template <typename Q = T>
+  requires CamlToValue<Q>
+  static inline value to_value(std::vector<T>&vec) {
     CAMLparam0();
     CAMLlocal1(v_ret);
     v_ret = caml_alloc(vec.size(), 0);
@@ -1108,6 +1110,50 @@ struct CamlConversion<std::vector<T>>{
 
 };
 static_assert(CamlBidirectional<std::vector<std::string>>);
+
+template<typename T>
+requires CamlHasContext<T>
+struct CamlConversion<std::vector<T>>{
+  typedef CamlConversion<T> N;
+  typedef CamlConversion<T>::Context Context;
+
+  typedef std::pair<std::optional<std::shared_ptr<Context>>, std::vector<T>> RepresentationType;
+  static const auto allocates = CamlAllocates::Allocation;
+
+  static inline std::shared_ptr<Context>& get_context(RepresentationType& r){
+    return r.first;
+  }
+
+  template <typename Q = T>
+  requires CamlToValue<Q>
+  static inline value to_value(std::shared_ptr<Context>&ctx, std::vector<T>&vec) {
+    CAMLparam0();
+    CAMLlocal1(v_ret);
+    v_ret = caml_alloc(vec.size(), 0);
+    for(size_t i = 0; i < vec.size(); i++){
+      value v = N::to_value(ctx,vec[i]);
+      Store_field(v_ret,i,v);
+    };
+    CAMLreturn(v_ret);
+  }
+
+  static inline RepresentationType of_value(value v) { 
+    auto len = Wosize_val(v);
+    std::optional<std::shared_ptr<Context>> context = std::nullopt;
+    auto f = [&context](value v){
+      auto& of_value = N::of_value(v);
+      context = N::get_context(of_value);
+      return N::get_underlying(of_value);
+    };
+    auto begin = boost::make_transform_iterator(&Field(v, 0), f);
+    auto end = boost::make_transform_iterator(&Field(v, len), f);
+
+    return std::make_pair(context,std::vector<T>(begin, end));
+  }
+
+  static inline std::vector<T> get_underlying(RepresentationType r) { return r.second; }
+
+};
 
 template<typename T0, typename T1>
 struct CamlConversion<std::pair<T0,T1>>{

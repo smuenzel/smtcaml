@@ -10,7 +10,7 @@
   (archive_name boolector_stubs)
   (names boolector_stubs)
   (language cxx)
-  (flags :standard -Wall -std=c++23 -fconcepts-diagnostics-depth=5)
+  (flags :standard -Wall -std=c++23 -fconcepts-diagnostics-depth=8)
   (include_dirs ../vendor/build/include ../cppcaml/include)
   )
 
@@ -18,7 +18,7 @@
   (archive_name cvc5_stubs)
   (names cvc5_stubs)
   (language cxx)
-  (flags :standard -Wall -std=c++23 -fconcepts-diagnostics-depth=5)
+  (flags :standard -Wall -std=c++23 -fconcepts-diagnostics-depth=8)
   (include_dirs ../vendor/build/include ../cppcaml/include)
   )
 
