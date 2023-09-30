@@ -40,6 +40,14 @@ template<> struct CppCaml::CamlConversionProperties<BoolectorNode*>{
   }
 };
 
+template<> struct CppCaml::CamlConversionProperties<BoolectorSortRaw*>{
+  static constexpr auto representation_kind = CppCaml::CamlRepresentationKind::ContainerWithContext;
+  typedef Btor Context;
+  static void delete_T(Context*context, BoolectorSortRaw*t){
+    boolector_release_sort(context,t);
+  }
+};
+
 static_assert(CppCaml::CamlBidirectional<BoolectorNode*>);
 
 template<> struct CppCaml::CamlConversionProperties<Btor*>{
@@ -49,23 +57,34 @@ template<> struct CppCaml::CamlConversionProperties<Btor*>{
   }
 };
 
-static_assert(CppCaml::CamlOfValue<Btor*>);
-static_assert(CppCaml::CamlBidirectional<Btor*>);
+template<> struct CppCaml::CamlConversion<BtorOption> {
+  typedef BtorOption RepresentationType;
+  static const auto allocates = CppCaml::CamlAllocates::No_allocation;
 
+  static inline value to_value(BtorOption x) { return Val_long(x); }
+  static inline RepresentationType of_value(value v) { return (BtorOption)Long_val(v); }
+  static inline BtorOption get_underlying(RepresentationType r) { return r; }
+};
+static_assert(CppCaml::CamlBidirectional<BtorOption>);
 
-static_assert(CppCaml::CamlToValue<CppCaml::Void>);
+template<> struct CppCaml::CamlConversion<BoolectorNode**> {
+  typedef std::vector<CppCaml::CamlConversion<BoolectorNode*>::RepresentationType> RepresentationType;
+  typedef Btor Context;
+  static const auto allocates = CppCaml::CamlAllocates::Allocation;
 
-value xxx(value v0, value v1, value v2){
-  return CppCaml::call_api(boolector_and, v0, v1, v2);
-}
-
-value xxxi(value v1, value v2){
-  return CppCaml::call_api_implied_first(boolector_and, v1, v2);
-}
-
-value xxxi_assert(value v0, value v1){
-  return CppCaml::call_api(boolector_assert, v0, v1);
-}
+  static inline value to_value(std::shared_ptr<Btor>&context, BoolectorNode** n) {
+    CAMLparam0();
+    CAMLlocal1(ar);
+    size_t length = 0;
+    auto it = n;
+    while(*it) { it ++; length ++; };
+    ar = caml_alloc(length, 0);
+    for(size_t i = 0; i < length; i ++){
+      Field(ar,i) = CppCaml::CamlConversion<BoolectorNode*>::to_value(context, n[i]);
+    };
+    return ar;
+  }
+};
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
@@ -133,11 +152,13 @@ template<> struct CppCaml::CustomWithContextProperties<BoolectorNode**> {
   static inline BoolectorNode** of_value(value v) { assert(false); }
 };
 
-#define API1(APIF) \
+#define API1(APIF) API1__(_,boolector_##APIF)
+/*
   REGISTER_API(boolector,boolector_##APIF, caml_boolector_##APIF); \
   apireturn caml_boolector_##APIF (value v_btor){\
     return CppCaml::apiN(boolector_##APIF,v_btor);\
   }
+  */
 
 #define API2(APIF) \
   REGISTER_API(boolector,boolector_##APIF, caml_boolector_##APIF); \

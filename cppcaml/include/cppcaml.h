@@ -873,7 +873,7 @@ concept CamlHasContext = requires (T a, CamlConversion<T>::RepresentationType& r
   requires CamlConvertible<T>;
   typename CamlConversion<T>::Context;
   //requires std::same_as<typename CamlConversion<T>::Context,C>;
-  { CamlConversion<T>::get_context(ra) } -> std::same_as<std::shared_ptr<typename CamlConversion<T>::Context>&>;
+  //{ CamlConversion<T>::get_context(ra) } -> std::same_as<std::shared_ptr<typename CamlConversion<T>::Context>&>;
 };
 
 template<typename T>
@@ -1315,7 +1315,7 @@ template<typename T> using ConversionNormalized = CamlConversion<NormalizeArgume
 template<typename R, typename Rv = ReplaceVoid<R>::type, typename... Asc>
 requires
 ( CamlToValue<Rv> && (CamlOfValue<NormalizeArgument<Asc>> && ...)
-  && CamlNoContext<R>
+  && CamlNoContext<Rv>
 )
 inline value
 call_api(R (*fun)(Asc...), typename first_type<value,Asc>::type... v_ps){
@@ -1331,11 +1331,11 @@ call_api(R (*fun)(Asc...), typename first_type<value,Asc>::type... v_ps){
 template<typename R, typename Rv = ReplaceVoid<R>::type, typename A0c, typename... Asc, typename A0 = NormalizeArgument<A0c>>
 requires
 ( CamlToValue<Rv> && CamlOfValue<A0> && (CamlOfValue<NormalizeArgument<Asc>> && ...)
+  && CamlHasContext<Rv>
   && CamlContextConstructible<Rv,A0>
 )
 inline value
 call_api(R (*fun)(A0c, Asc...), value v0, typename first_type<value,Asc>::type... v_ps){
-  if constexpr(CamlHasContext<R>) {
     typedef typename CamlConversion<Rv>::Context Context;
     auto r0 = CamlConversion<A0>::of_value(v0);
     auto context = extract_context<Context,A0>(r0);
@@ -1346,16 +1346,6 @@ call_api(R (*fun)(A0c, Asc...), value v0, typename first_type<value,Asc>::type..
         );
     auto v_ret = CamlConversion<Rv>::to_value(context, ret);
     return v_ret;
-  } else {
-    auto ret =
-      invoke_void
-        ( fun
-        , CamlConversion<A0>::get_underlying(CamlConversion<A0>::of_value(v0))
-        , ConversionNormalized<Asc>::get_underlying(ConversionNormalized<Asc>::of_value(v_ps))...
-        );
-    auto v_ret = CamlConversion<Rv>::to_value(ret);
-    return v_ret;
-  }
 }
 
 template<typename R, typename Rv = ReplaceVoid<R>::type, typename A0c, typename A1c, typename... As, typename A0 = NormalizeArgument<A0c>, typename A1 = NormalizeArgument<A1c>>
