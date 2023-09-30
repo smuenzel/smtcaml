@@ -52,10 +52,11 @@ let check_current_and_get_model t : _ Smtcaml_intf.Solver_result.t =
 let sort_boolean t = C.solver__getBooleanSort t
 let assert_ expr = C.solver__assertFormula expr
 
+let get_term_context (t : C.term) : C.solver = Obj.magic t
+
 module Boolean = struct
-  (* CR smuenzel: C.term__get_context allocates a new context!!! *)
-  let eq e0 e1 = C.solver__mkTerm__kind (C.term__get_context e0) EQUAL [| e0; e1 |]
-  let neq e0 e1 = C.solver__mkTerm__kind (C.term__get_context e0) DISTINCT [| e0; e1 |]
+  let eq e0 e1 = C.solver__mkTerm__kind (get_term_context e0) EQUAL [| e0; e1 |]
+  let neq e0 e1 = C.solver__mkTerm__kind (get_term_context e0) DISTINCT [| e0; e1 |]
 end
 
 module Types = struct

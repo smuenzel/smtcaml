@@ -360,11 +360,10 @@ __attribute((used, section("caml_api_registry"))) = \
     return CppCaml::call_api_class_implied(&CLASS :: APIF, v_p0, v_p1); \
   }
 
-// TODO: remove
-#define API_GET_CONTEXT(APIPREFIX, TYPE, CTYPE) \
-  REGISTER_API_CUSTOM(TYPE ##__get_context, caml_ ##APIPREFIX ##__##TYPE ## __get_context, typename CppCaml::InlinedWithContext<CTYPE>::Context*,CTYPE); \
-  apireturn caml_ ##APIPREFIX ##__##TYPE ## __get_context(value v){ \
-    return CppCaml::get_context_caml<CTYPE>(v); \
+#define APIM2_OVERLOAD_IMPLIED_(APIPREFIX, CLASS,APIF,SUFFIX,...) \
+  REGISTER_API_MEMBER_OVERLOAD(APIPREFIX,CLASS,APIF,SUFFIX, caml_ ##APIPREFIX ##__##CLASS ## __##APIF ## __overload__ ##SUFFIX, __VA_ARGS__); \
+  apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF ## __overload__ ##SUFFIX (value v_p0, value v_p1){ \
+    return CppCaml::call_api_class_implied(CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(),&CLASS :: APIF), v_p0, v_p1); \
   }
 
 #define APIM1_OVERLOAD_(APIPREFIX, CLASS,APIF,SUFFIX,...) \
@@ -376,19 +375,13 @@ __attribute((used, section("caml_api_registry"))) = \
 #define APIM2_OVERLOAD_(APIPREFIX, CLASS,APIF,SUFFIX,...) \
   REGISTER_API_MEMBER_OVERLOAD(APIPREFIX,CLASS,APIF,SUFFIX, caml_ ##APIPREFIX ##__##CLASS ## __##APIF ## __overload__ ##SUFFIX, __VA_ARGS__); \
   apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF ## __overload__ ##SUFFIX (value v_c, value v_p0, value v_p1){ \
-    return CppCaml::apiN_class(CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(),&CLASS :: APIF), v_c, v_p0, v_p1); \
-  }
-
-#define APIM2_OVERLOAD_IMPLIED_(APIPREFIX, CLASS,APIF,SUFFIX,...) \
-  REGISTER_API_MEMBER_OVERLOAD(APIPREFIX,CLASS,APIF,SUFFIX, caml_ ##APIPREFIX ##__##CLASS ## __##APIF ## __overload__ ##SUFFIX, __VA_ARGS__); \
-  apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF ## __overload__ ##SUFFIX (value v_p0, value v_p1){ \
-    return CppCaml::apiN_class_implied(CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(),&CLASS :: APIF), v_p0, v_p1); \
+    return CppCaml::call_api_class(CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(),&CLASS :: APIF), v_c, v_p0, v_p1); \
   }
 
 #define APIM3_OVERLOAD_(APIPREFIX, CLASS,APIF,SUFFIX,...) \
   REGISTER_API_MEMBER_OVERLOAD(APIPREFIX,CLASS,APIF,SUFFIX, caml_ ##APIPREFIX ##__##CLASS ## __##APIF ## __overload__ ##SUFFIX, __VA_ARGS__); \
   apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF ## __overload__ ##SUFFIX (value v_c, value v_p0, value v_p1, value v_p2){ \
-    return CppCaml::apiN_class(CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(),&CLASS :: APIF), v_c, v_p0, v_p1, v_p2); \
+    return CppCaml::call_api_class(CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(),&CLASS :: APIF), v_c, v_p0, v_p1, v_p2); \
   }
 /////////////////////////////////////
 
@@ -1006,6 +999,16 @@ template<> struct CamlConversion<unsigned int> {
   static inline unsigned int get_underlying(RepresentationType r) { return r; }
 };
 static_assert(CamlBidirectional<unsigned int>);
+
+template<> struct CamlConversion<long unsigned int> {
+  typedef long unsigned int RepresentationType;
+  static const auto allocates = CamlAllocates::No_allocation;
+
+  static inline value to_value(long unsigned int x) { return Val_long(x); }
+  static inline RepresentationType of_value(value v) { return Long_val(v); }
+  static inline long unsigned int get_underlying(RepresentationType r) { return r; }
+};
+static_assert(CamlBidirectional<long unsigned int>);
 
 template<> struct CamlConversion<bool> {
   typedef bool RepresentationType;
@@ -1745,6 +1748,6 @@ template<> struct CppCaml::CamlConversion<ENUM_NAME> {\
       default: assert(false); \
     } \
   } \
-  static inline ENUM_NAME&get_underlying(RepresentationType&r) { return r; }\
+  static inline ENUM_NAME get_underlying(RepresentationType r) { return r; }\
 };\
 static_assert(CppCaml::CamlBidirectional<ENUM_NAME>);

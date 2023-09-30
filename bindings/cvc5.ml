@@ -402,7 +402,6 @@ external result__isUnsat : (* class Result *) sat_result -> bool = "caml_cvc5__R
 external result__isUnknown : (* class Result *) sat_result -> bool = "caml_cvc5__Result__isUnknown"
 external result__toString : (* class Result *) sat_result -> string = "caml_cvc5__Result__toString"
 external result__getUnknownExplanation : (* class Result *) sat_result -> unknownExplanation = "caml_cvc5__Result__getUnknownExplanation"
-external term__get_context : term -> solver = "caml_cvc5__Term__get_context"
 external term__toString : (* class Term *) term -> string = "caml_cvc5__Term__toString"
 (*$*)
 

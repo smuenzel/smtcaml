@@ -532,7 +532,6 @@ APIM0(Result,isUnknown)
 APIM0(Result,toString)
 APIM0(Result,getUnknownExplanation)
 
-API_GET_CONTEXT(cvc5,Term,Term)
 APIM0(Term,toString)
 
 apireturn caml_cvc5_unit(value){
