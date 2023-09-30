@@ -977,8 +977,14 @@ template<> struct CamlConversionProperties<std::string>{
 };
 
 template<typename T>
-concept PropertyAllowConst =
-  CamlConversionProperties<T>::allow_const == true;
+concept PropertyAllowConst = requires {
+  requires(CamlConversionProperties<T>::allow_const == true);
+};
+
+template<typename T>
+concept PropertyAllowConstRef = requires {
+  requires(CamlConversionProperties<T>::allow_const_ref == true);
+};
 
 template<typename T> 
 requires PropertyAllowConst<T> && CamlBidirectional<T>
@@ -991,6 +997,26 @@ struct CamlConversion<const T> {
   static inline RepresentationType of_value(value v) { return N::of_value(v); }
   static inline auto&get_underlying(RepresentationType&r) { return r; }
 };
+
+/*
+template<typename T> 
+requires PropertyAllowConstRef<T> && CamlToValue<T> && CamlHasContext<T>
+struct CamlConversion<const T&> {
+  typedef typename CamlConversionProperties<T>::Context Context;
+  typedef CamlConversion<T> N;
+  typedef const N::RepresentationType& RepresentationType;
+  static const auto allocates = N::allocates;
+
+  static inline RepresentationType of_value(value v) { return N::of_value(v); }
+  static inline const T& get_underlying(RepresentationType&r) {
+    return CamlConversion<T>::get_underlying(r);
+  }
+
+  static inline std::shared_ptr<Context>& get_context(RepresentationType& r){
+    return CamlConversion<T>::get_context(r);
+  }
+};
+*/
 
 static_assert(CamlBidirectional<const std::string>);
 
@@ -1057,13 +1083,18 @@ struct ReplaceVoid<void>{
   typedef Void type;
 };
 
-template<typename R, typename Rv = ReplaceVoid<R>::type, typename A0, typename... As>
+
+template<typename T> using NormalizeArgument = std::remove_const_t<std::remove_reference_t<T>>;
+
+template<typename T> using ConversionNormalized = CamlConversion<NormalizeArgument<T>>;
+
+template<typename R, typename Rv = ReplaceVoid<R>::type, typename A0c, typename... Asc, typename A0 = NormalizeArgument<A0c>>
 requires
-( CamlToValue<Rv> && CamlOfValue<A0> && (CamlOfValue<As> && ...)
+( CamlToValue<Rv> && CamlOfValue<A0> && (CamlOfValue<NormalizeArgument<Asc>> && ...)
   && CamlContextConstructible<Rv,A0>
 )
 inline value
-call_api(R (*fun)(A0, As...), value v0, typename first_type<value,As>::type... v_ps){
+call_api(R (*fun)(A0c, Asc...), value v0, typename first_type<value,Asc>::type... v_ps){
   if constexpr(CamlHasContext<R>) {
     typedef typename CamlConversion<Rv>::Context Context;
     auto r0 = CamlConversion<A0>::of_value(v0);
@@ -1071,7 +1102,7 @@ call_api(R (*fun)(A0, As...), value v0, typename first_type<value,As>::type... v
     auto ret =
       (*fun)
         ( CamlConversion<A0>::get_underlying(r0)
-        , CamlConversion<As>::get_underlying(CamlConversion<As>::of_value(v_ps))...
+        , ConversionNormalized<Asc>::get_underlying(ConversionNormalized<Asc>::of_value(v_ps))...
         );
     auto v_ret = CamlConversion<Rv>::to_value(context, ret);
     return v_ret;
@@ -1080,7 +1111,7 @@ call_api(R (*fun)(A0, As...), value v0, typename first_type<value,As>::type... v
       invoke_void
         ( fun
         , CamlConversion<A0>::get_underlying(CamlConversion<A0>::of_value(v0))
-        , CamlConversion<As>::get_underlying(CamlConversion<As>::of_value(v_ps))...
+        , ConversionNormalized<Asc>::get_underlying(ConversionNormalized<Asc>::of_value(v_ps))...
         );
     auto v_ret = CamlConversion<Rv>::to_value(ret);
     return v_ret;
@@ -1144,6 +1175,42 @@ call_api_class(R (C::*fun)(As...), value c, typename first_type<value,As>::type.
   }
 }
 
+template<typename R, typename Rv = ReplaceVoid<R>::type, typename C, typename A0c, typename... As, typename A0 = NormalizeArgument<A0c>>
+requires
+( CamlToValue<Rv> && CamlOfValue<C*> && CamlOfValue<A0> && (CamlOfValue<NormalizeArgument<As>> && ...)
+  && CamlContextConstructible<Rv,A0>
+  && CamlConstructible<C*,A0>
+)
+inline value
+call_api_class_implied(R (C::*fun)(A0c, As...), value v_p0, typename first_type<value,As>::type... v_ps){
+  if constexpr(CamlHasContext<R>) {
+    typedef typename CamlConversion<Rv>::Context Context;
+    auto& r0 = CamlConversion<A0>::of_value(v_p0);
+    auto c0 = extract_context<C,A0>(r0);
+    auto context = extract_context<Context,A0>(r0);
+    auto ret =
+      invoke_void
+        ( fun
+        , c0.get()
+        , CamlConversion<A0>::get_underlying(r0)
+        , ConversionNormalized<As>::get_underlying(ConversionNormalized<As>::of_value(v_ps))...
+        );
+    auto v_ret = CamlConversion<Rv>::to_value(context, ret);
+    return v_ret;
+  } else {
+    /*
+    auto ret =
+      invoke_void
+        ( fun
+        , CamlConversion<C*>::get_underlying(CamlConversion<C>::of_value(c))
+        , CamlConversion<As>::get_underlying(CamlConversion<As>::of_value(v_ps))...
+        );
+    auto v_ret = CamlConversion<Rv>::to_value(ret);
+    return v_ret;
+    */
+  }
+}
+
 template<typename C, typename R, typename... Args>
 auto inline class_function_no_const(R (C::*f)(Args...) const){
   return (R (C::*)(Args...))(f);
@@ -1153,6 +1220,12 @@ template<typename R, typename Rv = ReplaceVoid<R>::type, typename C, typename...
 inline value
 call_api_class(R (C::*fun)(As...) const, value c, typename first_type<value,As>::type... v_ps){
   return call_api_class(class_function_no_const(fun), c, v_ps...);
+};
+
+template<typename R, typename Rv = ReplaceVoid<R>::type, typename C, typename A0, typename... As>
+inline value
+call_api_class_implied(R (C::*fun)(A0, As...) const, value v_p0, typename first_type<value,As>::type... v_ps){
+  return call_api_class_implied(class_function_no_const(fun), v_p0, v_ps...);
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////

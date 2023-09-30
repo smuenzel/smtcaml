@@ -49,6 +49,7 @@ CAML_REPRESENTATION(SortKind,Immediate);
 ///
 template<> struct CppCaml::CamlConversionProperties<Sort>{
   static constexpr auto representation_kind = CppCaml::CamlRepresentationKind::ContainerWithContext;
+  static constexpr bool allow_const_ref = true;
   typedef Solver Context;
 };
 
@@ -60,7 +61,10 @@ static_assert(CppCaml::CamlOfValue<Solver*>);
 
 value xxx(value v){
   return CppCaml::call_api_class(&Solver::getBooleanSort,v);
+}
 
+value yyy(value v0, value v1){
+  return CppCaml::call_api_class_implied(&Solver::mkArraySort,v0,v1);
 }
 /////////////////////////////////////////////////////////////////////////////////////////
 
