@@ -59,6 +59,10 @@ let get_sort_context (t : C.sort) : C.solver = Obj.magic t
 
 let term_op op ar = C.solver__mkTerm__kind (get_term_context ar.(0)) op ar
 
+let op1 o e0 = term_op o [| e0 |]
+let op2 o e0 e1 = term_op o [| e0; e1 |]
+let op3 o e0 e1 e2 = term_op o [| e0; e1; e2 |]
+
 module Boolean = struct
   module Numeral = struct
     let bool t b = C.solver__mkBoolean t b
@@ -66,9 +70,9 @@ module Boolean = struct
     let false_ t = bool t false
   end
 
-  let eq e0 e1 = term_op EQUAL [| e0; e1 |]
-  let neq e0 e1 = term_op DISTINCT [| e0; e1 |]
-  let ite e0 e1 e2 = term_op ITE [| e0; e1; e2 |]
+  let eq = op2 EQUAL
+  let neq = op2 DISTINCT
+  let ite = op3 ITE
 end
 
 module Bv = struct
@@ -86,12 +90,12 @@ module Bv = struct
       (C.solver__mkBitVector__u32_u64 t 1 1)
       (C.solver__mkBitVector__u32_u64 t 1 0)
 
-  let not e0 = term_op BITVECTOR_NOT [| e0 |]
-  let and_ e0 e1 = term_op BITVECTOR_AND [| e0; e1 |]
-  let or_ e0 e1 = term_op BITVECTOR_AND [| e0; e1 |]
-  let xor e0 e1 = term_op BITVECTOR_AND [| e0; e1 |]
+  let not = op1 BITVECTOR_NOT
+  let and_ = op2 BITVECTOR_AND
+  let or_ = op2 BITVECTOR_OR
+  let xor = op2 BITVECTOR_XOR
 
-  let add e0 e1 = term_op BITVECTOR_ADD [| e0; e1 |]
+  let add = op2 BITVECTOR_ADD
 end
 
 module Types = struct
