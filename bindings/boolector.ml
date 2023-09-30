@@ -15,8 +15,6 @@ type solver =
 type uint32_t = int
 type int32_t = int
 
-external make : unit -> btor = "caml_boolector_new"
-
 type solver_result =
   | Unknown
   | Sat
@@ -118,8 +116,7 @@ external get_opt_max : btor -> btor_option -> uint32_t = "caml____boolector_get_
 external get_opt_dflt : btor -> btor_option -> uint32_t = "caml____boolector_get_opt_dflt"
 external get_opt : btor -> btor_option -> uint32_t = "caml____boolector_get_opt"
 external set_opt : btor -> btor_option -> uint32_t -> unit = "caml____boolector_set_opt"
-external new_ : unit -> btor = "caml_boolector_new"
-external get_btor : node -> btor = "caml_boolector_get_btor"
+external new_ : unit -> btor = "caml____boolector_new_"
 external sat : btor -> solver_result = "caml_boolector_sat"
 external limited_sat : btor -> int32_t -> int32_t -> solver_result = "caml_boolector_limited_sat"
 external bv_assignment : node -> string = "caml_boolector_bv_assignment"

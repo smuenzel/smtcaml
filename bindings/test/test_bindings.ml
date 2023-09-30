@@ -8,7 +8,7 @@ let () =
     [%message "registry"
         (api_registry : Cppcaml_lib.api_registry_entry list)
     ];
-  let btor = make () in
+  let btor = new_ () in
   set_solver btor Cadical;
   let opts = all_options btor in
   List.iter opts ~f:(fun o -> print_s [%sexp (o : BOption.t)]);

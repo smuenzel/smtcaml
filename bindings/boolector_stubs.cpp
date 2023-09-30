@@ -21,15 +21,6 @@ DECL_API_TYPE(solver_result,solver_result);
 
 typedef std::remove_pointer<BoolectorSort>::type BoolectorSortRaw;
 
-CAML_REPRESENTATION(Btor*, ContainerSharedPointer);
-CAML_REPRESENTATION(BoolectorNode*, ContainerWithContext);
-CAML_REPRESENTATION(BoolectorSortRaw*, ContainerWithContext);
-CAML_REPRESENTATION(BtorOption,Immediate);
-CAML_REPRESENTATION(int32_t,Immediate);
-CAML_REPRESENTATION(uint32_t,Immediate);
-CAML_REPRESENTATION(BoolectorNode**, CustomWithContext);
-
-
 ////////////////////////////////////////////////////////////////////////////////////////
 
 template<> struct CppCaml::CamlConversionProperties<BoolectorNode*>{
@@ -90,69 +81,7 @@ template<> struct CppCaml::CamlConversion<BoolectorNode**> {
 ////////////////////////////////////////////////////////////////////////////////////////
 
 
-template<> struct CppCaml::SharedPointerProperties<Btor>{
-  static void delete_T(Btor*b) { boolector_delete(b); }
-};
-
-template<> struct CppCaml::ValueWithContextProperties<BoolectorNode>{
-  typedef Btor Context;
-  static void delete_T(Context*context, BoolectorNode*t){
-    boolector_release(context,t);
-  }
-};
-
-template<> struct CppCaml::ValueWithContextProperties<BoolectorSortRaw>{
-  typedef Btor Context;
-  static void delete_T(Context*context, BoolectorSortRaw*t){
-    boolector_release_sort(context,t);
-  }
-};
-
-using caml_boolector_btor = CppCaml::ContainerSharedPointer<Btor>;
-
-using caml_boolector_node =
-  CppCaml::ContainerWithContext<BoolectorNode>;
-
-template<> struct CppCaml::T_value_wrapper<const char*>{
-  static inline const char * get(value v) { return String_val(v); }
-};
-
-template<> struct CppCaml::ImmediateProperties<BtorOption> {
-  static inline value to_value(BtorOption b) { return Val_long(b); }
-  static inline BtorOption of_value(value v) { return (BtorOption)Long_val(v); }
-};
-
-template<> struct CppCaml::ImmediateProperties<uint32_t> {
-  static inline value to_value(uint32_t b) { return Val_long(b); }
-  static inline uint32_t of_value(value v) { return Long_val(v); }
-};
-
-template<> struct CppCaml::ImmediateProperties<int32_t> {
-  static inline value to_value(int32_t b) { return Val_long(b); }
-  static inline int32_t of_value(value v) { return Long_val(v); }
-};
-
-template<> struct CppCaml::CustomWithContextProperties<BoolectorNode**> {
-  typedef Btor Context;
-  static inline value to_value(std::shared_ptr<Context>&ctx, BoolectorNode** b) {
-    // Assume boolector manages memory
-    CAMLparam0();
-    CAMLlocal2(v_ar,v_elt);
-    size_t size = 0;
-    auto i = b;
-    while(*i){
-      size++;
-      i++;
-    };
-    v_ar = caml_alloc(size,0);
-    for(size_t i = 0; i < size; i++){
-      Store_field(v_ar,i, caml_boolector_node::allocate(ctx, b[i]));
-    }
-    CAMLreturn(v_ar);
-  }
-  static inline BoolectorNode** of_value(value v) { assert(false); }
-};
-
+#define API0(APIF) API0__(_,boolector_##APIF)
 #define API1(APIF) API1__(_,boolector_##APIF)
 #define API2(APIF) API2__(_,boolector_##APIF)
 #define API3(APIF) API3__(_,boolector_##APIF)
@@ -256,16 +185,11 @@ static void abort_callback(const char* msg){
   caml_failwith(msg);
 }
 
-apireturn caml_boolector_new(value){
+auto boolector_new_(){
   boolector_set_abort(&abort_callback);
-  return caml_boolector_btor::allocate(boolector_new());
+  return boolector_new();
 }
-REGISTER_API(boolector,boolector_new,caml_boolector_new);
-
-apireturn caml_boolector_get_btor(value v_node){
-  return caml_boolector_btor::allocate(Custom_value<caml_boolector_node>(v_node).pContext);
-}
-REGISTER_API(boolector,boolector_get_btor, caml_boolector_get_btor);
+API0(new_)
 
 template<typename... Ps, size_t... Is>
 static inline int32_t call_sat_generic(int32_t (*inner_sat)(Btor*,Ps...), Btor*btor, std::tuple<Ps...> args, std::index_sequence<Is...> is){
@@ -275,9 +199,9 @@ static inline int32_t call_sat_generic(int32_t (*inner_sat)(Btor*,Ps...), Btor*b
 template<typename... Ps>
 static value sat_generic(int32_t (*inner_sat)(Btor*,Ps...), value v_btor, typename CppCaml::first_type<value,Ps>::type... v_ps){
   /* acquire ownership before blocking section */
-  auto s_btor = Custom_value<caml_boolector_btor>(v_btor).pT;
+  auto s_btor = Custom_value<CppCaml::SharedPointerContainer<Btor>>(v_btor).t;
   auto index_sequence = std::index_sequence_for<Ps...>();
-  std::tuple p_ar{ T_value<Ps>(v_ps)... };
+  std::tuple p_ar{ CppCaml::CamlConversion<Ps>::get_underlying(CppCaml::CamlConversion<Ps>::of_value(v_ps))... };
   caml_enter_blocking_section();
   auto sat = call_sat_generic(inner_sat, s_btor.get(), p_ar, index_sequence);
   caml_leave_blocking_section();
@@ -298,10 +222,15 @@ apireturn caml_boolector_limited_sat(value v_btor, value lod_limit, value sat_li
 }
 REGISTER_API_CUSTOM(boolector_limited_sat,caml_boolector_limited_sat,solver_result,Btor*,int32_t,int32_t);
 
-apireturn caml_boolector_bv_assignment(value v_p0){
-  return CppCaml::apiN_implied_context_free(boolector_bv_assignment,boolector_free_bv_assignment,v_p0);
+void boolector_free_bv_assignment_(Btor*&b,const char*&s){
+  boolector_free_bv_assignment(b,s);
 }
-REGISTER_API_CUSTOM(boolector_bv_assignment,caml_boolector_bv_assignment,const char *, BoolectorNode * );
+
+apireturn caml_boolector_bv_assignment(value v_p0){
+  return CppCaml::call_api_implied_first(boolector_free_bv_assignment_,boolector_bv_assignment,v_p0);
+}
+REGISTER_API_CUSTOM(boolector_bv_assignment,caml_boolector_bv_assignment,const char *, BoolectorNode*);
+
 
 apireturn caml_boolector_unit(value){
   return Val_unit;

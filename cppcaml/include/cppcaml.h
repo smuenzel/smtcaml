@@ -1385,6 +1385,8 @@ call_api(R (*fun)(A0c, Asc...), value v0, typename first_type<value,Asc>::type..
     return v_ret;
 }
 
+template<typename C, typename T> void return_destructor(C&, T&) {  };
+
 template<typename R, typename Rv = ReplaceVoid<R>::type, typename A0c, typename A1c, typename... As, typename A0 = NormalizeArgument<A0c>, typename A1 = NormalizeArgument<A1c>>
 requires
 ( CamlToValue<Rv> && CamlOfValue<A1> && (CamlOfValue<NormalizeArgument<As>> && ...)
@@ -1392,23 +1394,32 @@ requires
   && CamlConstructible<A0,A1>
 )
 inline value
-call_api_implied_first(R (*fun)(A0c, A1c, As...), value v1, typename first_type<value,As>::type... v_ps){
+call_api_implied_first(void (*return_destructor)(A0c&, Rv&), R (*fun)(A0c, A1c, As...), value v1, typename first_type<value,As>::type... v_ps){
   auto& r1 = CamlConversion<A1>::of_value(v1);
   auto context = extract_context<typename std::remove_pointer<A0>::type,A1>(r1);
+  auto context_p = context.get();
   auto ret =
     invoke_void
       ( fun
-      , context.get()
+      , context_p
       , CamlConversion<A1>::get_underlying(r1)
       , ConversionNormalized<As>::get_underlying(ConversionNormalized<As>::of_value(v_ps))...
       );
   if constexpr(CamlHasContext<Rv>) {
     auto v_ret = CamlConversion<Rv>::to_value(context, ret);
+    return_destructor(context_p, ret);
     return v_ret;
   } else {
     auto v_ret = CamlConversion<Rv>::to_value(ret);
+    return_destructor(context_p, ret);
     return v_ret;
   }
+}
+
+template<typename R, typename Rv = ReplaceVoid<R>::type,  typename A0c, typename A1c, typename... As>
+inline value
+call_api_implied_first(R (*fun)(A0c, A1c, As...), value v1, typename first_type<value,As>::type... v_ps){
+  return call_api_implied_first(return_destructor<A0c,Rv>,fun,v1,v_ps...);
 }
 
 template<typename R, typename Rv = ReplaceVoid<R>::type, typename C, typename... As>

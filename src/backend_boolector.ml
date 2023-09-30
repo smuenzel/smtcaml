@@ -35,7 +35,7 @@ module Model = struct
 end
 
 let create ?(options=Options.default) () =
-  let t = B.make () in
+  let t = B.new_ () in
   Options.Fields.Direct.iter options
     ~solver:(fun _ _ s -> B.set_solver t s)
   ;
