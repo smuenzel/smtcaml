@@ -465,6 +465,7 @@ APIM0(Sort,isBoolean)
 APIM0(Sort,isInteger)
 APIM0(Sort,isReal)
 APIM0(Sort,isInstantiated)
+APIM0(Sort,getBitVectorSize)
 
 APIM0(Result,isNull)
 APIM0(Result,isSat)

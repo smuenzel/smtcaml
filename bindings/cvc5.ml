@@ -396,6 +396,7 @@ external sort__isBoolean : (* class Sort *) sort -> bool = "caml_cvc5__Sort__isB
 external sort__isInteger : (* class Sort *) sort -> bool = "caml_cvc5__Sort__isInteger"
 external sort__isReal : (* class Sort *) sort -> bool = "caml_cvc5__Sort__isReal"
 external sort__isInstantiated : (* class Sort *) sort -> bool = "caml_cvc5__Sort__isInstantiated"
+external sort__getBitVectorSize : (* class Sort *) sort -> uint32_t = "caml_cvc5__Sort__getBitVectorSize"
 external result__isNull : (* class Result *) sat_result -> bool = "caml_cvc5__Result__isNull"
 external result__isSat : (* class Result *) sat_result -> bool = "caml_cvc5__Result__isSat"
 external result__isUnsat : (* class Result *) sat_result -> bool = "caml_cvc5__Result__isUnsat"

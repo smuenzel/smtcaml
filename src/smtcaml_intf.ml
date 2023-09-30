@@ -80,10 +80,16 @@ module type Bitvector = sig
   val sort_bitvector : 'i Types.instance -> int -> ('i, m_sort) Types.sort
 
   module Bv : sig
+    module Numeral : sig
+      val int : ('i, m_sort) Types.sort -> int -> ('i, m_sort) Types.expr
+    end
+
     val not : ('i, m_sort) Op_types.unary
     val and_  : ('i, m_sort) Op_types.binary
     val or_  : ('i, m_sort) Op_types.binary
     val xor  : ('i, m_sort) Op_types.binary
+
+    val add : ('i, m_sort) Op_types.binary
 
     (* val to_bool : ('i, m_sort) Types.expr -> ('i, Sort_kind.bool) Types.expr *)
     val of_bool : ('i, Sort_kind.bool) Types.expr -> ('i, m_sort) Types.expr
@@ -101,8 +107,15 @@ module type Boolean = sig
   val assert_ : ('i, m_sort) Types.expr -> unit
 
   module Boolean : sig
+    module Numeral : sig
+      val true_ : 'i Types.instance -> ('i, m_sort) Types.expr
+      val false_ : 'i Types.instance -> ('i, m_sort) Types.expr
+      val bool : 'i Types.instance -> bool -> ('i, m_sort) Types.expr
+    end
+
     val eq : ('i, 's) Types.expr -> ('i, 's) Types.expr -> ('i, m_sort) Types.expr
     val neq : ('i, 's) Types.expr -> ('i, 's) Types.expr -> ('i, m_sort) Types.expr
+    val ite : ('i, m_sort) Types.expr ->  ('i, 's) Op_types.binary
   end
 end
 

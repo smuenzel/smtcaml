@@ -144,6 +144,9 @@ API3I(write)
 API3I(cond)
 API1I(inc)
 API1I(dec)
+
+API3(int);
+
 API1(bool_sort)
 
 API2I(var);

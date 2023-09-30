@@ -67,18 +67,33 @@ let check_current_and_get_model t : _ Smtcaml_intf.Solver_result.t =
   | B.Sat -> Satisfiable ()
   | B.Unsat -> Unsatisfiable
 
+let get_sort_context (sort : B.sort) : B.btor = Obj.magic sort
+
 module Bv = struct
+  module Numeral = struct
+    let int sort i = B.int (get_sort_context sort) i sort
+  end
+
   let not = B.not
   let and_ = B.and_
   let or_ = B.or_
   let xor = B.xor
 
+  let add = B.add
+
   let of_bool b = b
 end
 
 module Boolean = struct
+  module Numeral = struct
+    let true_ t = B.true_ t
+    let false_ t = B.false_ t
+    let bool t b = if b then true_ t else false_ t
+  end
+
   let eq = B.eq
   let neq = B.ne
+  let ite = B.cond
 end
 
 module Types = struct

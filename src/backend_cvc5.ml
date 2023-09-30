@@ -50,13 +50,48 @@ let check_current_and_get_model t : _ Smtcaml_intf.Solver_result.t =
   else Unknown "Unknown"
 
 let sort_boolean t = C.solver__getBooleanSort t
+let sort_bitvector t l = C.solver__mkBitVectorSort t l
+
 let assert_ expr = C.solver__assertFormula expr
 
 let get_term_context (t : C.term) : C.solver = Obj.magic t
+let get_sort_context (t : C.sort) : C.solver = Obj.magic t
+
+let term_op op ar = C.solver__mkTerm__kind (get_term_context ar.(0)) op ar
 
 module Boolean = struct
-  let eq e0 e1 = C.solver__mkTerm__kind (get_term_context e0) EQUAL [| e0; e1 |]
-  let neq e0 e1 = C.solver__mkTerm__kind (get_term_context e0) DISTINCT [| e0; e1 |]
+  module Numeral = struct
+    let bool t b = C.solver__mkBoolean t b
+    let true_ t = bool t true
+    let false_ t = bool t false
+  end
+
+  let eq e0 e1 = term_op EQUAL [| e0; e1 |]
+  let neq e0 e1 = term_op DISTINCT [| e0; e1 |]
+  let ite e0 e1 e2 = term_op ITE [| e0; e1; e2 |]
+end
+
+module Bv = struct
+  module Numeral = struct
+    let int sort i =
+      C.solver__mkBitVector__u32_u64
+        (get_sort_context sort)
+        (C.sort__getBitVectorSize sort)
+        i
+  end
+
+  let of_bool e0 =
+    let t = get_term_context e0 in
+    Boolean.ite e0
+      (C.solver__mkBitVector__u32_u64 t 1 1)
+      (C.solver__mkBitVector__u32_u64 t 1 0)
+
+  let not e0 = term_op BITVECTOR_NOT [| e0 |]
+  let and_ e0 e1 = term_op BITVECTOR_AND [| e0; e1 |]
+  let or_ e0 e1 = term_op BITVECTOR_AND [| e0; e1 |]
+  let xor e0 e1 = term_op BITVECTOR_AND [| e0; e1 |]
+
+  let add e0 e1 = term_op BITVECTOR_ADD [| e0; e1 |]
 end
 
 module Types = struct
