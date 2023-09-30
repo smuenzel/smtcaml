@@ -30,21 +30,6 @@ DECL_API_TYPE(UnknownExplanation,unknownExplanation);
 DECL_API_TYPE(Kind,kind);
 DECL_API_TYPE(SortKind,sortKind);
 
-
-CAML_REPRESENTATION(Solver*, ContainerSharedPointer);
-CAML_REPRESENTATION(Sort,InlinedWithContext);
-CAML_REPRESENTATION(Term,InlinedWithContext);
-CAML_REPRESENTATION(const Term&,InlinedWithContext);
-CAML_REPRESENTATION(Result,InlinedWithContext);
-CAML_REPRESENTATION(UnknownExplanation,Immediate);
-
-CAML_REPRESENTATION(int32_t,Immediate);
-CAML_REPRESENTATION(uint32_t,Immediate);
-CAML_REPRESENTATION(uint64_t,Immediate);
-
-CAML_REPRESENTATION(Kind,Immediate);
-CAML_REPRESENTATION(SortKind,Immediate);
-
 /////////////////////////////////////////////////////////////////////////////////////////
 ///
 template<> struct CppCaml::CamlConversionProperties<Sort>{
@@ -454,13 +439,12 @@ template<> struct CppCaml::SharedPointerProperties<Solver>{
   static void delete_T(Solver*s) { delete s; }
 };
 
-using caml_cvc5_solver = CppCaml::ContainerSharedPointer<Solver>;
 
-
-apireturn caml_cvc5__Solver__operator_new(value){
-  return caml_cvc5_solver::allocate(new Solver());
+Solver* new_Solver(){
+  return new Solver();
 }
-REGISTER_API_CONSTRUCTOR(Solver,caml_cvc5__Solver__operator_new);
+
+API0__(cvc5,new_Solver)
 
 #define APIM0(A,B) APIM0__(cvc5,A,B)
 #define APIM1(A,B) APIM1__(cvc5,A,B)

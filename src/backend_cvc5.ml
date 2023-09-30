@@ -30,7 +30,7 @@ end
 
 let create ?(options=()) () =
   let () = options in
-  let t = C.make_Solver () in
+  let t = C.new_Solver () in
   C.solver__setOption t "produce-models" "true";
   Packed.T t
 

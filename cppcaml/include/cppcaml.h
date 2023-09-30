@@ -329,6 +329,18 @@ __attribute((used, section("caml_api_registry"))) = \
 /////////////////////////////////////
 // Function Autogen
 /////////////////////////////////////
+///
+#define API0__(APIPREFIX, APIF) \
+  REGISTER_API(APIPREFIX,APIF, caml_ ##APIPREFIX ##__##APIF); \
+  apireturn caml_ ##APIPREFIX ## __##APIF(value v_unit){ \
+    return CppCaml::call_api(APIF); \
+  }
+
+#define API1__(APIPREFIX, APIF) \
+  REGISTER_API(APIPREFIX,APIF, caml_ ##APIPREFIX ##__##APIF); \
+  apireturn caml_ ##APIPREFIX ## __##APIF(value v0){ \
+    return CppCaml::call_api(APIF, v0); \
+  }
 
 #define APIM0__(APIPREFIX, CLASS,APIF) \
   REGISTER_API_MEMBER(APIPREFIX,CLASS,APIF, caml_ ##APIPREFIX ##__##CLASS ## __##APIF); \
@@ -826,7 +838,7 @@ struct SharedPointerContainer : private boost::noncopyable {
 
   SharedPointerContainer(std::shared_ptr<T>&& t) : t(std::move(t)) {}
 
-  static inline value allocate(std::shared_ptr<T>&& t){
+  static inline value allocate(std::shared_ptr<T> t){
     typedef SharedPointerContainer<T> This;
     value v_container =
       caml_alloc_custom(&ContainerOps<This>::value,sizeof(This),1,500000);
@@ -1299,6 +1311,22 @@ struct ReplaceVoid<void>{
 template<typename T> using NormalizeArgument = std::remove_const_t<std::remove_reference_t<T>>;
 
 template<typename T> using ConversionNormalized = CamlConversion<NormalizeArgument<T>>;
+
+template<typename R, typename Rv = ReplaceVoid<R>::type, typename... Asc>
+requires
+( CamlToValue<Rv> && (CamlOfValue<NormalizeArgument<Asc>> && ...)
+  && CamlNoContext<R>
+)
+inline value
+call_api(R (*fun)(Asc...), typename first_type<value,Asc>::type... v_ps){
+    auto ret =
+      invoke_void
+        ( fun
+        , ConversionNormalized<Asc>::get_underlying(ConversionNormalized<Asc>::of_value(v_ps))...
+        );
+    auto v_ret = CamlConversion<Rv>::to_value(ret);
+    return v_ret;
+}
 
 template<typename R, typename Rv = ReplaceVoid<R>::type, typename A0c, typename... Asc, typename A0 = NormalizeArgument<A0c>>
 requires

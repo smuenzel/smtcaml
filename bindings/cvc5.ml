@@ -353,7 +353,7 @@ type unknownExplanation =
     emit_api ()
       ~modify
   *)
-external make_Solver : unit -> solver = "caml_cvc5__Solver__operator_new"
+external new_Solver : unit -> solver = "caml_cvc5__new_Solver"
 external solver__getBooleanSort : (* class Solver *) solver -> sort = "caml_cvc5__Solver__getBooleanSort"
 external solver__getIntegerSort : (* class Solver *) solver -> sort = "caml_cvc5__Solver__getIntegerSort"
 external solver__getRealSort : (* class Solver *) solver -> sort = "caml_cvc5__Solver__getRealSort"
