@@ -1,0 +1,6 @@
+(library
+  (name backend_cvc5)
+  (libraries core core_unix ppxlib core_kernel.nonempty_list smtcaml_bindings smtcaml_intf)
+  (preprocess (pps ppx_jane))
+  (inline_tests)
+  )

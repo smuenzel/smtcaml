@@ -1,7 +1,6 @@
 open! Core
-open! Smtcaml
 
-module Test(Smt : Interface_definitions.Bitvector_basic) = struct
+module Test(Smt : Smtcaml_intf.Interface_definitions.Bitvector_basic) = struct
   let run () =
     let T t = Smt.create () in
     let s = Smt.sort_bitvector t 32 in

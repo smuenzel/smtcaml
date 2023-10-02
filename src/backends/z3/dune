@@ -1,0 +1,6 @@
+(library
+  (name backend_z3)
+  (libraries core core_unix ppxlib core_kernel.nonempty_list z3 smtcaml_intf)
+  (preprocess (pps ppx_jane))
+  (inline_tests)
+  )

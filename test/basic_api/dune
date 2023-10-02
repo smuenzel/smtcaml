@@ -1,6 +1,14 @@
 (library
   (name smtcaml_test_basic_api)
-  (libraries core core_unix ppxlib core_kernel.nonempty_list smtcaml_bindings smtcaml) 
+  (libraries
+   core
+   core_unix
+   ppxlib
+   core_kernel.nonempty_list
+   smtcaml_bindings
+   smtcaml_intf
+   backend_z3
+   backend_cvc5
+   backend_boolector)
   (preprocess (pps ppx_jane))
-  (inline_tests)
-  )
+  (inline_tests))

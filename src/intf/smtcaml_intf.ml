@@ -1,0 +1,3 @@
+include Smtcaml_intf_internal
+
+module Interface_definitions = Interface_definitions

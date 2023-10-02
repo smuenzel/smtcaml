@@ -1,6 +1,0 @@
-(library
-  (name smtcaml)
-  (libraries core core_unix ppxlib core_kernel.nonempty_list smtcaml_bindings z3 bitwuzla-cxx)
-  (preprocess (pps ppx_jane))
-  (inline_tests)
-  )
