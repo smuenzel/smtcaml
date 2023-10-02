@@ -25,6 +25,8 @@ end
 
 module Expr = struct
   type (_,_) t = B.node
+
+  let sort = B.get_sort
 end
 
 module Model = struct
@@ -72,31 +74,7 @@ let check_current_and_get_model t : _ Smtcaml_intf.Solver_result.t =
   | B.Unsat -> Unsatisfiable
 
 let get_sort_context (sort : B.sort) : B.btor = Obj.magic sort
-
-module Bv = struct
-  module Sort = struct
-    let length sort = B.bitvec_sort_get_width sort
-  end
-
-  module Numeral = struct
-    let int sort i = B.int (get_sort_context sort) i sort
-
-    let fast_bitvector sort bv =
-      assert (Sort.length sort = Fast_bitvector.length bv);
-      B.const
-        (get_sort_context sort)
-        (Fast_bitvector.Little_endian.to_string bv)
-  end
-
-  let not = B.not
-  let and_ = B.and_
-  let or_ = B.or_
-  let xor = B.xor
-
-  let add = B.add
-
-  let of_bool b = b
-end
+(* let get_expr_context (expr : B.node) : B.btor = Obj.magic expr *)
 
 module Boolean = struct
   module Numeral = struct
@@ -108,6 +86,86 @@ module Boolean = struct
   let eq = B.eq
   let neq = B.ne
   let ite = B.cond
+
+  let not = B.not
+end
+
+module Bv = struct
+  module Sort = struct
+    let length sort = B.bitvec_sort_get_width sort
+  end
+
+  let length e = Sort.length (Expr.sort e)
+
+  module Numeral = struct
+    let int sort i = B.int (get_sort_context sort) i sort
+
+    let fast_bitvector sort bv =
+      assert (Sort.length sort = Fast_bitvector.length bv);
+      B.const
+        (get_sort_context sort)
+        (Fast_bitvector.Little_endian.to_string bv)
+
+    let zero ~length t = B.zero (sort_bitvector t length)
+
+    let zero_e e = B.zero (Expr.sort e)
+  end
+
+  let extract ~low ~high e = B.slice e high low
+
+  let concat e0 e1 = B.concat e0 e1
+
+  let zero_extend ~extra_zeros e = B.uext e extra_zeros
+
+  let sign_extend ~extra_bits e = B.sext e extra_bits
+
+  let sign e =
+    let length = length e in
+    extract ~low:(length - 1) ~high:(length - 1) e
+
+  let not = B.not
+  let and_ = B.and_
+  let or_ = B.or_
+  let xor = B.xor
+
+  let add = B.add
+  let sub = B.sub
+
+  let is_zero e =
+    B.eq (Numeral.zero_e e) e
+
+  let is_not_zero e =
+    B.ne (Numeral.zero_e e) e
+
+  let is_all_ones e =
+    let sort = Expr.sort e in
+    B.eq (B.not (B.zero sort)) e
+
+  let parity e = B.redxor e
+
+  let is_add_overflow ~signed e0 e1 =
+    match signed with
+    | true -> B.saddo e0 e1
+    | false -> B.uaddo e0 e1
+
+  let is_add_underflow _e0 _e1 =
+    assert false
+
+  let is_sub_overflow _e0 _e1 =
+    assert false
+
+  let is_sub_underflow ~signed e0 e1 =
+    match signed with
+    | true -> B.ssubo e0 e1
+    | false -> B.usubo e0 e1
+
+  let shift_left ~count e = B.sll e count
+  let shift_right_logical ~count e = B.srl e count
+  let shift_right_arithmetic ~count e = B.sra e count
+
+
+
+  let of_bool b = b
 end
 
 module Types = struct

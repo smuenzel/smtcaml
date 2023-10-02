@@ -151,7 +151,9 @@ API1(bool_sort)
 API1I(bitvec_sort_get_width)
 API2(const)
 
-API2I(var);
+API1I(zero)
+
+API2I(var)
 
 API2(bitvec_sort);
 
@@ -183,6 +185,8 @@ API2(get_opt_max);
 API2(get_opt_dflt);
 API2(get_opt);
 API3(set_opt);
+
+API3(unsigned_int)
 
 static void abort_callback(const char* msg){
   if(Caml_state == NULL) caml_acquire_runtime_system();

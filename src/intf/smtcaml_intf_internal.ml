@@ -27,6 +27,9 @@ module type Op_types = sig
 
   type ('i, 's) unary = ('i, 's) Types.expr -> ('i, 's) Types.expr
   type ('i, 's) binary = ('i, 's) Types.expr -> ('i, 's) unary
+
+  type ('i, 's) unary_test = ('i, 's) Types.expr -> ('i, Sort_kind.bool) Types.expr
+  type ('i, 's) binary_test = ('i, 's) Types.expr -> ('i, 's) unary_test
 end
 
 module Make_op_types (Types : Types) : Op_types with module Types := Types = struct
@@ -86,9 +89,13 @@ module type Bitvector = sig
       val length : ('i, m_sort) Types.sort -> int
     end
 
+    val length : ('i, m_sort) Types.expr -> int
+
     module Numeral : sig
       val int : ('i, m_sort) Types.sort -> int -> ('i, m_sort) Types.expr
       val fast_bitvector : ('i, m_sort) Types.sort -> Fast_bitvector.t -> ('i, m_sort) Types.expr 
+      val zero : length:int -> 'i Types.instance -> ('i, m_sort) Types.expr
+      val zero_e : ('i, m_sort) Op_types.unary
     end
 
     val not : ('i, m_sort) Op_types.unary
@@ -97,6 +104,27 @@ module type Bitvector = sig
     val xor  : ('i, m_sort) Op_types.binary
 
     val add : ('i, m_sort) Op_types.binary
+    val sub : ('i, m_sort) Op_types.binary
+
+    val is_zero : ('i, m_sort) Op_types.unary_test
+    val is_not_zero : ('i, m_sort) Op_types.unary_test
+    val is_all_ones : ('i, m_sort) Op_types.unary_test
+    val sign : ('i, m_sort) Op_types.unary
+    val parity : ('i, m_sort) Op_types.unary
+    val is_add_overflow : signed:bool -> ('i, m_sort) Op_types.binary_test
+    val is_add_underflow : ('i, m_sort) Op_types.binary_test
+    val is_sub_overflow : ('i, m_sort) Op_types.binary_test
+    val is_sub_underflow : signed:bool -> ('i, m_sort) Op_types.binary_test
+
+    val shift_left : count:('i, m_sort) Types.expr -> ('i, m_sort) Op_types.unary 
+    val shift_right_logical : count:('i, m_sort) Types.expr -> ('i, m_sort) Op_types.unary 
+    val shift_right_arithmetic : count:('i, m_sort) Types.expr -> ('i, m_sort) Op_types.unary 
+
+    val extract : low:int -> high:int -> ('i, m_sort) Op_types.unary
+    val concat : ('i, m_sort) Op_types.binary
+    val zero_extend : extra_zeros:int -> ('i, m_sort) Op_types.unary
+    val sign_extend : extra_bits:int -> ('i, m_sort) Op_types.unary
+
 
     (* val to_bool : ('i, m_sort) Types.expr -> ('i, Sort_kind.bool) Types.expr *)
     val of_bool : ('i, Sort_kind.bool) Types.expr -> ('i, m_sort) Types.expr
@@ -123,6 +151,8 @@ module type Boolean = sig
     val eq : ('i, 's) Types.expr -> ('i, 's) Types.expr -> ('i, m_sort) Types.expr
     val neq : ('i, 's) Types.expr -> ('i, 's) Types.expr -> ('i, m_sort) Types.expr
     val ite : ('i, m_sort) Types.expr ->  ('i, 's) Op_types.binary
+
+    val not : ('i, m_sort) Op_types.unary
   end
 end
 
