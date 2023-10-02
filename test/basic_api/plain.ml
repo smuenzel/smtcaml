@@ -17,6 +17,7 @@ module Test(Smt : Smtcaml_intf.Interface_definitions.Bitvector_basic) = struct
     | Satisfiable model ->
       print_s [%message "model"
           (Smt.Model.eval_to_string t model c : string option)
+          (Smt.Model.eval_bitvector t model c : Fast_bitvector.t option)
       ]
 
 end
@@ -26,17 +27,20 @@ let%expect_test "boolector" =
   T.run ();
   [%expect {|
     (model
-     ("Smt.Model.eval_to_string t model c" (00000000000000011000011010010011))) |}]
+     ("Smt.Model.eval_to_string t model c" (00000000000000011000011010010011))
+     ("Smt.Model.eval_bitvector t model c" (00000000000000011000011010010011))) |}]
 
 let%expect_test "cvc5" =
   let module T = Test(Backend_cvc5) in
   T.run ();
   [%expect {|
     (model
-     ("Smt.Model.eval_to_string t model c" (#b00000000000000011000011010010011))) |}]
+     ("Smt.Model.eval_to_string t model c" (#b00000000000000011000011010010011))
+     ("Smt.Model.eval_bitvector t model c" (00000000000000011000011010010011))) |}]
 
 let%expect_test "z3" =
   let module T = Test(Backend_z3) in
   T.run ();
   [%expect {|
-    (model ("Smt.Model.eval_to_string t model c" (#x00018693))) |}]
+    (model ("Smt.Model.eval_to_string t model c" (#x00018693))
+     ("Smt.Model.eval_bitvector t model c" (00000000000000011000011010010011))) |}]

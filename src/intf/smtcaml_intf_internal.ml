@@ -62,6 +62,8 @@ module type Backend_base = sig
     type 'i t = 'i Types.model
 
     val eval_to_string : 'i t' -> 'i t -> ('i, 's) Expr.t -> string option
+
+    val eval_bitvector : 'i t' -> 'i t -> ('i, Sort_kind.bv) Expr.t -> Fast_bitvector.t option
   end
 
   val create : ?options:Options.t -> unit -> Packed.t
@@ -80,8 +82,13 @@ module type Bitvector = sig
   val sort_bitvector : 'i Types.instance -> int -> ('i, m_sort) Types.sort
 
   module Bv : sig
+    module Sort : sig
+      val length : ('i, m_sort) Types.sort -> int
+    end
+
     module Numeral : sig
       val int : ('i, m_sort) Types.sort -> int -> ('i, m_sort) Types.expr
+      val fast_bitvector : ('i, m_sort) Types.sort -> Fast_bitvector.t -> ('i, m_sort) Types.expr 
     end
 
     val not : ('i, m_sort) Op_types.unary

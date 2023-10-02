@@ -26,6 +26,11 @@ module Model = struct
 
   let eval_to_string solver () term =
     Some (C.term__toString (C.solver__getValue__t solver term))
+
+  let eval_bitvector solver model term =
+    eval_to_string solver model term
+    |> Option.map ~f:(String.chop_prefix_exn ~prefix:"#b")
+    |> Option.map ~f:Fast_bitvector.Little_endian.of_string
 end
 
 let create ?(options=()) () =
@@ -76,12 +81,24 @@ module Boolean = struct
 end
 
 module Bv = struct
+  module Sort = struct
+    let length sort = C.sort__getBitVectorSize sort
+  end
+
   module Numeral = struct
     let int sort i =
       C.solver__mkBitVector__u32_u64
         (get_sort_context sort)
         (C.sort__getBitVectorSize sort)
         i
+
+    let fast_bitvector sort bv =
+      assert (Sort.length sort = Fast_bitvector.length bv);
+      C.solver__mkBitVector__u32_s_u32
+        (get_sort_context sort)
+        (Fast_bitvector.length bv)
+        (Fast_bitvector.Little_endian.to_string bv)
+        2
   end
 
   let of_bool e0 =

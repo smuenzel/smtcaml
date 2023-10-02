@@ -34,3 +34,6 @@
 [submodule "vendor/vendor-cvc5/symfpu"]
 	path = vendor/vendor-cvc5/symfpu
 	url = git@github.com:smuenzel/symfpu
+[submodule "vendor/fast_bitvector"]
+	path = vendor/fast_bitvector
+	url = git@github.com:smuenzel/fast_bitvector

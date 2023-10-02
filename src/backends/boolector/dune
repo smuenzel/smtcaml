@@ -1,6 +1,6 @@
 (library
   (name backend_boolector)
-  (libraries core core_unix ppxlib core_kernel.nonempty_list smtcaml_bindings smtcaml_intf)
+  (libraries core core_unix ppxlib core_kernel.nonempty_list smtcaml_bindings smtcaml_intf fast_bitvector)
   (preprocess (pps ppx_jane))
   (inline_tests)
   )

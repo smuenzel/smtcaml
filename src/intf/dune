@@ -1,6 +1,6 @@
 (library
   (name smtcaml_intf)
-  (libraries core core_unix ppxlib core_kernel.nonempty_list)
+  (libraries core core_unix ppxlib core_kernel.nonempty_list fast_bitvector)
   (preprocess (pps ppx_jane))
   (inline_tests)
   )

@@ -286,6 +286,8 @@ module Model = struct
 
   let eval_to_string instance _model expr =
     Some (B.Solver.get_value instance expr |> B.Term.to_string)
+
+  let eval_bitvector _ _ _ = assert false
 end
 
 let create ?(options = Options.default) () =

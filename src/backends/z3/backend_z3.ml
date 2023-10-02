@@ -55,16 +55,6 @@ let create
     ; solver
     }
 
-module Model = struct
-  type _ t = Z3.Model.model
-
-  let eval_to_string _t model expr =
-    let apply_model_completion = true in
-    Z3.Model.eval model expr apply_model_completion
-    |> Option.map ~f:Z3.Expr.to_string
-
-end
-
 module Sort = struct
   type (_,_) t = Z3.Sort.sort
 
@@ -122,6 +112,10 @@ module Boolean = struct
 end
 
 module Bv = struct
+  module Sort_internal = struct
+    let length = Z3.BitVector.get_size
+  end
+
   module Numeral = struct
     let bit_cn cn i =
       Z3native.mk_bv_numeral cn 1 [ i ]
@@ -131,6 +125,39 @@ module Bv = struct
 
     let int sort i =
       Z3.Expr.mk_numeral_int (Sort.context sort) i sort
+
+    let fast_bitvector sort bv =
+      assert (Sort_internal.length sort = Fast_bitvector.length bv);
+      Z3.Expr.mk_numeral_string
+        (Sort.context sort)
+        ("#b" ^ (Fast_bitvector.Little_endian.to_string bv))
+        sort
+
+    let to_fast_bitvector t =
+      if Stdlib.not (Z3.Expr.is_numeral t)
+      then raise_s [%message "not a numeral"];
+      let length = Sort_internal.length (Z3.Expr.get_sort t) in
+      let ctx = Expr.context_native t in
+      let short_string =
+        Z3native.get_numeral_binary_string
+          ctx
+          (Expr.to_native t)
+      in
+      let bv = Fast_bitvector.create ~length in
+      let short_string_length = String.length short_string in
+      String.iteri short_string
+        ~f:(fun i c ->
+            match c with
+            | '0' -> ()
+            | '1' -> Fast_bitvector.set bv (length - ((length - short_string_length) + i + 1))
+            | _ -> assert false
+          )
+      ;
+      bv
+      (*
+      String.init (length - String.length short_string) ~f:(Fn.const '0')
+      ^ short_string
+         *)
   end
 
   let of_bool b =
@@ -143,7 +170,24 @@ module Bv = struct
   let xor = op Z3.BitVector.mk_xor
 
   let add = op Z3.BitVector.mk_add
+
+  module Sort = Sort_internal
 end
+
+module Model = struct
+  type _ t = Z3.Model.model
+
+  let eval_to_string _t model expr =
+    let apply_model_completion = true in
+    Z3.Model.eval model expr apply_model_completion
+    |> Option.map ~f:Z3.Expr.to_string
+
+  let eval_bitvector _t model expr =
+    let apply_model_completion = true in
+    Z3.Model.eval model expr apply_model_completion
+    |> Option.map ~f:Bv.Numeral.to_fast_bitvector
+end
+
 
 module Types = struct
   type 'i instance = 'i t

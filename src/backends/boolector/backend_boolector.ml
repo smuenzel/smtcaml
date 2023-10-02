@@ -32,6 +32,10 @@ module Model = struct
 
   let eval_to_string _instance _model expr =
     Some (B.bv_assignment expr)
+
+  let eval_bitvector instance model expr =
+    eval_to_string instance model expr
+    |> Option.map ~f:Fast_bitvector.Little_endian.of_string
 end
 
 let create ?(options=Options.default) () =
@@ -70,8 +74,18 @@ let check_current_and_get_model t : _ Smtcaml_intf.Solver_result.t =
 let get_sort_context (sort : B.sort) : B.btor = Obj.magic sort
 
 module Bv = struct
+  module Sort = struct
+    let length sort = B.bitvec_sort_get_width sort
+  end
+
   module Numeral = struct
     let int sort i = B.int (get_sort_context sort) i sort
+
+    let fast_bitvector sort bv =
+      assert (Sort.length sort = Fast_bitvector.length bv);
+      B.const
+        (get_sort_context sort)
+        (Fast_bitvector.Little_endian.to_string bv)
   end
 
   let not = B.not

@@ -148,6 +148,8 @@ API1I(dec)
 API3(int);
 
 API1(bool_sort)
+API1I(bitvec_sort_get_width)
+API2(const)
 
 API2I(var);
 
