@@ -311,6 +311,11 @@ __attribute((used, section("caml_api_registry"))) = \
 __attribute((used, section("caml_api_registry"))) = \
     CppCaml::ApiRegistryEntry(#CLASS "__" #APIF "__" #SUFFIX,#WRAPPER,#CLASS, CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(), &CLASS :: APIF));
 
+#define REGISTER_API_MEMBER_OVERLOAD_IMPLIED(APIPREFIX,CLASS, APIF, SUFFIX, WRAPPER, ...) \
+  static inline constexpr auto __caml_api_registry_var__##APIPREFIX ## _ ##CLASS ## _##APIF ## _ ## SUFFIX \
+__attribute((used, section("caml_api_registry"))) = \
+    CppCaml::ApiRegistryEntry(CppCaml::DropFirstArgument(), #CLASS "__" #APIF "__" #SUFFIX,#WRAPPER,#CLASS, CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(), &CLASS :: APIF));
+
 #define REGISTER_API_CUSTOM(APIF, WRAPPER,...) \
   static inline constexpr auto __caml_api_registry_var__##APIF \
 __attribute((used, section("caml_api_registry"))) = \
@@ -402,8 +407,14 @@ __attribute((used, section("caml_api_registry"))) = \
     return CppCaml::call_api_class_implied(&CLASS :: APIF, v_p0, v_p1); \
   }
 
+#define APIM1_OVERLOAD_IMPLIED_(APIPREFIX, CLASS,APIF,SUFFIX,...) \
+  REGISTER_API_MEMBER_OVERLOAD_IMPLIED(APIPREFIX,CLASS,APIF,SUFFIX, caml_ ##APIPREFIX ##__##CLASS ## __##APIF ## __overload__ ##SUFFIX, __VA_ARGS__); \
+  apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF ## __overload__ ##SUFFIX (value v_p0){ \
+    return CppCaml::call_api_class_implied(CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(),&CLASS :: APIF), v_p0); \
+  }
+
 #define APIM2_OVERLOAD_IMPLIED_(APIPREFIX, CLASS,APIF,SUFFIX,...) \
-  REGISTER_API_MEMBER_OVERLOAD(APIPREFIX,CLASS,APIF,SUFFIX, caml_ ##APIPREFIX ##__##CLASS ## __##APIF ## __overload__ ##SUFFIX, __VA_ARGS__); \
+  REGISTER_API_MEMBER_OVERLOAD_IMPLIED(APIPREFIX,CLASS,APIF,SUFFIX, caml_ ##APIPREFIX ##__##CLASS ## __##APIF ## __overload__ ##SUFFIX, __VA_ARGS__); \
   apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF ## __overload__ ##SUFFIX (value v_p0, value v_p1){ \
     return CppCaml::call_api_class_implied(CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(),&CLASS :: APIF), v_p0, v_p1); \
   }
@@ -701,14 +712,21 @@ requires
 (PropertyRepresented<T,CamlRepresentationKind::ContainerWithContext>
 && PropertyHasContext<T>)
 struct CamlConversion<T*> {
-  typedef T* RepresentationType;
+  typedef CamlConversion<T> N;
+  typedef typename N::RepresentationType RepresentationType;
 
-  static inline T* get_underlying(RepresentationType r){
-    return r;
+  typedef typename N::Context Context;
+
+  static inline T* get_underlying(RepresentationType& r){
+    return &N::get_underlying(r);
   }
 
-  static inline RepresentationType of_value(value v){
-    return &CamlConversion<T>::get_underlying(CamlConversion<T>::of_value(v));
+  static inline std::shared_ptr<Context>& get_context(RepresentationType& r){
+    return r.pContext;
+  }
+
+  static inline RepresentationType&of_value(value v){
+    return CamlConversion<T>::of_value(v);
   }
 };
 
@@ -1005,9 +1023,12 @@ template<typename T_first, typename T_second> struct first_type { typedef T_firs
 
 template<typename C, typename T>
 requires CamlHasContext<T>
+&& (std::same_as<typename CamlConversion<T>::Context,C>
+    || std::same_as<typename CamlConversion<T>::Context*,C>)
 std::shared_ptr<C>& extract_context(typename CamlConversion<T>::RepresentationType&t){
   return CamlConversion<T>::get_context(t);
 }
+
 
 template<typename C, typename T>
 requires std::same_as<std::shared_ptr<C>,T>
@@ -1020,6 +1041,35 @@ requires std::same_as<std::shared_ptr<C>,typename CamlConversion<T>::Representat
 std::shared_ptr<C>& extract_context(typename CamlConversion<T>::RepresentationType&t){
   return t;
 }
+
+template<typename C, typename T>
+requires std::same_as<C,typename CamlConversion<T>::RepresentationType*>
+C extract_object(T&t) {
+  return &t;
+}
+
+template<typename C, typename T>
+requires std::same_as<C,T*>
+C extract_object(typename CamlConversion<T>::RepresentationType&t) {
+  return &CamlConversion<T>::get_underlying(t);
+}
+
+template<typename C, typename T>
+requires requires (typename CamlConversion<T>::RepresentationType t){
+  { extract_context<std::remove_pointer_t<C>, T>(t) } -> std::same_as<std::shared_ptr<std::remove_pointer_t<C>>&>;
+}
+C extract_object(typename CamlConversion<T>::RepresentationType&t) {
+  return extract_context<std::remove_pointer_t<C>, T>(t).get();
+}
+
+
+template<typename Construct, typename FromThis>
+concept CamlObjectConstructible = requires {
+  requires requires
+    (CamlConversion<FromThis>::RepresentationType from){
+      extract_object<Construct,FromThis>(from);
+    };
+};
 
 template<typename Construct, typename FromThis>
 concept CamlConstructible = requires {
@@ -1157,7 +1207,7 @@ inline value
 call_api_class(R (C::*fun)(As...), value c, typename first_type<value,As>::type... v_ps){
   if constexpr(CamlHasContext<R>) {
     typedef typename CamlConversion<Rv>::Context Context;
-    auto r0 = CamlConversion<C*>::of_value(c);
+    auto&r0 = CamlConversion<C*>::of_value(c);
     auto context = extract_context<Context,C*>(r0);
     auto ret =
       invoke_void
@@ -1183,19 +1233,19 @@ template<typename R, typename Rv = ReplaceVoid<R>::type, typename C, typename A0
 requires
 ( CamlToValue<Rv> && CamlOfValue<C*> && CamlOfValue<A0> && (CamlOfValue<NormalizeArgument<As>> && ...)
   && CamlContextConstructible<Rv,A0>
-  && CamlConstructible<C*,A0>
+  && CamlObjectConstructible<C*,A0>
 )
 inline value
 call_api_class_implied(R (C::*fun)(A0c, As...), value v_p0, typename first_type<value,As>::type... v_ps){
   if constexpr(CamlHasContext<R>) {
     typedef typename CamlConversion<Rv>::Context Context;
     auto& r0 = CamlConversion<A0>::of_value(v_p0);
-    auto c0 = extract_context<C,A0>(r0);
+    auto c0 = extract_object<C*,A0>(r0);
     auto context = extract_context<Context,A0>(r0);
     auto ret =
       invoke_void
         ( fun
-        , c0.get()
+        , c0
         , CamlConversion<A0>::get_underlying(r0)
         , ConversionNormalized<As>::get_underlying(ConversionNormalized<As>::of_value(v_ps))...
         );
@@ -1203,11 +1253,11 @@ call_api_class_implied(R (C::*fun)(A0c, As...), value v_p0, typename first_type<
     return v_ret;
   } else {
     auto& r0 = CamlConversion<A0>::of_value(v_p0);
-    auto c0 = extract_context<C,A0>(r0);
+    auto c0 = extract_object<C*,A0>(r0);
     auto ret =
       invoke_void
         ( fun
-        , c0.get()
+        , c0
         , CamlConversion<A0>::get_underlying(r0)
         , ConversionNormalized<As>::get_underlying(ConversionNormalized<As>::of_value(v_ps))...
         );

@@ -4,6 +4,7 @@ type solver
 type sort
 type term
 type sat_result
+type op
 
 type uint32_t = int
 type int32_t = int
@@ -378,6 +379,7 @@ external solver__mkTrue : (* class Solver *) solver -> term = "caml_cvc5__Solver
 external solver__mkFalse : (* class Solver *) solver -> term = "caml_cvc5__Solver__mkFalse"
 external solver__mkBoolean : (* class Solver *) solver -> bool -> term = "caml_cvc5__Solver__mkBoolean"
 external solver__mkTerm__kind : (* class Solver *) solver -> kind -> (term array) -> term = "caml_cvc5__Solver__mkTerm__overload__kind"
+external solver__mkTerm__op : (* class Solver *) solver -> op -> (term array) -> term = "caml_cvc5__Solver__mkTerm__overload__op"
 external solver__mkConstArray : (* class Solver *) solver -> sort -> term -> term = "caml_cvc5__Solver__mkConstArray"
 external solver__mkConst : (* class Solver *) sort -> (string option) -> term = "caml_cvc5__Solver__mkConst"
 external solver__mkVar : (* class Solver *) solver -> sort -> (string option) -> term = "caml_cvc5__Solver__mkVar"
@@ -388,6 +390,7 @@ external solver__getValue__t : (* class Solver *) solver -> term -> term = "caml
 external solver__getValue__vt : (* class Solver *) solver -> (term array) -> (term array) = "caml_cvc5__Solver__getValue__overload__vt"
 external solver__setOption : (* class Solver *) solver -> string -> string -> unit = "caml_cvc5__Solver__setOption"
 external solver__getOption : (* class Solver *) solver -> string -> string = "caml_cvc5__Solver__getOption"
+external solver__mkOp__kv : (* class Solver *) solver -> kind -> (uint32_t array) -> op = "caml_cvc5__Solver__mkOp__overload__kv"
 external sort__getKind : (* class Sort *) sort -> sortKind = "caml_cvc5__Sort__getKind"
 external sort__hasSymbol : (* class Sort *) sort -> bool = "caml_cvc5__Sort__hasSymbol"
 external sort__getSymbol : (* class Sort *) sort -> string = "caml_cvc5__Sort__getSymbol"
@@ -403,7 +406,34 @@ external result__isUnsat : (* class Result *) sat_result -> bool = "caml_cvc5__R
 external result__isUnknown : (* class Result *) sat_result -> bool = "caml_cvc5__Result__isUnknown"
 external result__toString : (* class Result *) sat_result -> string = "caml_cvc5__Result__toString"
 external result__getUnknownExplanation : (* class Result *) sat_result -> unknownExplanation = "caml_cvc5__Result__getUnknownExplanation"
+external term__getNumChildren : (* class Term *) term -> uint64_t = "caml_cvc5__Term__getNumChildren"
+external term__getId : (* class Term *) term -> uint64_t = "caml_cvc5__Term__getId"
+external term__getKind : (* class Term *) term -> kind = "caml_cvc5__Term__getKind"
+external term__getSort : (* class Term *) term -> sort = "caml_cvc5__Term__getSort"
 external term__toString : (* class Term *) term -> string = "caml_cvc5__Term__toString"
+external term__substitute__tt : (* class Term *) term -> term -> term -> term = "caml_cvc5__Term__substitute__overload__tt"
+external term__substitute__tvtv : (* class Term *) term -> (term array) -> (term array) -> term = "caml_cvc5__Term__substitute__overload__tvtv"
+external term__hasOp : (* class Term *) term -> bool = "caml_cvc5__Term__hasOp"
+external term__getOp : (* class Term *) term -> op = "caml_cvc5__Term__getOp"
+external term__hasSymbol : (* class Term *) term -> bool = "caml_cvc5__Term__hasSymbol"
+external term__getSymbol : (* class Term *) term -> string = "caml_cvc5__Term__getSymbol"
+external term__isNull : (* class Term *) term -> bool = "caml_cvc5__Term__isNull"
+external term__notTerm : (* class Term *) term -> term = "caml_cvc5__Term__notTerm"
+external term__andTerm : (* class Term *) term -> term -> term = "caml_cvc5__Term__andTerm"
+external term__orTerm : (* class Term *) term -> term -> term = "caml_cvc5__Term__orTerm"
+external term__xorTerm : (* class Term *) term -> term -> term = "caml_cvc5__Term__xorTerm"
+external term__eqTerm : (* class Term *) term -> term -> term = "caml_cvc5__Term__eqTerm"
+external term__impTerm : (* class Term *) term -> term -> term = "caml_cvc5__Term__impTerm"
+external term__iteTerm : (* class Term *) term -> term -> term -> term = "caml_cvc5__Term__iteTerm"
+external term__getRealOrIntegerValueSign : (* class Term *) term -> int32_t = "caml_cvc5__Term__getRealOrIntegerValueSign"
+external term__isInt32Value : (* class Term *) term -> bool = "caml_cvc5__Term__isInt32Value"
+external term__getInt32Value : (* class Term *) term -> int32_t = "caml_cvc5__Term__getInt32Value"
+external term__isUInt32Value : (* class Term *) term -> bool = "caml_cvc5__Term__isUInt32Value"
+external term__getUInt32Value : (* class Term *) term -> uint32_t = "caml_cvc5__Term__getUInt32Value"
+external term__isBooleanValue : (* class Term *) term -> bool = "caml_cvc5__Term__isBooleanValue"
+external term__getBooleanValue : (* class Term *) term -> bool = "caml_cvc5__Term__getBooleanValue"
+external term__isBitVectorValue : (* class Term *) term -> bool = "caml_cvc5__Term__isBitVectorValue"
+external term__getBitVectorValue : (* class Term *) term -> uint32_t -> string = "caml_cvc5__Term__getBitVectorValue"
 (*$*)
 
 

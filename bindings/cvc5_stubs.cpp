@@ -7,6 +7,7 @@ using CppCaml::ContainerOps;
 using Solver = cvc5::Solver;
 using Sort = cvc5::Sort;
 using Term = cvc5::Term;
+using Op = cvc5::Op;
 using Result = cvc5::Result;
 using UnknownExplanation = cvc5::UnknownExplanation;
 using Kind = cvc5::Kind;
@@ -21,6 +22,8 @@ DECL_API_TYPE(Sort,sort);
 DECL_API_TYPE(Sort*,sort);
 DECL_API_TYPE(Term,term);
 DECL_API_TYPE(Term*,term);
+DECL_API_TYPE(Op,op);
+DECL_API_TYPE(Op*,op);
 DECL_API_TYPE(void,unit);
 DECL_API_TYPE(std::string,string);
 DECL_API_TYPE(Result,sat_result);
@@ -45,6 +48,15 @@ template<> struct CppCaml::CamlConversionProperties<Term>{
   typedef Solver Context;
 
   static void delete_T(Context*context, Term&t){
+    delete &t;
+  }
+};
+
+template<> struct CppCaml::CamlConversionProperties<Op>{
+  static constexpr auto representation_kind = CppCaml::CamlRepresentationKind::ContainerWithContext;
+  typedef Solver Context;
+
+  static void delete_T(Context*context, Op&t){
     delete &t;
   }
 };
@@ -409,6 +421,7 @@ API0__(cvc5,new_Solver)
 #define APIM1_IMPLIED(A,B) APIM1_IMPLIED__(cvc5,A,B)
 #define APIM2_IMPLIED(A,B) APIM2_IMPLIED__(cvc5,A,B)
 #define APIM1_OVERLOAD(...) APIM1_OVERLOAD_(cvc5,__VA_ARGS__)
+#define APIM1_OVERLOAD_IMPLIED(...) APIM1_OVERLOAD_IMPLIED_(cvc5,__VA_ARGS__)
 #define APIM2_OVERLOAD(...) APIM2_OVERLOAD_(cvc5,__VA_ARGS__)
 #define APIM2_OVERLOAD_IMPLIED(...) APIM2_OVERLOAD_IMPLIED_(cvc5,__VA_ARGS__)
 #define APIM3_OVERLOAD(...) APIM3_OVERLOAD_(cvc5,__VA_ARGS__)
@@ -440,6 +453,7 @@ APIM0(Solver,mkFalse)
 APIM1(Solver,mkBoolean)
 
 APIM2_OVERLOAD(Solver,mkTerm,kind,Term,Kind,const std::vector<Term>&)
+APIM2_OVERLOAD(Solver,mkTerm,op,Term,const Op&,const std::vector<Term>&)
 
 APIM2(Solver,mkConstArray)
 
@@ -456,6 +470,8 @@ APIM1_OVERLOAD(Solver,getValue,vt,std::vector<Term>,const std::vector<Term>&)
 
 APIM2(Solver,setOption)
 APIM1(Solver,getOption)
+
+APIM2_OVERLOAD(Solver,mkOp,kv,Op,Kind,const std::vector<uint32_t>&)
 
 APIM0(Sort,getKind)
 APIM0(Sort,hasSymbol)
@@ -474,7 +490,38 @@ APIM0(Result,isUnknown)
 APIM0(Result,toString)
 APIM0(Result,getUnknownExplanation)
 
+APIM0(Term,getNumChildren)
+APIM0(Term,getId)
+APIM0(Term,getKind)
+APIM0(Term,getSort)
 APIM0(Term,toString)
+APIM2_OVERLOAD(Term,substitute,tt, Term, const Term&, const Term&)
+APIM2_OVERLOAD(Term,substitute,tvtv, Term, const std::vector<Term>&, const std::vector<Term>&)
+APIM0(Term,hasOp)
+APIM0(Term,getOp)
+APIM0(Term,hasSymbol)
+APIM0(Term,getSymbol)
+APIM0(Term,isNull)
+APIM0(Term,notTerm)
+APIM1(Term,andTerm)
+APIM1(Term,orTerm)
+APIM1(Term,xorTerm)
+APIM1(Term,eqTerm)
+APIM1(Term,impTerm)
+APIM2(Term,iteTerm)
+APIM0(Term,getRealOrIntegerValueSign)
+APIM0(Term,isInt32Value)
+APIM0(Term,getInt32Value)
+APIM0(Term,isUInt32Value)
+APIM0(Term,getUInt32Value)
+//....
+APIM0(Term,isBooleanValue)
+APIM0(Term,getBooleanValue)
+APIM0(Term,isBitVectorValue)
+APIM1(Term,getBitVectorValue)
+//...
+
+
 
 apireturn caml_cvc5_unit(value){
   return Val_unit;

@@ -64,6 +64,11 @@ let get_sort_context (t : C.sort) : C.solver = Obj.magic t
 
 let term_op op ar = C.solver__mkTerm__kind (get_term_context ar.(0)) op ar
 
+let term_complex_op op op_params ar =
+  let t = get_term_context ar.(0) in
+  let op = C.solver__mkOp__kv t op op_params in
+  C.solver__mkTerm__op t op ar
+
 let op1 o e0 = term_op o [| e0 |]
 let op2 o e0 e1 = term_op o [| e0; e1 |]
 let op3 o e0 e1 e2 = term_op o [| e0; e1; e2 |]
@@ -75,6 +80,7 @@ module Boolean = struct
     let false_ t = bool t false
   end
 
+  let not = op1 NOT
   let eq = op2 EQUAL
   let neq = op2 DISTINCT
   let ite = op3 ITE
@@ -84,6 +90,8 @@ module Bv = struct
   module Sort = struct
     let length sort = C.sort__getBitVectorSize sort
   end
+
+  let length e0 = Sort.length (C.term__getSort e0)
 
   module Numeral = struct
     let int sort i =
@@ -99,7 +107,25 @@ module Bv = struct
         (Fast_bitvector.length bv)
         (Fast_bitvector.Little_endian.to_string bv)
         2
+
+    let zero ~length t = C.solver__mkBitVector__u32_u64 t length 0
+
+    let zero_e e0 =
+      C.solver__mkBitVector__u32_u64 (get_term_context e0) (length e0) 0
   end
+
+  let extract ~low ~high e =
+    term_complex_op BITVECTOR_EXTRACT [| high; low |] [| e |]
+
+  let extract_single ~bit e = extract ~low:bit ~high:bit e
+
+  let concat = op2 BITVECTOR_CONCAT
+
+  let zero_extend ~extra_zeros e =
+    term_complex_op BITVECTOR_ZERO_EXTEND [| extra_zeros |] [| e |]
+
+  let sign_extend ~extra_bits e =
+    term_complex_op BITVECTOR_SIGN_EXTEND [| extra_bits |] [| e |]
 
   let of_bool e0 =
     let t = get_term_context e0 in
@@ -113,6 +139,43 @@ module Bv = struct
   let xor = op2 BITVECTOR_XOR
 
   let add = op2 BITVECTOR_ADD
+  let sub = op2 BITVECTOR_SUB
+
+  let is_zero e = Boolean.eq (Numeral.zero_e e) e
+  let is_not_zero e = Boolean.neq (Numeral.zero_e e) e
+  let is_all_ones e = Boolean.eq (not (Numeral.zero_e e)) e 
+
+  let sign e =
+    let length = length e in
+    extract_single ~bit:(length - 1) e
+
+  let parity a =
+    let length = length a in
+    (* No mk_redxor *)
+    List.init length ~f:(fun i -> extract_single a ~bit:i)
+    |> List.reduce_balanced_exn ~f:xor
+
+  let is_add_overflow ~signed e0 e1 =
+    match signed with
+    | true -> op2 BITVECTOR_SADDO e0 e1
+    | false -> op2 BITVECTOR_UADDO e0 e1
+
+  let is_add_underflow _ _ = assert false
+  let is_sub_overflow _ _ = assert false
+
+  let is_sub_underflow ~signed e0 e1 =
+    match signed with
+    | true -> op2 BITVECTOR_SSUBO e0 e1
+    | false -> op2 BITVECTOR_USUBO e0 e1
+
+  let shift_left ~count e =
+    op2 BITVECTOR_SHL e count
+
+  let shift_right_logical ~count e =
+    op2 BITVECTOR_LSHR e count
+
+  let shift_right_arithmetic ~count e =
+    op2 BITVECTOR_ASHR e count
 end
 
 module Types = struct
