@@ -1,1 +1,1 @@
-(data_only_dirs vendor-boolector)
+(data_only_dirs vendor-boolector vendor-cvc5)
