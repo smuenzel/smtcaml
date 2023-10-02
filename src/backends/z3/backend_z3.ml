@@ -116,6 +116,8 @@ module Bv = struct
     let length = Z3.BitVector.get_size
   end
 
+  let length t = Sort_internal.length (Z3.Expr.get_sort t)
+
   module Numeral = struct
     let bit_cn cn i =
       Z3native.mk_bv_numeral cn 1 [ i ]
@@ -158,7 +160,21 @@ module Bv = struct
       String.init (length - String.length short_string) ~f:(Fn.const '0')
       ^ short_string
          *)
+
+    let zero ~length t =
+      Z3.Expr.mk_numeral_int (c t) 0 (sort_bitvector t length)
+
+    let zero_e t = Z3.Expr.mk_numeral_int (Expr.context t) 0 (Z3.Expr.get_sort t)
+
   end
+
+  let extract ~low ~high e =
+    Z3.BitVector.mk_extract (Expr.context e) high low e
+
+  let extract_single ~bit e = extract ~low:bit ~high:bit e
+
+  let concat a b =
+    Z3.BitVector.mk_concat (Expr.context a) a b
 
   let of_bool b =
     let cn = Expr.context_native b in
@@ -170,6 +186,57 @@ module Bv = struct
   let xor = op Z3.BitVector.mk_xor
 
   let add = op Z3.BitVector.mk_add
+  let sub = op Z3.BitVector.mk_sub
+
+  let is_zero e = Boolean.eq e (Numeral.zero_e e)
+  let is_not_zero e = Boolean.neq e (Numeral.zero_e e)
+
+  let is_all_ones e = Boolean.eq e (not (Numeral.zero_e e))
+
+  let sign e =
+    let length = length e in
+    extract_single ~bit:(length - 1) e
+
+  let parity a =
+    let length = length a in
+    (* No mk_redxor *)
+    List.init length ~f:(fun i -> extract_single a ~bit:i)
+    |> List.reduce_balanced_exn ~f:xor
+
+  let is_add_overflow ~signed a b =
+    let ctx = Expr.context a in
+    Z3.BitVector.mk_add_no_overflow ctx a b signed
+    |> Boolean.not
+
+  let is_add_underflow a b =
+    let ctx = Expr.context a in
+    Z3.BitVector.mk_add_no_underflow ctx a b
+    |> Boolean.not
+
+  let is_sub_underflow ~signed a b =
+    let ctx = Expr.context a in
+    Z3.BitVector.mk_sub_no_underflow ctx a b signed
+    |> Boolean.not
+
+  let is_sub_overflow a b =
+    let ctx = Expr.context a in
+    Z3.BitVector.mk_sub_no_overflow ctx a b
+    |> Boolean.not
+
+  let shift_left ~count e =
+    Z3.BitVector.mk_shl (Expr.context e) e count
+
+  let shift_right_logical ~count e =
+    Z3.BitVector.mk_lshr (Expr.context e) e count
+
+  let shift_right_arithmetic ~count e =
+    Z3.BitVector.mk_ashr (Expr.context e) e count
+
+  let zero_extend ~extra_zeros e =
+    Z3.BitVector.mk_zero_ext (Expr.context e) extra_zeros e
+
+  let sign_extend ~extra_bits e =
+    Z3.BitVector.mk_sign_ext (Expr.context e) extra_bits e
 
   module Sort = Sort_internal
 end

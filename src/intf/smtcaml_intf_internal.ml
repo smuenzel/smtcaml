@@ -121,6 +121,7 @@ module type Bitvector = sig
     val shift_right_arithmetic : count:('i, m_sort) Types.expr -> ('i, m_sort) Op_types.unary 
 
     val extract : low:int -> high:int -> ('i, m_sort) Op_types.unary
+    val extract_single : bit:int -> ('i, m_sort) Op_types.unary
     val concat : ('i, m_sort) Op_types.binary
     val zero_extend : extra_zeros:int -> ('i, m_sort) Op_types.unary
     val sign_extend : extra_bits:int -> ('i, m_sort) Op_types.unary

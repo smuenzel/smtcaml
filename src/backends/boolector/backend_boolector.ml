@@ -113,6 +113,8 @@ module Bv = struct
 
   let extract ~low ~high e = B.slice e high low
 
+  let extract_single ~bit e = extract ~low:bit ~high:bit e
+
   let concat e0 e1 = B.concat e0 e1
 
   let zero_extend ~extra_zeros e = B.uext e extra_zeros
@@ -121,7 +123,7 @@ module Bv = struct
 
   let sign e =
     let length = length e in
-    extract ~low:(length - 1) ~high:(length - 1) e
+    extract_single ~bit:(length - 1) e
 
   let not = B.not
   let and_ = B.and_
