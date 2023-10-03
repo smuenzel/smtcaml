@@ -1103,6 +1103,19 @@ inline Result invoke_void(F&& f, Ps&&... ps){
   return std::invoke(std::forward<F>(f), std::forward<Ps>(ps)...);
 };
 
+template<typename F, typename... Ps, size_t... is, typename Result = std::invoke_result_t<F,Ps...>>
+requires (!std::same_as<Result,void>)
+inline Result invoke_seq_void(F&& f, std::tuple<Ps...> ps, std::index_sequence<is...> iseq){
+  return std::invoke(std::forward<F>(f), get<is>(ps)...);
+};
+
+template<typename F, typename... Ps, size_t... is, typename Result = std::invoke_result_t<F,Ps...>>
+requires (std::same_as<Result,void>)
+inline Void invoke_seq_void(F&& f, std::tuple<Ps...> ps, std::index_sequence<is...> iseq){
+  std::invoke(std::forward<F>(f), get<is>(ps)...);
+  return {};
+};
+
 template<typename V>
 struct ReplaceVoid{
   typedef V type;
@@ -1132,10 +1145,13 @@ requires
 )
 inline value
 call_api(R (*fun)(Asc...), typename first_type<value,Asc>::type... v_ps){
+    auto index_sequence = std::index_sequence_for<Asc...>(); 
+    std::tuple p_ar{ ConversionNormalized<Asc>::get_underlying(ConversionNormalized<Asc>::of_value(v_ps))... };
     auto ret =
-      invoke_void
+      invoke_seq_void
         ( fun
-        , ConversionNormalized<Asc>::get_underlying(ConversionNormalized<Asc>::of_value(v_ps))...
+        , p_ar
+        , index_sequence
         );
     auto v_ret = CamlConversion<Rv>::to_value(ret);
     return v_ret;
@@ -1152,10 +1168,14 @@ call_api(R (*fun)(A0c, Asc...), value v0, typename first_type<value,Asc>::type..
     typedef typename CamlConversion<Rv>::Context Context;
     auto r0 = CamlConversion<A0>::of_value(v0);
     auto context = extract_context<Context,A0>(r0);
+    auto index_sequence = std::index_sequence_for<A0c, Asc...>(); 
+    std::tuple p_ar{ CamlConversion<A0>::get_underlying(r0)
+      , ConversionNormalized<Asc>::get_underlying(ConversionNormalized<Asc>::of_value(v_ps))... };
     auto ret =
-      (*fun)
-        ( CamlConversion<A0>::get_underlying(r0)
-        , ConversionNormalized<Asc>::get_underlying(ConversionNormalized<Asc>::of_value(v_ps))...
+      invoke_seq_void
+        ( fun
+        , p_ar
+        , index_sequence
         );
     auto v_ret = CamlConversion<Rv>::to_value(context, ret);
     return v_ret;
@@ -1174,12 +1194,16 @@ call_api_implied_first(void (*return_destructor)(A0c&, Rv&), R (*fun)(A0c, A1c, 
   auto& r1 = CamlConversion<A1>::of_value(v1);
   auto context = extract_context<typename std::remove_pointer<A0>::type,A1>(r1);
   auto context_p = context.get();
+  auto index_sequence = std::index_sequence_for<A0c,A1c,As...>(); 
+  std::tuple p_ar{ context_p
+    , CamlConversion<A1>::get_underlying(r1)
+    , ConversionNormalized<As>::get_underlying(ConversionNormalized<As>::of_value(v_ps))...
+  };
   auto ret =
-    invoke_void
+    invoke_seq_void
       ( fun
-      , context_p
-      , CamlConversion<A1>::get_underlying(r1)
-      , ConversionNormalized<As>::get_underlying(ConversionNormalized<As>::of_value(v_ps))...
+      , p_ar
+      , index_sequence
       );
   if constexpr(CamlHasContext<Rv>) {
     auto v_ret = CamlConversion<Rv>::to_value(context, ret);
@@ -1205,24 +1229,33 @@ requires
 )
 inline value
 call_api_class(R (C::*fun)(As...), value c, typename first_type<value,As>::type... v_ps){
+  auto index_sequence = std::index_sequence_for<C*, As...>(); 
   if constexpr(CamlHasContext<R>) {
     typedef typename CamlConversion<Rv>::Context Context;
     auto&r0 = CamlConversion<C*>::of_value(c);
     auto context = extract_context<Context,C*>(r0);
+    std::tuple p_ar
+      { CamlConversion<C*>::get_underlying(r0)
+      , ConversionNormalized<As>::get_underlying(ConversionNormalized<As>::of_value(v_ps))...
+      };
     auto ret =
-      invoke_void
+      invoke_seq_void
         ( fun
-        , CamlConversion<C*>::get_underlying(r0)
-        , ConversionNormalized<As>::get_underlying(ConversionNormalized<As>::of_value(v_ps))...
+        , p_ar
+        , index_sequence
         );
     auto v_ret = CamlConversion<Rv>::to_value(context, ret);
     return v_ret;
   } else {
+    std::tuple p_ar
+      { CamlConversion<C*>::get_underlying(CamlConversion<C*>::of_value(c))
+      , ConversionNormalized<As>::get_underlying(ConversionNormalized<As>::of_value(v_ps))...
+      };
     auto ret =
-      invoke_void
+      invoke_seq_void
         ( fun
-        , CamlConversion<C*>::get_underlying(CamlConversion<C*>::of_value(c))
-        , ConversionNormalized<As>::get_underlying(ConversionNormalized<As>::of_value(v_ps))...
+        , p_ar
+        , index_sequence
         );
     auto v_ret = CamlConversion<Rv>::to_value(ret);
     return v_ret;
@@ -1237,29 +1270,38 @@ requires
 )
 inline value
 call_api_class_implied(R (C::*fun)(A0c, As...), value v_p0, typename first_type<value,As>::type... v_ps){
+  auto index_sequence = std::index_sequence_for<C*, A0c, As...>(); 
   if constexpr(CamlHasContext<R>) {
     typedef typename CamlConversion<Rv>::Context Context;
     auto& r0 = CamlConversion<A0>::of_value(v_p0);
     auto c0 = extract_object<C*,A0>(r0);
     auto context = extract_context<Context,A0>(r0);
+    std::tuple p_ar
+      { c0
+      , CamlConversion<A0>::get_underlying(r0)
+      , ConversionNormalized<As>::get_underlying(ConversionNormalized<As>::of_value(v_ps))...
+      };
     auto ret =
-      invoke_void
+      invoke_seq_void
         ( fun
-        , c0
-        , CamlConversion<A0>::get_underlying(r0)
-        , ConversionNormalized<As>::get_underlying(ConversionNormalized<As>::of_value(v_ps))...
+        , p_ar
+        , index_sequence
         );
     auto v_ret = CamlConversion<Rv>::to_value(context, ret);
     return v_ret;
   } else {
     auto& r0 = CamlConversion<A0>::of_value(v_p0);
     auto c0 = extract_object<C*,A0>(r0);
+    std::tuple p_ar
+      { c0
+      , CamlConversion<A0>::get_underlying(r0)
+      , ConversionNormalized<As>::get_underlying(ConversionNormalized<As>::of_value(v_ps))...
+      };
     auto ret =
-      invoke_void
+      invoke_seq_void
         ( fun
-        , c0
-        , CamlConversion<A0>::get_underlying(r0)
-        , ConversionNormalized<As>::get_underlying(ConversionNormalized<As>::of_value(v_ps))...
+        , p_ar
+        , index_sequence
         );
     auto v_ret = CamlConversion<Rv>::to_value(ret);
     return v_ret;
