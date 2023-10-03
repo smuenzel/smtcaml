@@ -383,6 +383,12 @@ __attribute((used, section("caml_api_registry"))) = \
     return CppCaml::call_api(APIF, v0, v1, v2); \
   }
 
+#define API3_BLOCKING__(APIPREFIX, APIF) \
+  REGISTER_API(APIPREFIX,APIF, caml_ ##APIPREFIX ##__##APIF); \
+  apireturn caml_ ##APIPREFIX ## __##APIF(value v0, value v1, value v2){ \
+    return CppCaml::call_api<CppCaml::ReleaseOcamlLock>(APIF, v0, v1, v2); \
+  }
+
 #define APIM0__(APIPREFIX, CLASS,APIF) \
   REGISTER_API_MEMBER(APIPREFIX,CLASS,APIF, caml_ ##APIPREFIX ##__##CLASS ## __##APIF); \
   apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF(value v_c){ \

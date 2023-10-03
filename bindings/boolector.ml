@@ -15,12 +15,6 @@ type solver =
 type uint32_t = int
 type int32_t = int
 
-type solver_result =
-  | Unknown
-  | Sat
-  | Unsat
-[@@deriving sexp]
-
 (*$ open! Core
   open Cppcaml_lib
   (* dune cinaps currently doesn't support adding link flags, and we need -linkall,
@@ -183,9 +177,8 @@ external copyright : btor -> string = "caml____boolector_copyright"
 external version : btor -> string = "caml____boolector_version"
 external git_id : btor -> string = "caml____boolector_git_id"
 external new_ : unit -> btor = "caml____boolector_new_"
-external sat2 : btor -> solver_result = "caml_boolector_sat2"
 external satR : btor -> btorResult = "caml____boolector_satR"
-external limited_sat : btor -> int32_t -> int32_t -> solver_result = "caml_boolector_limited_sat"
+external limited_satR : btor -> int32_t -> int32_t -> btorResult = "caml____boolector_limited_satR"
 external bv_assignment : node -> string = "caml_boolector_bv_assignment"
 (*$*)
 

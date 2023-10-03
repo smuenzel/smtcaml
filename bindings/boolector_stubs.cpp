@@ -4,8 +4,6 @@
 using CppCaml::Custom_value;
 using CppCaml::ContainerOps;
 
-struct solver_result;
-
 DECL_API_TYPE(uint32_t,uint32_t);
 DECL_API_TYPE(int32_t,int32_t);
 DECL_API_TYPE(bool,bool);
@@ -16,7 +14,6 @@ DECL_API_TYPE(Btor*,btor);
 DECL_API_TYPE(const char*,string);
 DECL_API_TYPE(BtorOption,btor_option);
 DECL_API_TYPE(void,unit);
-DECL_API_TYPE(solver_result,solver_result);
 
 typedef std::remove_pointer<BoolectorSort>::type BoolectorSortRaw;
 
@@ -85,6 +82,7 @@ template<> struct CppCaml::CamlConversion<BoolectorNode**> {
 #define API1_BLOCKING(APIF) API1_BLOCKING__(_,boolector_##APIF)
 #define API2(APIF) API2__(_,boolector_##APIF)
 #define API3(APIF) API3__(_,boolector_##APIF)
+#define API3_BLOCKING(APIF) API3_BLOCKING__(_,boolector_##APIF)
 #define API4(APIF) API3__(_,boolector_##APIF)
 #define API1I(APIF) API1_IMPLIED__(_,boolector_##APIF);
 #define API2I(APIF) API2_IMPLIED__(_,boolector_##APIF);
@@ -315,20 +313,15 @@ static value sat_generic(int32_t (*inner_sat)(Btor*,Ps...), value v_btor, typena
   }
 }
 
-apireturn caml_boolector_sat2(value v_btor){
-  return sat_generic(boolector_sat, v_btor);
-}
-REGISTER_API_CUSTOM(boolector_sat2,caml_boolector_sat2,solver_result,Btor*);
-
 BtorResult boolector_satR (Btor *btor){
   return (BtorResult)boolector_sat(btor);
 }
 API1_BLOCKING(satR)
 
-apireturn caml_boolector_limited_sat(value v_btor, value lod_limit, value sat_limit){
-  return sat_generic(boolector_limited_sat,v_btor,lod_limit,sat_limit);
+BtorResult boolector_limited_satR (Btor *btor, int32_t lod_limit, int32_t sat_limit){
+  return (BtorResult)boolector_limited_sat(btor, lod_limit, sat_limit);
 }
-REGISTER_API_CUSTOM(boolector_limited_sat,caml_boolector_limited_sat,solver_result,Btor*,int32_t,int32_t);
+API3_BLOCKING(limited_satR)
 
 void boolector_free_bv_assignment_(Btor*&b,const char*&s){
   boolector_free_bv_assignment(b,s);
