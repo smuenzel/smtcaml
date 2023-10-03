@@ -180,6 +180,8 @@ external new_ : unit -> btor = "caml____boolector_new_"
 external satR : btor -> btorResult = "caml____boolector_satR"
 external limited_satR : btor -> int32_t -> int32_t -> btorResult = "caml____boolector_limited_satR"
 external bv_assignment : node -> string = "caml_boolector_bv_assignment"
+external fun_sort_vector : btor -> (sort array) -> sort -> sort = "caml____boolector_fun_sort_vector"
+external apply_vector : btor -> (node array) -> node -> node = "caml____boolector_apply_vector"
 (*$*)
 
 let set_solver btor (solver : solver) =

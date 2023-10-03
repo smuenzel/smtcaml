@@ -5,6 +5,8 @@ module Sort_kind = struct
   type bool = [ `Bool ]
   type ('a, 'b) array = [ `Array of 'a * 'b ]
 
+  type ('a, 'b) ufun = [ `Ufun of 'a * 'b ]
+
 end
 
 module Solver_result = struct
@@ -153,6 +155,23 @@ module type Boolean = sig
     val ite : ('i, m_sort) Types.expr ->  ('i, 's) Op_types.binary
 
     val not : ('i, m_sort) Op_types.unary
+  end
+end
+
+module type Uninterpreted_function = sig
+  module Types : Types
+
+  val sort_uninterpreted_function 
+    : 'i Types.instance
+    -> domain:('i,'d) Types.sort
+    -> codomain:('i, 'cd) Types.sort
+    -> ('i, ('d, 'cd) Sort_kind.ufun) Types.sort
+
+  module Ufun : sig
+    val apply
+      : ('i, ('d, 'cd) Sort_kind.ufun) Types.expr
+      -> ('i, 'd) Types.expr
+      -> ('i, 'cd) Types.expr
   end
 end
 
