@@ -34,6 +34,8 @@ let function_type
     then [ "unit" ]
     else parameters
   in
+  let parameters = List.map ~f:String.uncapitalize parameters in
+  let return_type = String.uncapitalize return_type in
   let r = String.concat ~sep:" -> " (parameters @ [ return_type]) in
   match class_name with
   | None -> r

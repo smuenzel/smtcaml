@@ -26,7 +26,21 @@ type solver_result =
   (* dune cinaps currently doesn't support adding link flags, and we need -linkall,
      this is a workaround *)
   external unit_x : unit -> unit = "caml_boolector_unit"
+    *)(*$*)
 
+(*$
+  let () =
+    emit_enums ()
+*)
+type btorResult =
+  | Unknown
+  | Sat
+  | Unsat
+[@@deriving sexp]
+
+(*$*)
+
+(*$
   let () =
     let modify s =
       Option.value ~default:s (String.chop_prefix ~prefix:"boolector_" s)
@@ -169,7 +183,8 @@ external copyright : btor -> string = "caml____boolector_copyright"
 external version : btor -> string = "caml____boolector_version"
 external git_id : btor -> string = "caml____boolector_git_id"
 external new_ : unit -> btor = "caml____boolector_new_"
-external sat : btor -> solver_result = "caml_boolector_sat"
+external sat2 : btor -> solver_result = "caml_boolector_sat2"
+external satR : btor -> btorResult = "caml____boolector_satR"
 external limited_sat : btor -> int32_t -> int32_t -> solver_result = "caml_boolector_limited_sat"
 external bv_assignment : node -> string = "caml_boolector_bv_assignment"
 (*$*)

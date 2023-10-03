@@ -28,9 +28,6 @@ DECL_API_TYPE(void,unit);
 DECL_API_TYPE(std::string,string);
 DECL_API_TYPE(Result,sat_result);
 DECL_API_TYPE(Result*,sat_result);
-DECL_API_TYPE(UnknownExplanation,unknownExplanation);
-DECL_API_TYPE(Kind,kind);
-DECL_API_TYPE(SortKind,sortKind);
 
 /////////////////////////////////////////////////////////////////////////////////////////
 ///

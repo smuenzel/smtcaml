@@ -82,6 +82,7 @@ template<> struct CppCaml::CamlConversion<BoolectorNode**> {
 
 #define API0(APIF) API0__(_,boolector_##APIF)
 #define API1(APIF) API1__(_,boolector_##APIF)
+#define API1_BLOCKING(APIF) API1_BLOCKING__(_,boolector_##APIF)
 #define API2(APIF) API2__(_,boolector_##APIF)
 #define API3(APIF) API3__(_,boolector_##APIF)
 #define API4(APIF) API3__(_,boolector_##APIF)
@@ -90,6 +91,20 @@ template<> struct CppCaml::CamlConversion<BoolectorNode**> {
 #define API3I(APIF) API3_IMPLIED__(_,boolector_##APIF);
 #define API4I(APIF) API3_IMPLIED__(_,boolector_##APIF);
 
+////////////////////////////////////////////////////////////////////////////////////////
+
+enum class BtorResult {
+  Unknown = BTOR_RESULT_UNKNOWN
+, Sat = BTOR_RESULT_SAT
+, Unsat = BTOR_RESULT_UNSAT
+};
+
+#define ENUM_BtorResult(F) \
+  F(BtorResult, Unknown) \
+  F(BtorResult, Sat) \
+  F(BtorResult, Unsat)
+
+MAKE_ENUM_IMMEDIATE_PROPERTIES(BtorResult,ENUM_BtorResult,Unknown)
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
@@ -300,10 +315,15 @@ static value sat_generic(int32_t (*inner_sat)(Btor*,Ps...), value v_btor, typena
   }
 }
 
-apireturn caml_boolector_sat(value v_btor){
+apireturn caml_boolector_sat2(value v_btor){
   return sat_generic(boolector_sat, v_btor);
 }
-REGISTER_API_CUSTOM(boolector_sat,caml_boolector_sat,solver_result,Btor*);
+REGISTER_API_CUSTOM(boolector_sat2,caml_boolector_sat2,solver_result,Btor*);
+
+BtorResult boolector_satR (Btor *btor){
+  return (BtorResult)boolector_sat(btor);
+}
+API1_BLOCKING(satR)
 
 apireturn caml_boolector_limited_sat(value v_btor, value lod_limit, value sat_limit){
   return sat_generic(boolector_limited_sat,v_btor,lod_limit,sat_limit);

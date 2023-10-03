@@ -347,6 +347,12 @@ __attribute((used, section("caml_api_registry"))) = \
     return CppCaml::call_api(APIF, v0); \
   }
 
+#define API1_BLOCKING__(APIPREFIX, APIF) \
+  REGISTER_API(APIPREFIX,APIF, caml_ ##APIPREFIX ##__##APIF); \
+  apireturn caml_ ##APIPREFIX ## __##APIF(value v0){ \
+    return CppCaml::call_api<CppCaml::ReleaseOcamlLock>(APIF, v0); \
+  }
+
 #define API2__(APIPREFIX, APIF) \
   REGISTER_API(APIPREFIX,APIF, caml_ ##APIPREFIX ##__##APIF); \
   apireturn caml_ ##APIPREFIX ## __##APIF(value v0, value v1){ \
@@ -1412,4 +1418,5 @@ template<> struct CppCaml::CamlConversion<ENUM_NAME> {\
   } \
   static inline ENUM_NAME get_underlying(RepresentationType r) { return r; }\
 };\
+DECL_API_TYPE(ENUM_NAME,ENUM_NAME); \
 static_assert(CppCaml::CamlBidirectional<ENUM_NAME>);

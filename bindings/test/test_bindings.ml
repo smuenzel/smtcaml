@@ -31,8 +31,8 @@ let () =
   let xb = not c in
   assume xa;
   assume xb;
-  let result = sat btor in
-  print_s ([%sexp_of: solver_result] result);
+  let result = satR btor in
+  print_s ([%sexp_of: btorResult] result);
   print_s [%message "" (get_failed_assumptions btor : _ array)];
   print_s [%message ""
       (failed xa : bool)

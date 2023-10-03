@@ -68,7 +68,7 @@ let assert_ _ expr =
   B.assert_ expr
 
 let check_current_and_get_model t : _ Smtcaml_intf.Solver_result.t =
-  match B.sat t with
+  match B.satR t with
   | B.Unknown -> Unknown "unknown"
   | B.Sat -> Satisfiable ()
   | B.Unsat -> Unsatisfiable
