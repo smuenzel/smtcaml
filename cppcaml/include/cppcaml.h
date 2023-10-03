@@ -1138,28 +1138,52 @@ template<typename T> using NormalizeArgument =
 
 template<typename T> using ConversionNormalized = CamlConversion<NormalizeArgument<T>>;
 
-template<typename R, typename Rv = ReplaceVoid<R>::type, typename... Asc>
+struct ReleaseOcamlLock {
+  static inline void pre() {
+    caml_enter_blocking_section();
+  }
+  
+  static inline void post() {
+    caml_leave_blocking_section();
+  }
+};
+
+struct KeepOcamlLock {
+  static inline void pre() { }
+  static inline void post() { }
+};
+
+template<typename T> concept PrePostFunction = requires(){
+  T::pre();
+  T::post();
+};
+
+template<typename PrePost = KeepOcamlLock, typename R, typename Rv = ReplaceVoid<R>::type, typename... Asc>
 requires
-( CamlToValue<Rv> && (CamlOfValue<NormalizeArgument<Asc>> && ...)
+( PrePostFunction<PrePost>
+  && CamlToValue<Rv> && (CamlOfValue<NormalizeArgument<Asc>> && ...)
   && CamlNoContext<Rv>
 )
 inline value
 call_api(R (*fun)(Asc...), typename first_type<value,Asc>::type... v_ps){
     auto index_sequence = std::index_sequence_for<Asc...>(); 
     std::tuple p_ar{ ConversionNormalized<Asc>::get_underlying(ConversionNormalized<Asc>::of_value(v_ps))... };
+    PrePost::pre();
     auto ret =
       invoke_seq_void
         ( fun
         , p_ar
         , index_sequence
         );
+    PrePost::post();
     auto v_ret = CamlConversion<Rv>::to_value(ret);
     return v_ret;
 }
 
-template<typename R, typename Rv = ReplaceVoid<R>::type, typename A0c, typename... Asc, typename A0 = NormalizeArgument<A0c>>
+template<typename PrePost = KeepOcamlLock, typename R, typename Rv = ReplaceVoid<R>::type, typename A0c, typename... Asc, typename A0 = NormalizeArgument<A0c>>
 requires
-( CamlToValue<Rv> && CamlOfValue<A0> && (CamlOfValue<NormalizeArgument<Asc>> && ...)
+( PrePostFunction<PrePost>
+  && CamlToValue<Rv> && CamlOfValue<A0> && (CamlOfValue<NormalizeArgument<Asc>> && ...)
   && CamlHasContext<Rv>
   && CamlContextConstructible<Rv,A0>
 )
@@ -1171,21 +1195,24 @@ call_api(R (*fun)(A0c, Asc...), value v0, typename first_type<value,Asc>::type..
     auto index_sequence = std::index_sequence_for<A0c, Asc...>(); 
     std::tuple p_ar{ CamlConversion<A0>::get_underlying(r0)
       , ConversionNormalized<Asc>::get_underlying(ConversionNormalized<Asc>::of_value(v_ps))... };
+    PrePost::pre();
     auto ret =
       invoke_seq_void
         ( fun
         , p_ar
         , index_sequence
         );
+    PrePost::post();
     auto v_ret = CamlConversion<Rv>::to_value(context, ret);
     return v_ret;
 }
 
 template<typename C, typename T> void return_destructor(C&, T&) {  };
 
-template<typename R, typename Rv = ReplaceVoid<R>::type, typename A0c, typename A1c, typename... As, typename A0 = NormalizeArgument<A0c>, typename A1 = NormalizeArgument<A1c>>
+template<typename PrePost = KeepOcamlLock, typename R, typename Rv = ReplaceVoid<R>::type, typename A0c, typename A1c, typename... As, typename A0 = NormalizeArgument<A0c>, typename A1 = NormalizeArgument<A1c>>
 requires
-( CamlToValue<Rv> && CamlOfValue<A1> && (CamlOfValue<NormalizeArgument<As>> && ...)
+( PrePostFunction<PrePost>
+  && CamlToValue<Rv> && CamlOfValue<A1> && (CamlOfValue<NormalizeArgument<As>> && ...)
   && CamlContextConstructible<Rv,A1>
   && CamlConstructible<A0,A1>
 )
@@ -1199,12 +1226,14 @@ call_api_implied_first(void (*return_destructor)(A0c&, Rv&), R (*fun)(A0c, A1c, 
     , CamlConversion<A1>::get_underlying(r1)
     , ConversionNormalized<As>::get_underlying(ConversionNormalized<As>::of_value(v_ps))...
   };
+  PrePost::pre();
   auto ret =
     invoke_seq_void
       ( fun
       , p_ar
       , index_sequence
       );
+  PrePost::post();
   if constexpr(CamlHasContext<Rv>) {
     auto v_ret = CamlConversion<Rv>::to_value(context, ret);
     return_destructor(context_p, ret);
@@ -1216,15 +1245,16 @@ call_api_implied_first(void (*return_destructor)(A0c&, Rv&), R (*fun)(A0c, A1c, 
   }
 }
 
-template<typename R, typename Rv = ReplaceVoid<R>::type,  typename A0c, typename A1c, typename... As>
+template<typename PrePost = KeepOcamlLock, typename R, typename Rv = ReplaceVoid<R>::type,  typename A0c, typename A1c, typename... As>
 inline value
 call_api_implied_first(R (*fun)(A0c, A1c, As...), value v1, typename first_type<value,As>::type... v_ps){
-  return call_api_implied_first(return_destructor<A0c,Rv>,fun,v1,v_ps...);
+  return call_api_implied_first<PrePost>(return_destructor<A0c,Rv>,fun,v1,v_ps...);
 }
 
-template<typename R, typename Rv = ReplaceVoid<R>::type, typename C, typename... As>
+template<typename PrePost = KeepOcamlLock, typename R, typename Rv = ReplaceVoid<R>::type, typename C, typename... As>
 requires
-( CamlToValue<Rv> && CamlOfValue<C*> && (CamlOfValue<NormalizeArgument<As>> && ...)
+( PrePostFunction<PrePost>
+  && CamlToValue<Rv> && CamlOfValue<C*> && (CamlOfValue<NormalizeArgument<As>> && ...)
   && CamlContextConstructible<Rv,C*>
 )
 inline value
@@ -1238,12 +1268,14 @@ call_api_class(R (C::*fun)(As...), value c, typename first_type<value,As>::type.
       { CamlConversion<C*>::get_underlying(r0)
       , ConversionNormalized<As>::get_underlying(ConversionNormalized<As>::of_value(v_ps))...
       };
+    PrePost::pre();
     auto ret =
       invoke_seq_void
         ( fun
         , p_ar
         , index_sequence
         );
+    PrePost::post();
     auto v_ret = CamlConversion<Rv>::to_value(context, ret);
     return v_ret;
   } else {
@@ -1251,20 +1283,23 @@ call_api_class(R (C::*fun)(As...), value c, typename first_type<value,As>::type.
       { CamlConversion<C*>::get_underlying(CamlConversion<C*>::of_value(c))
       , ConversionNormalized<As>::get_underlying(ConversionNormalized<As>::of_value(v_ps))...
       };
+    PrePost::pre();
     auto ret =
       invoke_seq_void
         ( fun
         , p_ar
         , index_sequence
         );
+    PrePost::post();
     auto v_ret = CamlConversion<Rv>::to_value(ret);
     return v_ret;
   }
 }
 
-template<typename R, typename Rv = ReplaceVoid<R>::type, typename C, typename A0c, typename... As, typename A0 = NormalizeArgument<A0c>>
+template<typename PrePost = KeepOcamlLock, typename R, typename Rv = ReplaceVoid<R>::type, typename C, typename A0c, typename... As, typename A0 = NormalizeArgument<A0c>>
 requires
-( CamlToValue<Rv> && CamlOfValue<C*> && CamlOfValue<A0> && (CamlOfValue<NormalizeArgument<As>> && ...)
+( PrePostFunction<PrePost>
+  && CamlToValue<Rv> && CamlOfValue<C*> && CamlOfValue<A0> && (CamlOfValue<NormalizeArgument<As>> && ...)
   && CamlContextConstructible<Rv,A0>
   && CamlObjectConstructible<C*,A0>
 )
@@ -1281,12 +1316,14 @@ call_api_class_implied(R (C::*fun)(A0c, As...), value v_p0, typename first_type<
       , CamlConversion<A0>::get_underlying(r0)
       , ConversionNormalized<As>::get_underlying(ConversionNormalized<As>::of_value(v_ps))...
       };
+    PrePost::pre();
     auto ret =
       invoke_seq_void
         ( fun
         , p_ar
         , index_sequence
         );
+    PrePost::post();
     auto v_ret = CamlConversion<Rv>::to_value(context, ret);
     return v_ret;
   } else {
@@ -1297,12 +1334,14 @@ call_api_class_implied(R (C::*fun)(A0c, As...), value v_p0, typename first_type<
       , CamlConversion<A0>::get_underlying(r0)
       , ConversionNormalized<As>::get_underlying(ConversionNormalized<As>::of_value(v_ps))...
       };
+    PrePost::pre();
     auto ret =
       invoke_seq_void
         ( fun
         , p_ar
         , index_sequence
         );
+    PrePost::post();
     auto v_ret = CamlConversion<Rv>::to_value(ret);
     return v_ret;
   }
@@ -1313,16 +1352,16 @@ auto inline class_function_no_const(R (C::*f)(Args...) const){
   return (R (C::*)(Args...))(f);
 };
 
-template<typename R, typename C, typename... As>
+template<typename PrePost = KeepOcamlLock, typename R, typename C, typename... As>
 inline value
 call_api_class(R (C::*fun)(As...) const, value c, typename first_type<value,As>::type... v_ps){
-  return call_api_class(class_function_no_const(fun), c, v_ps...);
+  return call_api_class<PrePost>(class_function_no_const(fun), c, v_ps...);
 };
 
-template<typename R, typename Rv = ReplaceVoid<R>::type, typename C, typename A0, typename... As>
+template<typename PrePost = KeepOcamlLock, typename R, typename Rv = ReplaceVoid<R>::type, typename C, typename A0, typename... As>
 inline value
 call_api_class_implied(R (C::*fun)(A0, As...) const, value v_p0, typename first_type<value,As>::type... v_ps){
-  return call_api_class_implied(class_function_no_const(fun), v_p0, v_ps...);
+  return call_api_class_implied<PrePost>(class_function_no_const(fun), v_p0, v_ps...);
 };
 
 };
