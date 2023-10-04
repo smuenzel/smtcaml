@@ -96,6 +96,8 @@ let check_current_and_get_model t : _ Smtcaml_intf.Solver_result.t =
     Satisfiable model
 
 let op f a = f (Expr.context a) a
+let op2_nolist f a b = f (Expr.context a) [a; b]
+let op_list f a = f (Expr.context (List.hd_exn a)) a
 
 module Boolean = struct
   module Numeral = struct
@@ -109,6 +111,10 @@ module Boolean = struct
   let neq a b = not (eq a b)
   let ite = op Z3.Boolean.mk_ite
 
+  let and_ = op2_nolist Z3.Boolean.mk_and
+  let or_ = op2_nolist Z3.Boolean.mk_or
+
+  let distinct = op_list Z3.Boolean.mk_distinct
 end
 
 module Bv = struct

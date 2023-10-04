@@ -81,9 +81,13 @@ module Boolean = struct
   end
 
   let not = op1 NOT
+  let and_ = op2 AND
+  let or_ = op2 OR
   let eq = op2 EQUAL
   let neq = op2 DISTINCT
   let ite = op3 ITE
+
+  let distinct list = term_op DISTINCT (Array.of_list list)
 end
 
 module Bv = struct

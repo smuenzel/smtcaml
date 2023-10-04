@@ -83,11 +83,28 @@ module Boolean = struct
     let bool t b = if b then true_ t else false_ t
   end
 
+  let and_ = B.and_
+  let or_ = B.or_
   let eq = B.eq
   let neq = B.ne
   let ite = B.cond
 
   let not = B.not
+
+  let distinct l =
+    List.Cartesian_product.map2 l l ~f:(fun a b ->
+        if phys_equal a b
+        then None
+        else Some (neq a b)
+      )
+    |> List.reduce_balanced_exn ~f:(fun a b ->
+        match a, b with
+        | Some a, Some b -> Some (and_ a b)
+        | None, (Some _ as a)
+        | (Some _ as a), None -> a
+        | None, None -> None
+      )
+    |> Option.value_exn
 end
 
 module Bv = struct

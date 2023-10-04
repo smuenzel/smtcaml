@@ -150,11 +150,15 @@ module type Boolean = sig
       val bool : 'i Types.instance -> bool -> ('i, m_sort) Types.expr
     end
 
+    val distinct : ('i, 's) Types.expr list -> ('i, m_sort) Types.expr
+
     val eq : ('i, 's) Types.expr -> ('i, 's) Types.expr -> ('i, m_sort) Types.expr
     val neq : ('i, 's) Types.expr -> ('i, 's) Types.expr -> ('i, m_sort) Types.expr
     val ite : ('i, m_sort) Types.expr ->  ('i, 's) Op_types.binary
 
     val not : ('i, m_sort) Op_types.unary
+    val and_ : ('i, m_sort) Op_types.binary
+    val or_ : ('i, m_sort) Op_types.binary
   end
 end
 
