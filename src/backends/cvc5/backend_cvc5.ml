@@ -98,7 +98,7 @@ module Bv = struct
       C.solver__mkBitVector__u32_u64
         (get_sort_context sort)
         (C.sort__getBitVectorSize sort)
-        i
+        (Int64.of_int i)
 
     let fast_bitvector sort bv =
       assert (Sort.length sort = Fast_bitvector.length bv);
@@ -108,10 +108,10 @@ module Bv = struct
         (Fast_bitvector.Little_endian.to_string bv)
         2
 
-    let zero ~length t = C.solver__mkBitVector__u32_u64 t length 0
+    let zero ~length t = C.solver__mkBitVector__u32_u64 t length 0L
 
     let zero_e e0 =
-      C.solver__mkBitVector__u32_u64 (get_term_context e0) (length e0) 0
+      C.solver__mkBitVector__u32_u64 (get_term_context e0) (length e0) 0L
   end
 
   let extract ~low ~high e =
@@ -130,8 +130,8 @@ module Bv = struct
   let of_bool e0 =
     let t = get_term_context e0 in
     Boolean.ite e0
-      (C.solver__mkBitVector__u32_u64 t 1 1)
-      (C.solver__mkBitVector__u32_u64 t 1 0)
+      (C.solver__mkBitVector__u32_u64 t 1 1L)
+      (C.solver__mkBitVector__u32_u64 t 1 0L)
 
   let not = op1 BITVECTOR_NOT
   let and_ = op2 BITVECTOR_AND

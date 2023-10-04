@@ -778,6 +778,26 @@ template<> struct CamlConversion<Void> {
   static inline value to_value(Void) { return Val_unit; }
 };
 
+template<> struct CamlConversion<int64_t> {
+  typedef int64_t RepresentationType;
+  static const auto allocates = CamlAllocates::Allocation;
+
+  static inline value to_value(int64_t x) { return caml_copy_int64(x); }
+  static inline RepresentationType of_value(value v) { return Int64_val(v); }
+  static inline int64_t get_underlying(RepresentationType r) { return r; }
+};
+static_assert(CamlBidirectional<int64_t>);
+
+template<> struct CamlConversion<uint64_t> {
+  typedef uint64_t RepresentationType;
+  static const auto allocates = CamlAllocates::Allocation;
+
+  static inline value to_value(uint64_t x) { return caml_copy_int64(x); }
+  static inline RepresentationType of_value(value v) { return Int64_val(v); }
+  static inline uint64_t get_underlying(RepresentationType r) { return r; }
+};
+static_assert(CamlBidirectional<uint64_t>);
+
 template<> struct CamlConversion<int> {
   typedef int RepresentationType;
   static const auto allocates = CamlAllocates::No_allocation;
@@ -798,16 +818,6 @@ template<> struct CamlConversion<unsigned int> {
 };
 static_assert(CamlBidirectional<unsigned int>);
 
-template<> struct CamlConversion<long unsigned int> {
-  typedef long unsigned int RepresentationType;
-  static const auto allocates = CamlAllocates::No_allocation;
-
-  static inline value to_value(long unsigned int x) { return Val_long(x); }
-  static inline RepresentationType of_value(value v) { return Long_val(v); }
-  static inline long unsigned int get_underlying(RepresentationType r) { return r; }
-};
-static_assert(CamlBidirectional<long unsigned int>);
-
 template<> struct CamlConversion<bool> {
   typedef bool RepresentationType;
   static const auto allocates = CamlAllocates::No_allocation;
@@ -816,7 +826,7 @@ template<> struct CamlConversion<bool> {
   static inline RepresentationType of_value(value v) { return Bool_val(v); }
   static inline bool get_underlying(RepresentationType r) { return r; }
 };
-static_assert(CamlBidirectional<int>);
+static_assert(CamlBidirectional<bool>);
 
 template<> struct CamlConversion<const char *> {
   typedef const char * RepresentationType;

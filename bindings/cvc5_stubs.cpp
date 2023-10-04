@@ -10,12 +10,14 @@ using Term = cvc5::Term;
 using Op = cvc5::Op;
 using Result = cvc5::Result;
 using Datatype = cvc5::Datatype;
+using DatatypeDecl = cvc5::DatatypeDecl;
 using UnknownExplanation = cvc5::UnknownExplanation;
 using Kind = cvc5::Kind;
 using SortKind = cvc5::SortKind;
 
 DECL_API_TYPE(uint32_t,uint32_t);
-DECL_API_TYPE(uint64_t,uint64_t);
+DECL_API_TYPE(uint64_t,int64);
+DECL_API_TYPE(int64_t,int64);
 DECL_API_TYPE(int32_t,int32_t);
 DECL_API_TYPE(bool,bool);
 DECL_API_TYPE(Solver*,solver);
@@ -31,6 +33,8 @@ DECL_API_TYPE(Result,sat_result);
 DECL_API_TYPE(Result*,sat_result);
 DECL_API_TYPE(Datatype,datatype);
 DECL_API_TYPE(Datatype*,datatype);
+DECL_API_TYPE(DatatypeDecl,datatype_decl);
+DECL_API_TYPE(DatatypeDecl*,datatype_decl);
 
 /////////////////////////////////////////////////////////////////////////////////////////
 ///
@@ -75,6 +79,15 @@ template<> struct CppCaml::CamlConversionProperties<Datatype>{
   typedef Solver Context;
 
   static void delete_T(Context*context, Datatype&t){
+    delete &t;
+  }
+};
+
+template<> struct CppCaml::CamlConversionProperties<DatatypeDecl>{
+  static constexpr auto representation_kind = CppCaml::CamlRepresentationKind::ContainerWithContext;
+  typedef Solver Context;
+
+  static void delete_T(Context*context, DatatypeDecl&t){
     delete &t;
   }
 };
@@ -445,14 +458,24 @@ APIM2(Solver,mkArraySort)
 APIM1(Solver,mkBitVectorSort)
 APIM2(Solver,mkFloatingPointSort)
 APIM1(Solver,mkFiniteFieldSort)
+APIM1(Solver,mkDatatypeSort)
+APIM1(Solver,mkDatatypeSorts)
 APIM2(Solver,mkFunctionSort)
+APIM1(Solver,mkParamSort)
 APIM1(Solver,mkPredicateSort)
 APIM1(Solver,mkRecordSort)
 APIM1(Solver,mkSetSort)
 APIM1(Solver,mkBagSort)
 APIM1(Solver,mkSequenceSort)
+APIM1(Solver,mkAbstractSort)
 APIM1(Solver,mkUninterpretedSort)
+APIM2(Solver,mkUnresolvedDatatypeSort)
+APIM2(Solver,mkUninterpretedSortConstructorSort)
 APIM1(Solver,mkTupleSort)
+APIM2_OVERLOAD(Solver,mkTerm,kind,Term,Kind,const std::vector<Term>&)
+APIM2_OVERLOAD(Solver,mkTerm,op,Term,const Op&,const std::vector<Term>&)
+APIM1(Solver,mkTuple)
+// ....
 
 APIM2_OVERLOAD(Solver,mkBitVector,u32_u64,Term,uint32_t,uint64_t)
 APIM3_OVERLOAD(Solver,mkBitVector,u32_s_u32,Term,uint32_t,const std::string&, uint32_t)
@@ -461,8 +484,6 @@ APIM0(Solver,mkTrue)
 APIM0(Solver,mkFalse)
 APIM1(Solver,mkBoolean)
 
-APIM2_OVERLOAD(Solver,mkTerm,kind,Term,Kind,const std::vector<Term>&)
-APIM2_OVERLOAD(Solver,mkTerm,op,Term,const Op&,const std::vector<Term>&)
 
 APIM2(Solver,mkConstArray)
 
@@ -573,6 +594,14 @@ APIM0(Term,isInt32Value)
 APIM0(Term,getInt32Value)
 APIM0(Term,isUInt32Value)
 APIM0(Term,getUInt32Value)
+APIM0(Term,isInt64Value)
+APIM0(Term,getInt64Value)
+APIM0(Term,isUInt64Value)
+APIM0(Term,getUInt64Value)
+APIM0(Term,isIntegerValue)
+APIM0(Term,getIntegerValue)
+APIM0(Term,isStringValue)
+//APIM0(Term,getStringValue)
 //....
 APIM0(Term,isBooleanValue)
 APIM0(Term,getBooleanValue)
