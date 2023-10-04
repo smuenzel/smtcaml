@@ -9,6 +9,7 @@ using Sort = cvc5::Sort;
 using Term = cvc5::Term;
 using Op = cvc5::Op;
 using Result = cvc5::Result;
+using Datatype = cvc5::Datatype;
 using UnknownExplanation = cvc5::UnknownExplanation;
 using Kind = cvc5::Kind;
 using SortKind = cvc5::SortKind;
@@ -28,6 +29,8 @@ DECL_API_TYPE(void,unit);
 DECL_API_TYPE(std::string,string);
 DECL_API_TYPE(Result,sat_result);
 DECL_API_TYPE(Result*,sat_result);
+DECL_API_TYPE(Datatype,datatype);
+DECL_API_TYPE(Datatype*,datatype);
 
 /////////////////////////////////////////////////////////////////////////////////////////
 ///
@@ -63,6 +66,15 @@ template<> struct CppCaml::CamlConversionProperties<Result>{
   typedef Solver Context;
 
   static void delete_T(Context*context, Result&t){
+    delete &t;
+  }
+};
+
+template<> struct CppCaml::CamlConversionProperties<Datatype>{
+  static constexpr auto representation_kind = CppCaml::CamlRepresentationKind::ContainerWithContext;
+  typedef Solver Context;
+
+  static void delete_T(Context*context, Datatype&t){
     delete &t;
   }
 };
@@ -477,8 +489,58 @@ APIM0(Sort,isNull)
 APIM0(Sort,isBoolean)
 APIM0(Sort,isInteger)
 APIM0(Sort,isReal)
+APIM0(Sort,isRegExp)
+APIM0(Sort,isRoundingMode)
+APIM0(Sort,isBitVector)
+APIM0(Sort,isFloatingPoint)
+APIM0(Sort,isDatatype)
+APIM0(Sort,isDatatypeConstructor)
+APIM0(Sort,isDatatypeSelector)
+APIM0(Sort,isDatatypeUpdater)
+APIM0(Sort,isFunction)
+APIM0(Sort,isPredicate)
+APIM0(Sort,isTuple)
+APIM0(Sort,isRecord)
+APIM0(Sort,isArray)
+APIM0(Sort,isFiniteField)
+APIM0(Sort,isSet)
+APIM0(Sort,isBag)
+APIM0(Sort,isSequence)
+APIM0(Sort,isAbstract)
+APIM0(Sort,isUninterpretedSort)
+APIM0(Sort,isUninterpretedSortConstructor)
+APIM0(Sort,getUninterpretedSortConstructor)
+APIM0(Sort,getDatatype)
 APIM0(Sort,isInstantiated)
+APIM1(Sort,instantiate)
+APIM0(Sort,getInstantiatedParameters)
+APIM2_OVERLOAD(Sort,substitute,ss, Sort, const Sort&, const Sort&)
+APIM2_OVERLOAD(Sort,substitute,svsv, Sort, const std::vector<Sort>&, const std::vector<Sort>&)
+APIM0(Sort,toString)
+APIM0(Sort,getDatatypeConstructorArity)
+APIM0(Sort,getDatatypeConstructorDomainSorts)
+APIM0(Sort,getDatatypeConstructorCodomainSort)
+APIM0(Sort,getDatatypeSelectorDomainSort)
+APIM0(Sort,getDatatypeSelectorCodomainSort)
+APIM0(Sort,getDatatypeTesterDomainSort)
+APIM0(Sort,getDatatypeTesterCodomainSort)
+APIM0(Sort,getFunctionArity)
+APIM0(Sort,getFunctionDomainSorts)
+APIM0(Sort,getFunctionCodomainSort)
+APIM0(Sort,getArrayIndexSort)
+APIM0(Sort,getArrayElementSort)
+APIM0(Sort,getSetElementSort)
+APIM0(Sort,getBagElementSort)
+APIM0(Sort,getSequenceElementSort)
+APIM0(Sort,getAbstractedKind)
+APIM0(Sort,getUninterpretedSortConstructorArity)
 APIM0(Sort,getBitVectorSize)
+APIM0(Sort,getFiniteFieldSize)
+APIM0(Sort,getFloatingPointExponentSize)
+APIM0(Sort,getFloatingPointSignificandSize)
+APIM0(Sort,getDatatypeArity)
+APIM0(Sort,getTupleLength)
+APIM0(Sort,getTupleSorts)
 
 APIM0(Result,isNull)
 APIM0(Result,isSat)
