@@ -40,3 +40,6 @@
 [submodule "vendor/ocaml-bitwuzla"]
 	path = vendor/ocaml-bitwuzla
 	url = git@github.com:smuenzel/ocaml-bitwuzla
+[submodule "vendor/vendor-stp/stp"]
+	path = vendor/vendor-stp/stp
+	url = git@github.com:smuenzel/stp

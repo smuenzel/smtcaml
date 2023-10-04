@@ -1,4 +1,6 @@
 #!/bin/zsh
+set -e
+
 INSTALL_DIR=$(pwd)/../build
 echo "Install Dir=\"${INSTALL_DIR}\""
 BUILD_DIR=build

@@ -9,8 +9,8 @@ to infer conversion and function types in OCaml.
 smtCaml is not usable yet.
 
 ## Build instructions
-First go to the vendor directory and build the dependencies in `vendor-boolector` and
-`vendor-cvc5`, in that order. Then, you can use dune.
+First go to the vendor directory and build the dependencies in `vendor-boolector`,
+`vendor-cvc5`, and `vendor-stp` in that order. Then, you can use dune.
 
 ## cppcaml
 `cppcaml` is a C++ library that allows specification of conversion properties for C++
