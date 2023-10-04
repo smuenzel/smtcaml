@@ -334,7 +334,18 @@ __attribute((used, section("caml_api_registry"))) = \
 /////////////////////////////////////
 // Function Autogen
 /////////////////////////////////////
-///
+
+template<typename... Args, size_t... is>
+inline value call_native_from_bytecode_index(value (*fun)(Args...), std::index_sequence<is...> seq, value *argv, int argn){
+  return fun(argv[is]...);
+}
+
+template<typename... Args>
+inline value call_native_from_bytecode(value (*fun)(Args...), value *argv, int argn){
+  auto index_sequence = std::index_sequence_for<Args...>(); 
+  return call_native_from_bytecode_index(fun,index_sequence,argv, argn);
+}
+
 #define API0__(APIPREFIX, APIF) \
   REGISTER_API(APIPREFIX,APIF, caml_ ##APIPREFIX ##__##APIF); \
   apireturn caml_ ##APIPREFIX ## __##APIF(value v_unit){ \
@@ -429,7 +440,11 @@ __attribute((used, section("caml_api_registry"))) = \
   REGISTER_API_MEMBER(APIPREFIX,CLASS,APIF, caml_ ##APIPREFIX ##__##CLASS ## __##APIF); \
   apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF(value v_c, value v_p0,value v_p1, value v_p2, value v_p3, value v_p4){ \
     return CppCaml::call_api_class(&CLASS :: APIF, v_c, v_p0, v_p1,v_p2,v_p3,v_p4); \
+  } \
+  apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF##_bytecode(value *argv, int argn){\
+    return CppCaml::call_native_from_bytecode(caml_ ##APIPREFIX ##__##CLASS ## __##APIF, argv, argn); \
   }
+
 
 #define APIM1_IMPLIED__(APIPREFIX, CLASS,APIF) \
   REGISTER_API_MEMBER_IMPLIED(APIPREFIX,CLASS,APIF, caml_ ##APIPREFIX ##__##CLASS ## __##APIF); \
@@ -489,6 +504,9 @@ __attribute((used, section("caml_api_registry"))) = \
   REGISTER_API_MEMBER_OVERLOAD(APIPREFIX,CLASS,APIF,SUFFIX, caml_ ##APIPREFIX ##__##CLASS ## __##APIF ## __overload__ ##SUFFIX, __VA_ARGS__); \
   apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF ## __overload__ ##SUFFIX (value v_c, value v_p0, value v_p1, value v_p2, value v_p3, value v_p4){ \
     return CppCaml::call_api_class(CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(),&CLASS :: APIF), v_c, v_p0, v_p1, v_p2, v_p3, v_p4); \
+  } \
+  apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF##__overload__ ##SUFFIX##_bytecode(value *argv, int argn){\
+    return CppCaml::call_native_from_bytecode(caml_ ##APIPREFIX ##__##CLASS ## __##APIF ##__overload__ ##SUFFIX, argv, argn); \
   }
 /////////////////////////////////////
 

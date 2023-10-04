@@ -48,12 +48,21 @@ let emit_entry
     ; description
     }
   =
-  Stdlib.Printf.printf
-    {|external %s : %s = "%s"|}
-    (String.uncapitalize (modify name))
-    (function_type description)
-    wrapper_name
-  ;
+  if description.parameter_count > 5
+  then begin
+    Stdlib.Printf.printf
+      {|external %s : %s = "%s_bytecode" "%s"|}
+      (String.uncapitalize (modify name))
+      (function_type description)
+      wrapper_name
+      wrapper_name
+  end else begin
+    Stdlib.Printf.printf
+      {|external %s : %s = "%s"|}
+      (String.uncapitalize (modify name))
+      (function_type description)
+      wrapper_name
+  end;
   Stdlib.print_newline ()
 
 let emit_api ?registry ?(filter=Fn.const true) ?(modify=Fn.id) () =
