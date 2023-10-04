@@ -15,6 +15,11 @@ using DatatypeConstructorDecl = cvc5::DatatypeConstructorDecl;
 using UnknownExplanation = cvc5::UnknownExplanation;
 using Kind = cvc5::Kind;
 using SortKind = cvc5::SortKind;
+using RoundingMode = cvc5::RoundingMode;
+using BlockModelsMode = cvc5::modes::BlockModelsMode;
+using LearnedLitType = cvc5::modes::LearnedLitType;
+using ProofComponent = cvc5::modes::ProofComponent;
+using FindSynthTarget = cvc5::modes::FindSynthTarget;
 
 DECL_API_TYPE(uint32_t,uint32_t);
 DECL_API_TYPE(uint64_t,int64);
@@ -442,6 +447,52 @@ MAKE_ENUM_IMMEDIATE_PROPERTIES(UnknownExplanation,ENUM_UnknownExplanation,UNKNOW
 
 MAKE_ENUM_IMMEDIATE_PROPERTIES(Kind,ENUM_Kind,UNDEFINED_KIND)
 MAKE_ENUM_IMMEDIATE_PROPERTIES(SortKind,ENUM_SortKind,UNDEFINED_SORT_KIND)
+
+#define ENUM_RoundingMode(F) \
+  F(RoundingMode,ROUND_NEAREST_TIES_TO_EVEN)\
+  F(RoundingMode,ROUND_TOWARD_POSITIVE)\
+  F(RoundingMode,ROUND_TOWARD_NEGATIVE)\
+  F(RoundingMode,ROUND_TOWARD_ZERO)\
+  F(RoundingMode,ROUND_NEAREST_TIES_TO_AWAY)
+
+MAKE_ENUM_IMMEDIATE_PROPERTIES(RoundingMode,ENUM_RoundingMode,ROUND_NEAREST_TIES_TO_EVEN)
+
+#define ENUM_BlockModelsMode(F) \
+  F(BlockModelsMode,LITERALS)\
+  F(BlockModelsMode,VALUES)
+
+MAKE_ENUM_IMMEDIATE_PROPERTIES(BlockModelsMode,ENUM_BlockModelsMode,LITERALS)
+
+#define ENUM_LearnedLitType(F) \
+  F(LearnedLitType,PREPROCESS_SOLVED)\
+  F(LearnedLitType,PREPROCESS)\
+  F(LearnedLitType,INPUT)\
+  F(LearnedLitType,SOLVABLE)\
+  F(LearnedLitType,CONSTANT_PROP)\
+  F(LearnedLitType,INTERNAL)\
+  F(LearnedLitType,UNKNOWN)
+
+MAKE_ENUM_IMMEDIATE_PROPERTIES(LearnedLitType,ENUM_LearnedLitType,UNKNOWN)
+
+#define ENUM_ProofComponent(F) \
+  F(ProofComponent,RAW_PREPROCESS)\
+  F(ProofComponent,PREPROCESS)\
+  F(ProofComponent,SAT)\
+  F(ProofComponent,THEORY_LEMMAS)\
+  F(ProofComponent,FULL)
+
+MAKE_ENUM_IMMEDIATE_PROPERTIES(ProofComponent,ENUM_ProofComponent,FULL)
+
+#define ENUM_FindSynthTarget(F) \
+  F(FindSynthTarget,ENUM)\
+  F(FindSynthTarget,REWRITE)\
+  F(FindSynthTarget,REWRITE_UNSOUND)\
+  F(FindSynthTarget,REWRITE_INPUT)\
+  F(FindSynthTarget,QUERY)
+
+MAKE_ENUM_IMMEDIATE_PROPERTIES(FindSynthTarget,ENUM_FindSynthTarget,QUERY)
+
+/////////////////////////////////////////////////////////////////////////////////////////
 
 Solver* new_Solver(){
   return new Solver();

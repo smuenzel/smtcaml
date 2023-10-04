@@ -308,6 +308,14 @@ type kind =
   | LAST_KIND
 [@@deriving sexp]
 
+type roundingMode =
+  | ROUND_NEAREST_TIES_TO_EVEN
+  | ROUND_TOWARD_POSITIVE
+  | ROUND_TOWARD_NEGATIVE
+  | ROUND_TOWARD_ZERO
+  | ROUND_NEAREST_TIES_TO_AWAY
+[@@deriving sexp]
+
 type sortKind =
   | INTERNAL_SORT_KIND
   | UNDEFINED_SORT_KIND
@@ -333,6 +341,16 @@ type sortKind =
   | LAST_SORT_KIND
 [@@deriving sexp]
 
+type learnedLitType =
+  | PREPROCESS_SOLVED
+  | PREPROCESS
+  | INPUT
+  | SOLVABLE
+  | CONSTANT_PROP
+  | INTERNAL
+  | UNKNOWN
+[@@deriving sexp]
+
 type unknownExplanation =
   | REQUIRES_FULL_CHECK
   | INCOMPLETE
@@ -344,6 +362,27 @@ type unknownExplanation =
   | OTHER
   | REQUIRES_CHECK_AGAIN
   | UNKNOWN_REASON
+[@@deriving sexp]
+
+type findSynthTarget =
+  | ENUM
+  | REWRITE
+  | REWRITE_UNSOUND
+  | REWRITE_INPUT
+  | QUERY
+[@@deriving sexp]
+
+type proofComponent =
+  | RAW_PREPROCESS
+  | PREPROCESS
+  | SAT
+  | THEORY_LEMMAS
+  | FULL
+[@@deriving sexp]
+
+type blockModelsMode =
+  | LITERALS
+  | VALUES
 [@@deriving sexp]
 
 (*$*)
