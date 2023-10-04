@@ -395,6 +395,12 @@ __attribute((used, section("caml_api_registry"))) = \
     return CppCaml::call_api_class(&CLASS :: APIF, v_c); \
   }
 
+#define APIM0_BLOCKING__(APIPREFIX, CLASS,APIF) \
+  REGISTER_API_MEMBER(APIPREFIX,CLASS,APIF, caml_ ##APIPREFIX ##__##CLASS ## __##APIF); \
+  apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF(value v_c){ \
+    return CppCaml::call_api_class<CppCaml::ReleaseOcamlLock>(&CLASS :: APIF, v_c); \
+  }
+
 #define APIM1__(APIPREFIX, CLASS,APIF) \
   REGISTER_API_MEMBER(APIPREFIX,CLASS,APIF, caml_ ##APIPREFIX ##__##CLASS ## __##APIF); \
   apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF(value v_c, value v_p0){ \
@@ -405,6 +411,18 @@ __attribute((used, section("caml_api_registry"))) = \
   REGISTER_API_MEMBER(APIPREFIX,CLASS,APIF, caml_ ##APIPREFIX ##__##CLASS ## __##APIF); \
   apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF(value v_c, value v_p0,value v_p1){ \
     return CppCaml::call_api_class(&CLASS :: APIF, v_c, v_p0, v_p1); \
+  }
+
+#define APIM3__(APIPREFIX, CLASS,APIF) \
+  REGISTER_API_MEMBER(APIPREFIX,CLASS,APIF, caml_ ##APIPREFIX ##__##CLASS ## __##APIF); \
+  apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF(value v_c, value v_p0,value v_p1, value v_p2){ \
+    return CppCaml::call_api_class(&CLASS :: APIF, v_c, v_p0, v_p1,v_p2); \
+  }
+
+#define APIM4__(APIPREFIX, CLASS,APIF) \
+  REGISTER_API_MEMBER(APIPREFIX,CLASS,APIF, caml_ ##APIPREFIX ##__##CLASS ## __##APIF); \
+  apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF(value v_c, value v_p0,value v_p1, value v_p2, value v_p3){ \
+    return CppCaml::call_api_class(&CLASS :: APIF, v_c, v_p0, v_p1,v_p2,v_p3); \
   }
 
 #define APIM1_IMPLIED__(APIPREFIX, CLASS,APIF) \
@@ -447,6 +465,12 @@ __attribute((used, section("caml_api_registry"))) = \
   REGISTER_API_MEMBER_OVERLOAD(APIPREFIX,CLASS,APIF,SUFFIX, caml_ ##APIPREFIX ##__##CLASS ## __##APIF ## __overload__ ##SUFFIX, __VA_ARGS__); \
   apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF ## __overload__ ##SUFFIX (value v_c, value v_p0, value v_p1, value v_p2){ \
     return CppCaml::call_api_class(CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(),&CLASS :: APIF), v_c, v_p0, v_p1, v_p2); \
+  }
+
+#define APIM1_OVERLOAD_BLOCKING__(APIPREFIX, CLASS,APIF,SUFFIX,...) \
+  REGISTER_API_MEMBER_OVERLOAD(APIPREFIX,CLASS,APIF,SUFFIX, caml_ ##APIPREFIX ##__##CLASS ## __##APIF ## __overload__ ##SUFFIX, __VA_ARGS__); \
+  apireturn caml_ ##APIPREFIX ##__##CLASS ## __##APIF ## __overload__ ##SUFFIX (value v_c, value v_p0){ \
+    return CppCaml::call_api_class<CppCaml::ReleaseOcamlLock>(CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(),&CLASS :: APIF), v_c, v_p0); \
   }
 /////////////////////////////////////
 

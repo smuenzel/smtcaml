@@ -11,6 +11,7 @@ using Op = cvc5::Op;
 using Result = cvc5::Result;
 using Datatype = cvc5::Datatype;
 using DatatypeDecl = cvc5::DatatypeDecl;
+using DatatypeConstructorDecl = cvc5::DatatypeConstructorDecl;
 using UnknownExplanation = cvc5::UnknownExplanation;
 using Kind = cvc5::Kind;
 using SortKind = cvc5::SortKind;
@@ -35,6 +36,8 @@ DECL_API_TYPE(Datatype,datatype);
 DECL_API_TYPE(Datatype*,datatype);
 DECL_API_TYPE(DatatypeDecl,datatype_decl);
 DECL_API_TYPE(DatatypeDecl*,datatype_decl);
+DECL_API_TYPE(DatatypeConstructorDecl,datatype_constructor_decl);
+DECL_API_TYPE(DatatypeConstructorDecl*,datatype_constructor_decl);
 
 /////////////////////////////////////////////////////////////////////////////////////////
 ///
@@ -88,6 +91,15 @@ template<> struct CppCaml::CamlConversionProperties<DatatypeDecl>{
   typedef Solver Context;
 
   static void delete_T(Context*context, DatatypeDecl&t){
+    delete &t;
+  }
+};
+
+template<> struct CppCaml::CamlConversionProperties<DatatypeConstructorDecl>{
+  static constexpr auto representation_kind = CppCaml::CamlRepresentationKind::ContainerWithContext;
+  typedef Solver Context;
+
+  static void delete_T(Context*context, DatatypeConstructorDecl&t){
     delete &t;
   }
 };
@@ -438,11 +450,15 @@ Solver* new_Solver(){
 API0__(cvc5,new_Solver)
 
 #define APIM0(A,B) APIM0__(cvc5,A,B)
+#define APIM0_BLOCKING(A,B) APIM0_BLOCKING__(cvc5,A,B)
 #define APIM1(A,B) APIM1__(cvc5,A,B)
 #define APIM2(A,B) APIM2__(cvc5,A,B)
+#define APIM3(A,B) APIM3__(cvc5,A,B)
+#define APIM4(A,B) APIM4__(cvc5,A,B)
 #define APIM1_IMPLIED(A,B) APIM1_IMPLIED__(cvc5,A,B)
 #define APIM2_IMPLIED(A,B) APIM2_IMPLIED__(cvc5,A,B)
 #define APIM1_OVERLOAD(...) APIM1_OVERLOAD_(cvc5,__VA_ARGS__)
+#define APIM1_OVERLOAD_BLOCKING(...) APIM1_OVERLOAD_BLOCKING__(cvc5,__VA_ARGS__)
 #define APIM1_OVERLOAD_IMPLIED(...) APIM1_OVERLOAD_IMPLIED_(cvc5,__VA_ARGS__)
 #define APIM2_OVERLOAD(...) APIM2_OVERLOAD_(cvc5,__VA_ARGS__)
 #define APIM2_OVERLOAD_IMPLIED(...) APIM2_OVERLOAD_IMPLIED_(cvc5,__VA_ARGS__)
@@ -475,7 +491,16 @@ APIM1(Solver,mkTupleSort)
 APIM2_OVERLOAD(Solver,mkTerm,kind,Term,Kind,const std::vector<Term>&)
 APIM2_OVERLOAD(Solver,mkTerm,op,Term,const Op&,const std::vector<Term>&)
 APIM1(Solver,mkTuple)
-// ....
+//...
+APIM1(Solver,simplify)
+APIM1_IMPLIED(Solver,assertFormula)
+APIM0_BLOCKING(Solver,checkSat)
+APIM1_OVERLOAD_BLOCKING(Solver,checkSatAssuming,t,Result,const Term&)
+APIM1_OVERLOAD_BLOCKING(Solver,checkSatAssuming,tv,Result,const std::vector<Term>&)
+APIM2(Solver,declareDatatype)
+APIM4(Solver,declareFun)
+APIM3(Solver,declareSort)
+//...
 
 APIM2_OVERLOAD(Solver,mkBitVector,u32_u64,Term,uint32_t,uint64_t)
 APIM3_OVERLOAD(Solver,mkBitVector,u32_s_u32,Term,uint32_t,const std::string&, uint32_t)
@@ -489,11 +514,6 @@ APIM2(Solver,mkConstArray)
 
 APIM2_IMPLIED(Solver,mkConst)
 APIM2(Solver,mkVar)
-
-APIM1(Solver,simplify)
-
-APIM1_IMPLIED(Solver,assertFormula)
-APIM0(Solver,checkSat)
 
 APIM1_OVERLOAD(Solver,getValue,t,Term,const Term&)
 APIM1_OVERLOAD(Solver,getValue,vt,std::vector<Term>,const std::vector<Term>&)

@@ -7,6 +7,7 @@ type sat_result
 type op
 type datatype
 type datatype_decl
+type datatype_constructor_decl
 
 type uint32_t = int
 type int32_t = int
@@ -384,6 +385,14 @@ external solver__mkTupleSort : (* class Solver *) solver -> (sort array) -> sort
 external solver__mkTerm__kind : (* class Solver *) solver -> kind -> (term array) -> term = "caml_cvc5__Solver__mkTerm__overload__kind"
 external solver__mkTerm__op : (* class Solver *) solver -> op -> (term array) -> term = "caml_cvc5__Solver__mkTerm__overload__op"
 external solver__mkTuple : (* class Solver *) solver -> (term array) -> term = "caml_cvc5__Solver__mkTuple"
+external solver__simplify : (* class Solver *) solver -> term -> term = "caml_cvc5__Solver__simplify"
+external solver__assertFormula : (* class Solver *) term -> unit = "caml_cvc5__Solver__assertFormula"
+external solver__checkSat : (* class Solver *) solver -> sat_result = "caml_cvc5__Solver__checkSat"
+external solver__checkSatAssuming__t : (* class Solver *) solver -> term -> sat_result = "caml_cvc5__Solver__checkSatAssuming__overload__t"
+external solver__checkSatAssuming__tv : (* class Solver *) solver -> (term array) -> sat_result = "caml_cvc5__Solver__checkSatAssuming__overload__tv"
+external solver__declareDatatype : (* class Solver *) solver -> string -> (datatype_constructor_decl array) -> sort = "caml_cvc5__Solver__declareDatatype"
+external solver__declareFun : (* class Solver *) solver -> string -> (sort array) -> sort -> bool -> term = "caml_cvc5__Solver__declareFun"
+external solver__declareSort : (* class Solver *) solver -> string -> uint32_t -> bool -> sort = "caml_cvc5__Solver__declareSort"
 external solver__mkBitVector__u32_u64 : (* class Solver *) solver -> uint32_t -> int64 -> term = "caml_cvc5__Solver__mkBitVector__overload__u32_u64"
 external solver__mkBitVector__u32_s_u32 : (* class Solver *) solver -> uint32_t -> string -> uint32_t -> term = "caml_cvc5__Solver__mkBitVector__overload__u32_s_u32"
 external solver__mkTrue : (* class Solver *) solver -> term = "caml_cvc5__Solver__mkTrue"
@@ -392,9 +401,6 @@ external solver__mkBoolean : (* class Solver *) solver -> bool -> term = "caml_c
 external solver__mkConstArray : (* class Solver *) solver -> sort -> term -> term = "caml_cvc5__Solver__mkConstArray"
 external solver__mkConst : (* class Solver *) sort -> (string option) -> term = "caml_cvc5__Solver__mkConst"
 external solver__mkVar : (* class Solver *) solver -> sort -> (string option) -> term = "caml_cvc5__Solver__mkVar"
-external solver__simplify : (* class Solver *) solver -> term -> term = "caml_cvc5__Solver__simplify"
-external solver__assertFormula : (* class Solver *) term -> unit = "caml_cvc5__Solver__assertFormula"
-external solver__checkSat : (* class Solver *) solver -> sat_result = "caml_cvc5__Solver__checkSat"
 external solver__getValue__t : (* class Solver *) solver -> term -> term = "caml_cvc5__Solver__getValue__overload__t"
 external solver__getValue__vt : (* class Solver *) solver -> (term array) -> (term array) = "caml_cvc5__Solver__getValue__overload__vt"
 external solver__setOption : (* class Solver *) solver -> string -> string -> unit = "caml_cvc5__Solver__setOption"
