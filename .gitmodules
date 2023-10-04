@@ -37,3 +37,6 @@
 [submodule "vendor/fast_bitvector"]
 	path = vendor/fast_bitvector
 	url = git@github.com:smuenzel/fast_bitvector
+[submodule "vendor/ocaml-bitwuzla"]
+	path = vendor/ocaml-bitwuzla
+	url = git@github.com:smuenzel/ocaml-bitwuzla
