@@ -332,6 +332,11 @@ apireturn caml_boolector_bv_assignment(value v_p0){
 }
 REGISTER_API_CUSTOM(boolector_bv_assignment,caml_boolector_bv_assignment,const char *, BoolectorNode*);
 
+inline BoolectorNode* boolector_fun_vector(Btor*btor, std::vector<BoolectorNode*> params, BoolectorNode*body){
+  return boolector_fun(btor,params.data(), params.size(), body);
+}
+API3(fun_vector)
+
 //CR smuenzel: we should do something to prevent copying of vectors
 // probably make it a reference and change 'invoke_result' to not remove the reference
 inline BoolectorSort boolector_fun_sort_vector(Btor*btor, std::vector<BoolectorSort> domain, BoolectorSort codomain){
