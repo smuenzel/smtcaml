@@ -287,7 +287,9 @@ module Model = struct
   let eval_to_string instance _model expr =
     Some (B.Solver.get_value instance expr |> B.Term.to_string)
 
-  let eval_bitvector _ _ _ = assert false
+  let eval_bitvector i m e =
+    eval_to_string i m e
+    |> Option.map ~f:Fast_bitvector.Little_endian.of_string
 end
 
 let create ?(options = Options.default) () =
@@ -303,6 +305,7 @@ let check_current_and_get_model t : _ Smtcaml_intf.Solver_result.t =
   | B.Result.Unknown -> Unknown "unknown"
 
 let sort_boolean _ = B.mk_bool_sort ()
+let sort_bitvector _ i = B.mk_bv_sort i
 
 let assert_ t e = B.Solver.assert_formula t e
 
@@ -325,6 +328,67 @@ module Boolean = struct
 
   let ite = B.mk_term3 Ite
 
+end
+
+module Bv = struct
+  module Sort = struct
+    let length s = B.Sort.bv_size s
+
+  end
+
+  let length e = Sort.length (B.Term.sort e)
+
+  module Numeral = struct
+    let int s i = B.mk_bv_value_int s i
+
+    let fast_bitvector s fbv =
+      B.mk_bv_value s (Fast_bitvector.Little_endian.to_string fbv) 2
+
+    let zero ~length t = B.mk_bv_zero (sort_bitvector t length)
+    let zero_e e = B.mk_bv_zero (B.Term.sort e)
+  end
+
+  let extract ~low ~high e =
+    B.mk_term1_indexed2 Bv_extract e high low
+
+  let extract_single ~bit e = extract ~low:bit ~high:bit e
+
+  let concat = B.mk_term2 Bv_concat
+
+  let zero_extend ~extra_zeros e = B.mk_term1_indexed1 Bv_zero_extend e extra_zeros
+  let sign_extend ~extra_bits e = B.mk_term1_indexed1 Bv_sign_extend e extra_bits
+
+  let not = B.mk_term1 Bv_not
+  let and_ = B.mk_term2 Bv_and
+  let or_ = B.mk_term2 Bv_or
+  let xor = B.mk_term2 Bv_xor
+
+  let add = B.mk_term2 Bv_add
+  let sub = B.mk_term2 Bv_sub
+
+  let is_zero e = Boolean.eq e (Numeral.zero_e e)
+  let is_not_zero e = Boolean.neq e (Numeral.zero_e e)
+
+  let is_all_ones e = Boolean.eq e (B.mk_bv_ones (B.Term.sort e))
+
+  let sign e =
+    let length = length e in
+    extract_single ~bit:(length - 1) e
+
+  let parity e = B.mk_term1 Bv_redxor e
+
+  let is_add_overflow ~signed:_ _ _ = assert false
+  let is_add_underflow _ _ = assert false
+  let is_sub_overflow _ _ = assert false
+  let is_sub_underflow ~signed:_ _ _ = assert false
+
+  let shift_left ~count e = B.mk_term2 Bv_shl e count
+  let shift_right_logical ~count e = B.mk_term2 Bv_shr e count
+  let shift_right_arithmetic ~count e = B.mk_term2 Bv_ashr e count
+
+  let of_bool b =
+    let s = B.mk_bv_sort 1 in
+    Boolean.ite b (B.mk_bv_one s) (B.mk_bv_zero s)
 end
 
 module Types = struct
