@@ -302,6 +302,31 @@ let check_current_and_get_model t : _ Smtcaml_intf.Solver_result.t =
   | B.Result.Unsat -> Unsatisfiable
   | B.Result.Unknown -> Unknown "unknown"
 
+let sort_boolean _ = B.mk_bool_sort ()
+
+let assert_ t e = B.Solver.assert_formula t e
+
+module Boolean = struct
+  module Numeral = struct
+    let true_ _ = B.mk_true ()
+    let false_ _ = B.mk_false ()
+
+    let bool t b = if b then true_ t else false_ t
+
+  end
+
+  let not = B.mk_term1 Not
+  let and_ = B.mk_term2 And
+  let or_ = B.mk_term2 Or
+
+  let eq = B.mk_term2 Equal
+  let neq a b = not (eq a b)
+  let distinct vs = B.mk_term Distinct (Array.of_list vs)
+
+  let ite = B.mk_term3 Ite
+
+end
+
 module Types = struct
   type 'i instance = 'i t
   type _ model = unit
