@@ -7,13 +7,13 @@
 (generate_opam_files true)
 
 (source
- (github username/reponame))
+ (github smuenzel/smtcaml))
 
-(authors "Author Name")
+(authors "Stefan Muenzel")
 
-(maintainers "Maintainer Name")
+(maintainers "Stefan Muenzel")
 
-(license LICENSE)
+(license MPL-2.0)
 
 (documentation https://url/to/documentation)
 
