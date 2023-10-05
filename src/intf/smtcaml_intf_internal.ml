@@ -119,9 +119,15 @@ module type Bitvector = sig
     val is_all_ones : ('i, m_sort) Op_types.unary_test
     val sign : ('i, m_sort) Op_types.unary
     val parity : ('i, m_sort) Op_types.unary
+
+    (* a + b > max *)
     val is_add_overflow : signed:bool -> ('i, m_sort) Op_types.binary_test
+    (* sign(a) = sign(b) = -1, sign(a+b) <> -1*)
     val is_add_underflow : ('i, m_sort) Op_types.binary_test
+
+    (* a - b > max *)
     val is_sub_overflow : ('i, m_sort) Op_types.binary_test
+    (* sign(a) = -1, sign(b) <> -1, sign(a-b) <> -1 *)
     val is_sub_underflow : signed:bool -> ('i, m_sort) Op_types.binary_test
 
     val shift_left : count:('i, m_sort) Types.expr -> ('i, m_sort) Op_types.unary 
