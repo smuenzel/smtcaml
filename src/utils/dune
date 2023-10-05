@@ -1,0 +1,6 @@
+(library
+  (name smtcaml_utils)
+  (libraries core core_unix ppxlib core_kernel.nonempty_list smtcaml_intf)
+  (preprocess (pps ppx_jane))
+  (inline_tests)
+  )
