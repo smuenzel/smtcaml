@@ -61,8 +61,15 @@ let sort_bitvector t length =
 let sort_boolean t =
   B.bool_sort t
 
+let sort_uninterpreted_function t ~domain ~codomain =
+  B.fun_sort_vector t [| domain |] codomain
+
 let var sort name =
-  B.var sort name
+  if B.is_bitvec_sort sort
+  then B.var sort name
+  else if B.is_fun_sort sort
+  then B.uf_opt sort None 
+  else assert false
 
 let assert_ _ expr =
   B.assert_ expr
@@ -74,7 +81,7 @@ let check_current_and_get_model t : _ Smtcaml_intf.Solver_result.t =
   | B.Unsat -> Unsatisfiable
 
 let get_sort_context (sort : B.sort) : B.btor = Obj.magic sort
-(* let get_expr_context (expr : B.node) : B.btor = Obj.magic expr *)
+let get_expr_context (expr : B.node) : B.btor = Obj.magic expr
 
 module Boolean = struct
   module Numeral = struct
@@ -185,6 +192,10 @@ module Bv = struct
 
 
   let of_bool b = b
+end
+
+module Ufun = struct
+  let apply a b = B.apply_vector (get_expr_context b) [| b |] a
 end
 
 module Types = struct

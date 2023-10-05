@@ -57,6 +57,9 @@ let check_current_and_get_model t : _ Smtcaml_intf.Solver_result.t =
 let sort_boolean t = C.solver__getBooleanSort t
 let sort_bitvector t l = C.solver__mkBitVectorSort t l
 
+let sort_uninterpreted_function t ~domain ~codomain =
+  C.solver__mkFunctionSort t [| domain |] codomain
+
 let assert_ _ expr = C.solver__assertFormula expr
 
 let get_term_context (t : C.term) : C.solver = Obj.magic t
@@ -180,6 +183,10 @@ module Bv = struct
 
   let shift_right_arithmetic ~count e =
     op2 BITVECTOR_ASHR e count
+end
+
+module Ufun = struct
+  let apply a b = op2 APPLY_UF a b
 end
 
 module Types = struct

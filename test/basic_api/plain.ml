@@ -22,6 +22,14 @@ module Test(Smt : Smtcaml_intf.Interface_definitions.Bitvector_basic) = struct
 
 end
 
+let%expect_test "bitwuzla" =
+  let module T = Test(Backend_bitwuzla) in
+  T.run ();
+  [%expect {|
+    (model
+     ("Smt.Model.eval_to_string t model c" (#b00000000000000011000011010010011))
+     ("Smt.Model.eval_bitvector t model c" (00000000000000011000011010010011))) |}]
+
 let%expect_test "boolector" =
   let module T = Test(Backend_boolector) in
   T.run ();

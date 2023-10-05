@@ -289,6 +289,7 @@ module Model = struct
 
   let eval_bitvector i m e =
     eval_to_string i m e
+    |> Option.map ~f:(String.chop_prefix_exn ~prefix:"#b")
     |> Option.map ~f:Fast_bitvector.Little_endian.of_string
 end
 
@@ -306,6 +307,9 @@ let check_current_and_get_model t : _ Smtcaml_intf.Solver_result.t =
 
 let sort_boolean _ = B.mk_bool_sort ()
 let sort_bitvector _ i = B.mk_bv_sort i
+
+let sort_uninterpreted_function _t ~domain ~codomain =
+  B.mk_fun_sort [| domain |] codomain
 
 let assert_ t e = B.Solver.assert_formula t e
 
@@ -389,6 +393,11 @@ module Bv = struct
   let of_bool b =
     let s = B.mk_bv_sort 1 in
     Boolean.ite b (B.mk_bv_one s) (B.mk_bv_zero s)
+end
+
+module Ufun = struct
+  let apply a b = B.mk_term2 Apply a b
+
 end
 
 module Types = struct

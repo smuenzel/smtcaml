@@ -83,6 +83,9 @@ end
 let sort_boolean t = Z3.Boolean.mk_sort (c t)
 let sort_bitvector t l = Z3.BitVector.mk_sort (c t) l
 
+let sort_uninterpreted_function t ~domain ~codomain =
+  Z3.Z3Array.mk_sort t.context domain codomain
+
 let assert_ t expr = Z3.Solver.add (s t) [ expr ]
 
 let var sort name = Z3.Expr.mk_const_s (Sort.context sort) name sort
@@ -261,6 +264,9 @@ module Model = struct
     |> Option.map ~f:Bv.Numeral.to_fast_bitvector
 end
 
+module Ufun = struct
+  let apply a b = Z3.Z3Array.mk_select (Expr.context a) a b
+end
 
 module Types = struct
   type 'i instance = 'i t

@@ -349,6 +349,15 @@ inline BoolectorNode* boolector_apply_vector(Btor*btor, std::vector<BoolectorNod
 }
 API4(apply_vector)
 
+inline BoolectorNode* boolector_uf_opt(Btor*btor, BoolectorSort sort, std::optional<const char *> symbol){
+  if(symbol)
+    return boolector_uf(btor,sort,symbol.value());
+  else
+    return boolector_uf(btor,sort,0);
+}
+
+API2I(uf_opt)
+
 apireturn caml_boolector_unit(value){
   return Val_unit;
 }
