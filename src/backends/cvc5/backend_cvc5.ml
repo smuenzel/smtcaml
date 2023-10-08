@@ -89,6 +89,9 @@ module Boolean = struct
   let eq = op2 EQUAL
   let neq = op2 DISTINCT
   let ite = op3 ITE
+  let implies = op2 IMPLIES
+  let xor = op2 XOR
+  let iff a b = not (xor a b) 
 
   let distinct list = term_op DISTINCT (Array.of_list list)
 end

@@ -165,6 +165,9 @@ module type Boolean = sig
     val not : ('i, m_sort) Op_types.unary
     val and_ : ('i, m_sort) Op_types.binary
     val or_ : ('i, m_sort) Op_types.binary
+
+    val implies : ('i, m_sort) Op_types.binary
+    val iff : ('i, m_sort) Op_types.binary
   end
 end
 

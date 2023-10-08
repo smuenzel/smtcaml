@@ -95,6 +95,8 @@ module Boolean = struct
   let eq = B.eq
   let neq = B.ne
   let ite = B.cond
+  let implies = B.implies
+  let iff = B.iff
 
   let not = B.not
 

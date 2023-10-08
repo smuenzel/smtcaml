@@ -332,6 +332,9 @@ module Boolean = struct
 
   let ite = B.mk_term3 Ite
 
+  let iff = B.mk_term2 Iff
+  let implies = B.mk_term2 Implies
+
 end
 
 module Bv = struct

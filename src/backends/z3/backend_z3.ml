@@ -113,6 +113,8 @@ module Boolean = struct
   let eq = op Z3.Boolean.mk_eq
   let neq a b = not (eq a b)
   let ite = op Z3.Boolean.mk_ite
+  let implies = op Z3.Boolean.mk_implies
+  let iff = op Z3.Boolean.mk_iff
 
   let and_ = op2_nolist Z3.Boolean.mk_and
   let or_ = op2_nolist Z3.Boolean.mk_or
