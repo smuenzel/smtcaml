@@ -76,18 +76,20 @@ template<> struct CppCaml::CamlConversion<BoolectorNode**> {
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
+#define APIPREFIX _
 
-#define API0(APIF) API0__(_,boolector_##APIF)
-#define API1(APIF) API1__(_,boolector_##APIF)
-#define API1_BLOCKING(APIF) API1_BLOCKING__(_,boolector_##APIF)
-#define API2(APIF) API2__(_,boolector_##APIF)
-#define API3(APIF) API3__(_,boolector_##APIF)
-#define API3_BLOCKING(APIF) API3_BLOCKING__(_,boolector_##APIF)
-#define API4(APIF) API3__(_,boolector_##APIF)
-#define API1I(APIF) API1_IMPLIED__(_,boolector_##APIF);
-#define API2I(APIF) API2_IMPLIED__(_,boolector_##APIF);
-#define API3I(APIF) API3_IMPLIED__(_,boolector_##APIF);
-#define API4I(APIF) API3_IMPLIED__(_,boolector_##APIF);
+
+#define API0(APIF) API0__(boolector_##APIF)
+#define API1(APIF) API1__(boolector_##APIF)
+#define API1_BLOCKING(APIF) API1_BLOCKING__(boolector_##APIF)
+#define API2(APIF) API2__(boolector_##APIF)
+#define API3(APIF) API3__(boolector_##APIF)
+#define API3_BLOCKING(APIF) API3_BLOCKING__(boolector_##APIF)
+#define API4(APIF) API3__(boolector_##APIF)
+#define API1I(APIF) API1_IMPLIED__(boolector_##APIF);
+#define API2I(APIF) API2_IMPLIED__(boolector_##APIF);
+#define API3I(APIF) API3_IMPLIED__(boolector_##APIF);
+#define API4I(APIF) API3_IMPLIED__(boolector_##APIF);
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
