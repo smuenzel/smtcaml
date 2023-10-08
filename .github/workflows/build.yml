@@ -30,6 +30,7 @@ jobs:
       uses: ocaml/setup-ocaml@v2
       with:
         ocaml-compiler: ${{ matrix.ocaml-compiler }}
+        dune-cache: true
     - name: Install opam dependencies
       run: opam install core dune z3 higher_kinded --yes
     - name: Cache vendor builds
