@@ -340,6 +340,8 @@ and Boolean_t : Smtcaml_intf.Boolean with module Types := Types
     let not = B.mk_term1 Not
     let and_ = B.mk_term2 And
     let or_ = B.mk_term2 Or
+    let and_list list = B.mk_term And (Array.of_list list)
+    let or_list list = B.mk_term Or (Array.of_list list)
 
     let eq = B.mk_term2 Equal
     let neq a b = not (eq a b)
@@ -407,8 +409,6 @@ and Bitvector_t : Smtcaml_intf.Bitvector with module Types := Types
 
     let parity e = B.mk_term1 Bv_redxor e
 
-    let is_add_overflow ~signed:_ _ _ = assert false
-    let is_add_underflow _ _ = assert false
     let is_sub_overflow _ _ = assert false
     let is_sub_underflow ~signed:_ _ _ = assert false
 
@@ -422,8 +422,6 @@ and Bitvector_t : Smtcaml_intf.Bitvector with module Types := Types
       let s = B.mk_bv_sort 1 in
       Boolean.ite b (B.mk_bv_one s) (B.mk_bv_zero s)
   end
-
-
 end
 
 and Uf_t : Smtcaml_intf.Uninterpreted_function

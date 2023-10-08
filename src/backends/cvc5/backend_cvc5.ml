@@ -76,6 +76,8 @@ let op1 o e0 = term_op o [| e0 |]
 let op2 o e0 e1 = term_op o [| e0; e1 |]
 let op3 o e0 e1 e2 = term_op o [| e0; e1; e2 |]
 
+let op_list o elist = term_op o (Array.of_list elist)
+
 module Boolean = struct
   module Numeral = struct
     let bool t b = C.solver__mkBoolean t b
@@ -86,6 +88,8 @@ module Boolean = struct
   let not = op1 NOT
   let and_ = op2 AND
   let or_ = op2 OR
+  let and_list = op_list AND
+  let or_list = op_list OR
   let eq = op2 EQUAL
   let neq = op2 DISTINCT
   let ite = op3 ITE

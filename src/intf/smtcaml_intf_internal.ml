@@ -27,6 +27,8 @@ end
 module type Op_types = sig
   module Types : Types
 
+  type ('i, 's) redlist = ('i, 's) Types.expr list -> ('i, 's) Types.expr
+
   type ('i, 's) unary = ('i, 's) Types.expr -> ('i, 's) Types.expr
   type ('i, 's) binary = ('i, 's) Types.expr -> ('i, 's) unary
 
@@ -134,7 +136,6 @@ module type Bitvector = sig
     val shift_right_logical : count:('i, m_sort) Types.expr -> ('i, m_sort) Op_types.unary 
     val shift_right_arithmetic : count:('i, m_sort) Types.expr -> ('i, m_sort) Op_types.unary 
 
-    (* val to_bool : ('i, m_sort) Types.expr -> ('i, Sort_kind.bool) Types.expr *)
     val of_bool : ('i, Sort_kind.bool) Types.expr -> ('i, m_sort) Types.expr
   end
 end
@@ -165,6 +166,9 @@ module type Boolean = sig
     val not : ('i, m_sort) Op_types.unary
     val and_ : ('i, m_sort) Op_types.binary
     val or_ : ('i, m_sort) Op_types.binary
+
+    val and_list : ('i, m_sort) Op_types.redlist
+    val or_list : ('i, m_sort) Op_types.redlist
 
     val implies : ('i, m_sort) Op_types.binary
     val iff : ('i, m_sort) Op_types.binary

@@ -119,6 +119,9 @@ module Boolean = struct
   let and_ = op2_nolist Z3.Boolean.mk_and
   let or_ = op2_nolist Z3.Boolean.mk_or
 
+  let and_list = op_list Z3.Boolean.mk_and
+  let or_list = op_list Z3.Boolean.mk_or
+
   let distinct = op_list Z3.Boolean.mk_distinct
 end
 

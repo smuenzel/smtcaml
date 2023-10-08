@@ -92,6 +92,9 @@ module Boolean = struct
 
   let and_ = B.and_
   let or_ = B.or_
+  let and_list = List.reduce_balanced_exn ~f:and_
+  let or_list = List.reduce_balanced_exn ~f:or_
+
   let eq = B.eq
   let neq = B.ne
   let ite = B.cond
