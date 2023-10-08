@@ -38,6 +38,9 @@ module Model = struct
   let eval_bitvector instance model expr =
     eval_to_string instance model expr
     |> Option.map ~f:Fast_bitvector.Little_endian.of_string
+
+  let eval_bool _instance _model expr =
+    Some (B.is_bv_const_one expr)
 end
 
 let create ?(options=Options.default) () =

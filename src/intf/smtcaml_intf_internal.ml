@@ -71,6 +71,8 @@ module type Backend_base = sig
     val eval_to_string : 'i t' -> 'i t -> ('i, 's) Expr.t -> string option
 
     val eval_bitvector : 'i t' -> 'i t -> ('i, Sort_kind.bv) Expr.t -> Fast_bitvector.t option
+
+    val eval_bool : 'i t' -> 'i t -> ('i, Sort_kind.bool) Expr.t -> bool option
   end
 
   val create : ?options:Options.t -> unit -> Packed.t

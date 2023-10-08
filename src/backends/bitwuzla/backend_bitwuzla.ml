@@ -305,6 +305,9 @@ module rec Base : Smtcaml_intf.Backend_base with module Types := Types
       eval_to_string i m e
       |> Option.map ~f:(String.chop_prefix_exn ~prefix:"#b")
       |> Option.map ~f:Fast_bitvector.Little_endian.of_string
+
+    let eval_bool instance _m expr =
+      Some (B.Solver.get_value instance expr |> B.Term.is_bv_value_one)
   end
 
   let create ?(options = Options.default) () =
@@ -408,9 +411,6 @@ and Bitvector_t : Smtcaml_intf.Bitvector with module Types := Types
       extract_single ~bit:(length - 1) e
 
     let parity e = B.mk_term1 Bv_redxor e
-
-    let is_sub_overflow _ _ = assert false
-    let is_sub_underflow ~signed:_ _ _ = assert false
 
     include Smtcaml_utils.Add_sub_over_under_flow.Make(T)
 

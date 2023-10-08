@@ -267,6 +267,16 @@ module Model = struct
     let apply_model_completion = true in
     Z3.Model.eval model expr apply_model_completion
     |> Option.map ~f:Bv.Numeral.to_fast_bitvector
+
+  let eval_bool _t model expr =
+    let apply_model_completion = true in
+    Z3.Model.eval model expr apply_model_completion
+    |> Option.map ~f:Z3.Boolean.get_bool_value
+    |> Option.map ~f:(function
+        | Z3enums.L_FALSE -> false
+        | Z3enums.L_UNDEF -> assert false
+        | Z3enums.L_TRUE -> true
+      )
 end
 
 module Ufun = struct

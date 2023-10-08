@@ -31,6 +31,9 @@ module Model = struct
     eval_to_string solver model term
     |> Option.map ~f:(String.chop_prefix_exn ~prefix:"#b")
     |> Option.map ~f:Fast_bitvector.Little_endian.of_string
+
+  let eval_bool solver () term =
+    Some (C.term__getBooleanValue (C.solver__getValue__t solver term))
 end
 
 let create ?(options=()) () =
