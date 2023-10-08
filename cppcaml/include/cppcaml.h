@@ -358,14 +358,18 @@ inline value call_native_from_bytecode(value (*fun)(Args...), value *argv, int a
 
 #define MAKE_APIF_N_(APIPREFIX,APIF) caml_## APIPREFIX ##__## APIF
 #define MAKE_APIF_N(APIPREFIX,APIF) MAKE_APIF_N_(APIPREFIX,APIF)
+
 #define MAKE_APIF_NCLASS_(APIPREFIX,APIF,CLASS) caml_## APIPREFIX ##__## CLASS ##__## APIF
 #define MAKE_APIF_NCLASS(APIPREFIX,APIF,CLASS) MAKE_APIF_NCLASS_(APIPREFIX,APIF,CLASS)
+
 #define MAKE_APIF_NCLASS_BYTE_(APIPREFIX,APIF,CLASS) caml_## APIPREFIX ##__## CLASS ##__## APIF ## _bytecode
 #define MAKE_APIF_NCLASS_BYTE(APIPREFIX,APIF,CLASS) MAKE_APIF_NCLASS_BYTE_(APIPREFIX,APIF,CLASS)
+
 #define MAKE_APIF_NCLASS_OVERLOAD_(APIPREFIX,APIF,CLASS,SUFFIX) \
   caml_## APIPREFIX ##__## CLASS ##__## APIF ## __overload__ ## SUFFIX
 #define  MAKE_APIF_NCLASS_OVERLOAD(APIPREFIX,APIF,CLASS,SUFFIX) \
   MAKE_APIF_NCLASS_OVERLOAD_(APIPREFIX,APIF,CLASS,SUFFIX)
+
 #define MAKE_APIF_NCLASS_OVERLOAD_BYTE_(APIPREFIX,APIF,CLASS,SUFFIX) \
   caml_## APIPREFIX ##__## CLASS ##__## APIF ## __overload__ ## SUFFIX ## _bytecode
 #define  MAKE_APIF_NCLASS_OVERLOAD_BYTE(APIPREFIX,APIF,CLASS,SUFFIX) \
@@ -389,144 +393,115 @@ inline value call_native_from_bytecode(value (*fun)(Args...), value *argv, int a
 #define API2__(APIF) \
   APIX(call_api,(value v0, value v1),(,v0,v1),APIF)
 
-#define API1_IMPLIED__(APIF) \
-  REGISTER_API_IMPLIED_FIRST(APIPREFIX,APIF, MAKE_APIF_N(APIPREFIX,APIF)); \
-  apireturn MAKE_APIF_N(APIPREFIX,APIF)(value v0){ \
-    return CppCaml::call_api_implied_first(APIF, v0); \
-  }
-
-#define API2_IMPLIED__(APIF) \
-  REGISTER_API_IMPLIED_FIRST(APIPREFIX,APIF, MAKE_APIF_N(APIPREFIX,APIF)); \
-  apireturn MAKE_APIF_N(APIPREFIX,APIF)(value v0, value v1){ \
-    return CppCaml::call_api_implied_first(APIF, v0, v1); \
-  }
-
-#define API3_IMPLIED__(APIF) \
-  REGISTER_API_IMPLIED_FIRST(APIPREFIX,APIF, MAKE_APIF_N(APIPREFIX,APIF)); \
-  apireturn MAKE_APIF_N(APIPREFIX,APIF)(value v0, value v1, value v2){ \
-    return CppCaml::call_api_implied_first(APIF, v0, v1, v2); \
-  }
-
 #define API3__(APIF) \
-  REGISTER_API(APIPREFIX,APIF, MAKE_APIF_N(APIPREFIX,APIF)); \
-  apireturn MAKE_APIF_N(APIPREFIX,APIF)(value v0, value v1, value v2){ \
-    return CppCaml::call_api(APIF, v0, v1, v2); \
-  }
+  APIX(call_api,(value v0, value v1, value v2),(,v0,v1,v2),APIF)
 
 #define API3_BLOCKING__(APIF) \
-  REGISTER_API(APIPREFIX,APIF, MAKE_APIF_N(APIPREFIX,APIF)); \
-  apireturn MAKE_APIF_N(APIPREFIX,APIF)(value v0, value v1, value v2){ \
-    return CppCaml::call_api<CppCaml::ReleaseOcamlLock>(APIF, v0, v1, v2); \
+  APIX(call_api<CppCaml::ReleaseOcamlLock>,(value v0, value v1, value v2),(,v0,v1,v2),APIF)
+
+#define APIX_IMPLIED(CALLER,PARAMS,PARAMS_INSTANCE,APIF) \
+  REGISTER_API_IMPLIED_FIRST(APIPREFIX,APIF, MAKE_APIF_N(APIPREFIX,APIF)); \
+  apireturn MAKE_APIF_N(APIPREFIX,APIF)(UNPAREN PARAMS){ \
+    return CppCaml::CALLER(APIF UNPAREN PARAMS_INSTANCE); \
+  }
+
+#define API1_IMPLIED__(APIF) \
+  APIX_IMPLIED(call_api_implied_first,(value v0),(,v0),APIF)
+
+#define API2_IMPLIED__(APIF) \
+  APIX_IMPLIED(call_api_implied_first,(value v0, value v1),(,v0,v1),APIF)
+
+#define API3_IMPLIED__(APIF) \
+  APIX_IMPLIED(call_api_implied_first,(value v0, value v1, value v2),(,v0,v1,v2),APIF)
+
+#define APIX_M(CALLER,PARAMS,PARAMS_INSTANCE,APIF,CLASS) \
+  REGISTER_API_MEMBER(APIPREFIX,CLASS,APIF, MAKE_APIF_NCLASS(APIPREFIX,APIF,CLASS)); \
+  apireturn MAKE_APIF_NCLASS(APIPREFIX,APIF,CLASS)(UNPAREN PARAMS){ \
+    return CppCaml::CALLER(&CLASS :: APIF UNPAREN PARAMS_INSTANCE); \
   }
 
 #define APIM0__(CLASS,APIF) \
-  REGISTER_API_MEMBER(APIPREFIX,CLASS,APIF, MAKE_APIF_NCLASS(APIPREFIX,APIF,CLASS)); \
-  apireturn MAKE_APIF_NCLASS(APIPREFIX,APIF,CLASS)(value v_c){ \
-    return CppCaml::call_api_class(&CLASS :: APIF, v_c); \
-  }
+  APIX_M(call_api_class,(value v_c),(,v_c),APIF,CLASS)
 
 #define APIM0_BLOCKING__(CLASS,APIF) \
-  REGISTER_API_MEMBER(APIPREFIX,CLASS,APIF, MAKE_APIF_NCLASS(APIPREFIX,APIF,CLASS)); \
-  apireturn MAKE_APIF_NCLASS(APIPREFIX,APIF,CLASS)(value v_c){ \
-    return CppCaml::call_api_class<CppCaml::ReleaseOcamlLock>(&CLASS :: APIF, v_c); \
-  }
+  APIX_M(call_api_class<CppCaml::ReleaseOcamlLock>,(value v_c),(,v_c),APIF,CLASS)
 
 #define APIM1__(CLASS,APIF) \
-  REGISTER_API_MEMBER(APIPREFIX,CLASS,APIF, MAKE_APIF_NCLASS(APIPREFIX,APIF,CLASS)); \
-  apireturn MAKE_APIF_NCLASS(APIPREFIX,APIF,CLASS)(value v_c, value v_p0){ \
-    return CppCaml::call_api_class(&CLASS :: APIF, v_c, v_p0); \
-  }
+  APIX_M(call_api_class,(value v_c, value v0),(,v_c,v0),APIF,CLASS)
 
 #define APIM2__(CLASS,APIF) \
-  REGISTER_API_MEMBER(APIPREFIX,CLASS,APIF, MAKE_APIF_NCLASS(APIPREFIX,APIF,CLASS)); \
-  apireturn MAKE_APIF_NCLASS(APIPREFIX,APIF,CLASS)(value v_c, value v_p0,value v_p1){ \
-    return CppCaml::call_api_class(&CLASS :: APIF, v_c, v_p0, v_p1); \
-  }
+  APIX_M(call_api_class,(value v_c, value v0, value v1),(,v_c,v0,v1),APIF,CLASS)
 
 #define APIM3__(CLASS,APIF) \
-  REGISTER_API_MEMBER(APIPREFIX,CLASS,APIF, MAKE_APIF_NCLASS(APIPREFIX,APIF,CLASS)); \
-  apireturn MAKE_APIF_NCLASS(APIPREFIX,APIF,CLASS)(value v_c, value v_p0,value v_p1, value v_p2){ \
-    return CppCaml::call_api_class(&CLASS :: APIF, v_c, v_p0, v_p1,v_p2); \
-  }
+  APIX_M(call_api_class,(value v_c, value v0, value v1, value v2),(,v_c,v0,v1,v2),APIF,CLASS)
 
 #define APIM4__(CLASS,APIF) \
-  REGISTER_API_MEMBER(APIPREFIX,CLASS,APIF, MAKE_APIF_NCLASS(APIPREFIX,APIF,CLASS)); \
-  apireturn MAKE_APIF_NCLASS(APIPREFIX,APIF,CLASS)(value v_c, value v_p0,value v_p1, value v_p2, value v_p3){ \
-    return CppCaml::call_api_class(&CLASS :: APIF, v_c, v_p0, v_p1,v_p2,v_p3); \
-  }
+  APIX_M(call_api_class,(value v_c, value v0, value v1, value v2, value v3),(,v_c,v0,v1,v2,v3),APIF,CLASS)
 
-#define APIM5__(CLASS,APIF) \
-  REGISTER_API_MEMBER(APIPREFIX,CLASS,APIF, MAKE_APIF_NCLASS(APIPREFIX,APIF,CLASS)); \
-  apireturn MAKE_APIF_NCLASS(APIPREFIX,APIF,CLASS)(value v_c, value v_p0,value v_p1, value v_p2, value v_p3, value v_p4){ \
-    return CppCaml::call_api_class(&CLASS :: APIF, v_c, v_p0, v_p1,v_p2,v_p3,v_p4); \
-  } \
+#define APIX_M_LONG(CALLER,PARAMS,PARAMS_INSTANCE,APIF,CLASS) \
+  APIX_M(CALLER,PARAMS,PARAMS_INSTANCE,APIF,CLASS) \
   apireturn MAKE_APIF_NCLASS_BYTE(APIPREFIX,APIF,CLASS)(value *argv, int argn){\
     return CppCaml::call_native_from_bytecode(MAKE_APIF_NCLASS(APIPREFIX,APIF,CLASS), argv, argn); \
   }
 
+#define APIM5__(CLASS,APIF) \
+  APIX_M_LONG(call_api_class,(value v_c, value v0, value v1, value v2, value v3, value v4),(,v_c,v0,v1,v2,v3,v4),APIF,CLASS)
 
-#define APIM1_IMPLIED__(CLASS,APIF) \
+#define APIX_M_IMPLIED(CALLER,PARAMS,PARAMS_INSTANCE,APIF,CLASS) \
   REGISTER_API_MEMBER_IMPLIED(APIPREFIX,CLASS,APIF, MAKE_APIF_NCLASS(APIPREFIX,APIF,CLASS)); \
-  apireturn MAKE_APIF_NCLASS(APIPREFIX,APIF,CLASS)(value v_p0){ \
-    return CppCaml::call_api_class_implied(&CLASS :: APIF, v_p0); \
+  apireturn MAKE_APIF_NCLASS(APIPREFIX,APIF,CLASS)(UNPAREN PARAMS){ \
+    return CppCaml::CALLER(&CLASS :: APIF UNPAREN PARAMS_INSTANCE); \
   }
 
+#define APIM1_IMPLIED__(CLASS,APIF) \
+  APIX_M_IMPLIED(call_api_class_implied,(value v0),(,v0),APIF,CLASS)
+
 #define APIM2_IMPLIED__(CLASS,APIF) \
-  REGISTER_API_MEMBER_IMPLIED(APIPREFIX,CLASS,APIF, MAKE_APIF_NCLASS(APIPREFIX,APIF,CLASS)); \
-  apireturn MAKE_APIF_NCLASS(APIPREFIX,APIF,CLASS)(value v_p0, value v_p1){ \
-    return CppCaml::call_api_class_implied(&CLASS :: APIF, v_p0, v_p1); \
+  APIX_M_IMPLIED(call_api_class_implied,(value v0, value v1),(,v0,v1),APIF,CLASS)
+
+#define APIX_M_OVERLOAD_IMPLIED(CALLER,PARAMS,PARAMS_INSTANCE,APIF,CLASS,SUFFIX,...) \
+  REGISTER_API_MEMBER_OVERLOAD_IMPLIED(APIPREFIX,CLASS,APIF,SUFFIX, MAKE_APIF_NCLASS_OVERLOAD(APIPREFIX,APIF,CLASS,SUFFIX), __VA_ARGS__); \
+  apireturn MAKE_APIF_NCLASS_OVERLOAD(APIPREFIX,APIF,CLASS,SUFFIX)(UNPAREN PARAMS){ \
+    return CppCaml::CALLER(CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(),&CLASS :: APIF) UNPAREN PARAMS_INSTANCE); \
   }
 
 #define APIM1_OVERLOAD_IMPLIED_(CLASS,APIF,SUFFIX,...) \
-  REGISTER_API_MEMBER_OVERLOAD_IMPLIED(APIPREFIX,CLASS,APIF,SUFFIX, MAKE_APIF_NCLASS_OVERLOAD(APIPREFIX,APIF,CLASS,SUFFIX), __VA_ARGS__); \
-  apireturn MAKE_APIF_NCLASS_OVERLOAD(APIPREFIX,APIF,CLASS,SUFFIX)(value v_p0){ \
-    return CppCaml::call_api_class_implied(CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(),&CLASS :: APIF), v_p0); \
-  }
+  APIX_M_OVERLOAD_IMPLIED(call_api_class_implied,(value v0),(,v0),APIF,CLASS,SUFFIX,__VA_ARGS__)
 
 #define APIM2_OVERLOAD_IMPLIED_(CLASS,APIF,SUFFIX,...) \
-  REGISTER_API_MEMBER_OVERLOAD_IMPLIED(APIPREFIX,CLASS,APIF,SUFFIX, MAKE_APIF_NCLASS_OVERLOAD(APIPREFIX,APIF,CLASS,SUFFIX), __VA_ARGS__); \
-  apireturn MAKE_APIF_NCLASS_OVERLOAD(APIPREFIX,APIF,CLASS,SUFFIX)(value v_p0, value v_p1){ \
-    return CppCaml::call_api_class_implied(CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(),&CLASS :: APIF), v_p0, v_p1); \
+  APIX_M_OVERLOAD_IMPLIED(call_api_class_implied,(value v0, value v1),(,v0,v1),APIF,CLASS,SUFFIX,__VA_ARGS__)
+
+#define APIX_M_OVERLOAD(CALLER,PARAMS,PARAMS_INSTANCE,APIF,CLASS,SUFFIX,...) \
+  REGISTER_API_MEMBER_OVERLOAD(APIPREFIX,CLASS,APIF,SUFFIX, MAKE_APIF_NCLASS_OVERLOAD(APIPREFIX,APIF,CLASS,SUFFIX), __VA_ARGS__); \
+  apireturn MAKE_APIF_NCLASS_OVERLOAD(APIPREFIX,APIF,CLASS,SUFFIX)(UNPAREN PARAMS){ \
+    return CppCaml::CALLER(CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(),&CLASS :: APIF) UNPAREN PARAMS_INSTANCE); \
   }
 
 #define APIM1_OVERLOAD_(CLASS,APIF,SUFFIX,...) \
-  REGISTER_API_MEMBER_OVERLOAD(APIPREFIX,CLASS,APIF,SUFFIX, MAKE_APIF_NCLASS_OVERLOAD(APIPREFIX,APIF,CLASS,SUFFIX), __VA_ARGS__); \
-  apireturn MAKE_APIF_NCLASS_OVERLOAD(APIPREFIX,APIF,CLASS,SUFFIX)(value v_c, value v_p0){ \
-    return CppCaml::call_api_class(CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(),&CLASS :: APIF), v_c, v_p0); \
-  }
-
-#define APIM2_OVERLOAD_(CLASS,APIF,SUFFIX,...) \
-  REGISTER_API_MEMBER_OVERLOAD(APIPREFIX,CLASS,APIF,SUFFIX, MAKE_APIF_NCLASS_OVERLOAD(APIPREFIX,APIF,CLASS,SUFFIX), __VA_ARGS__); \
-  apireturn MAKE_APIF_NCLASS_OVERLOAD(APIPREFIX,APIF,CLASS,SUFFIX)(value v_c, value v_p0, value v_p1){ \
-    return CppCaml::call_api_class(CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(),&CLASS :: APIF), v_c, v_p0, v_p1); \
-  }
-
-#define APIM3_OVERLOAD_(CLASS,APIF,SUFFIX,...) \
-  REGISTER_API_MEMBER_OVERLOAD(APIPREFIX,CLASS,APIF,SUFFIX, MAKE_APIF_NCLASS_OVERLOAD(APIPREFIX,APIF,CLASS,SUFFIX), __VA_ARGS__); \
-  apireturn MAKE_APIF_NCLASS_OVERLOAD(APIPREFIX,APIF,CLASS,SUFFIX)(value v_c, value v_p0, value v_p1, value v_p2){ \
-    return CppCaml::call_api_class(CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(),&CLASS :: APIF), v_c, v_p0, v_p1, v_p2); \
-  }
+  APIX_M_OVERLOAD(call_api_class,(value v_c, value v0),(,v_c,v0),APIF,CLASS,SUFFIX,__VA_ARGS__)
 
 #define APIM1_OVERLOAD_BLOCKING__(CLASS,APIF,SUFFIX,...) \
-  REGISTER_API_MEMBER_OVERLOAD(APIPREFIX,CLASS,APIF,SUFFIX, MAKE_APIF_NCLASS_OVERLOAD(APIPREFIX,APIF,CLASS,SUFFIX), __VA_ARGS__); \
-  apireturn MAKE_APIF_NCLASS_OVERLOAD(APIPREFIX,APIF,CLASS,SUFFIX)(value v_c, value v_p0){ \
-    return CppCaml::call_api_class<CppCaml::ReleaseOcamlLock>(CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(),&CLASS :: APIF), v_c, v_p0); \
-  }
+  APIX_M_OVERLOAD(call_api_class<CppCaml::ReleaseOcamlLock>,(value v_c, value v0),(,v_c,v0),APIF,CLASS,SUFFIX,__VA_ARGS__)
+
+#define APIM2_OVERLOAD_(CLASS,APIF,SUFFIX,...) \
+  APIX_M_OVERLOAD(call_api_class,(value v_c, value v0, value v1),(,v_c,v0,v1),APIF,CLASS,SUFFIX,__VA_ARGS__)
+
+#define APIM3_OVERLOAD_(CLASS,APIF,SUFFIX,...) \
+  APIX_M_OVERLOAD(call_api_class,(value v_c, value v0, value v1, value v2),(,v_c,v0,v1,v2),APIF,CLASS,SUFFIX,__VA_ARGS__)
 
 #define APIM4_OVERLOAD_(CLASS,APIF,SUFFIX,...) \
-  REGISTER_API_MEMBER_OVERLOAD(APIPREFIX,CLASS,APIF,SUFFIX, MAKE_APIF_NCLASS_OVERLOAD(APIPREFIX,APIF,CLASS,SUFFIX), __VA_ARGS__); \
-  apireturn MAKE_APIF_NCLASS_OVERLOAD(APIPREFIX,APIF,CLASS,SUFFIX)(value v_c, value v_p0, value v_p1, value v_p2, value v_p3){ \
-    return CppCaml::call_api_class(CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(),&CLASS :: APIF), v_c, v_p0, v_p1, v_p2, v_p3); \
-  }
+  APIX_M_OVERLOAD(call_api_class,(value v_c, value v0, value v1, value v2, value v3),(,v_c,v0,v1,v2,v3),APIF,CLASS,SUFFIX,__VA_ARGS__)
 
-#define APIM5_OVERLOAD_(CLASS,APIF,SUFFIX,...) \
-  REGISTER_API_MEMBER_OVERLOAD(APIPREFIX,CLASS,APIF,SUFFIX, MAKE_APIF_NCLASS_OVERLOAD(APIPREFIX,APIF,CLASS,SUFFIX), __VA_ARGS__); \
-  apireturn MAKE_APIF_NCLASS_OVERLOAD(APIPREFIX,APIF,CLASS,SUFFIX)(value v_c, value v_p0, value v_p1, value v_p2, value v_p3, value v_p4){ \
-    return CppCaml::call_api_class(CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(),&CLASS :: APIF), v_c, v_p0, v_p1, v_p2, v_p3, v_p4); \
-  } \
+#define APIX_M_OVERLOAD_LONG(CALLER,PARAMS,PARAMS_INSTANCE,APIF,CLASS,SUFFIX,...) \
+  APIX_M_OVERLOAD(CALLER,PARAMS,PARAMS_INSTANCE,APIF,CLASS,SUFFIX,__VA_ARGS__) \
   apireturn MAKE_APIF_NCLASS_OVERLOAD_BYTE(APIPREFIX,APIF,CLASS,SUFFIX)(value *argv, int argn){\
     return CppCaml::call_native_from_bytecode(MAKE_APIF_NCLASS_OVERLOAD(APIPREFIX,APIF,CLASS,SUFFIX), argv, argn); \
   }
+
+
+#define APIM5_OVERLOAD_(CLASS,APIF,SUFFIX,...) \
+  APIX_M_OVERLOAD_LONG(call_api_class,(value v_c, value v0, value v1, value v2, value v3, value v4),(,v_c,v0,v1,v2,v3,v4),APIF,CLASS,SUFFIX,__VA_ARGS__)
+
 /////////////////////////////////////
 
 template<typename T> static inline T& Custom_value(value v){
