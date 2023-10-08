@@ -354,6 +354,8 @@ inline value call_native_from_bytecode(value (*fun)(Args...), value *argv, int a
   return call_native_from_bytecode_index(fun,index_sequence,argv, argn);
 }
 
+#define UNPAREN(...) __VA_ARGS__
+
 #define MAKE_APIF_N_(APIPREFIX,APIF) caml_## APIPREFIX ##__## APIF
 #define MAKE_APIF_N(APIPREFIX,APIF) MAKE_APIF_N_(APIPREFIX,APIF)
 #define MAKE_APIF_NCLASS_(APIPREFIX,APIF,CLASS) caml_## APIPREFIX ##__## CLASS ##__## APIF
@@ -369,29 +371,23 @@ inline value call_native_from_bytecode(value (*fun)(Args...), value *argv, int a
 #define  MAKE_APIF_NCLASS_OVERLOAD_BYTE(APIPREFIX,APIF,CLASS,SUFFIX) \
   MAKE_APIF_NCLASS_OVERLOAD_BYTE_(APIPREFIX,APIF,CLASS,SUFFIX)
 
-#define API0__(APIF) \
+#define APIX(CALLER,PARAMS,PARAMS_INSTANCE,APIF) \
   REGISTER_API(APIPREFIX,APIF, MAKE_APIF_N(APIPREFIX,APIF)); \
-  apireturn MAKE_APIF_N(APIPREFIX,APIF)(value v_unit){ \
-    return CppCaml::call_api(APIF); \
+  apireturn MAKE_APIF_N(APIPREFIX,APIF)(UNPAREN PARAMS){ \
+    return CppCaml::CALLER(APIF UNPAREN PARAMS_INSTANCE); \
   }
+
+#define API0__(APIF) \
+  APIX(call_api,(value v_unit), (),APIF)
 
 #define API1__(APIF) \
-  REGISTER_API(APIPREFIX,APIF, MAKE_APIF_N(APIPREFIX,APIF)); \
-  apireturn MAKE_APIF_N(APIPREFIX,APIF)(value v0){ \
-    return CppCaml::call_api(APIF, v0); \
-  }
+  APIX(call_api,(value v0),(,v0),APIF)
 
 #define API1_BLOCKING__(APIF) \
-  REGISTER_API(APIPREFIX,APIF, MAKE_APIF_N(APIPREFIX,APIF)); \
-  apireturn MAKE_APIF_N(APIPREFIX,APIF)(value v0){ \
-    return CppCaml::call_api<CppCaml::ReleaseOcamlLock>(APIF, v0); \
-  }
+  APIX(call_api<CppCaml::ReleaseOcamlLock>,(value v0),(,v0),APIF)
 
 #define API2__(APIF) \
-  REGISTER_API(APIPREFIX,APIF, MAKE_APIF_N(APIPREFIX,APIF)); \
-  apireturn MAKE_APIF_N(APIPREFIX,APIF)(value v0, value v1){ \
-    return CppCaml::call_api(APIF, v0, v1); \
-  }
+  APIX(call_api,(value v0, value v1),(,v0,v1),APIF)
 
 #define API1_IMPLIED__(APIF) \
   REGISTER_API_IMPLIED_FIRST(APIPREFIX,APIF, MAKE_APIF_N(APIPREFIX,APIF)); \
