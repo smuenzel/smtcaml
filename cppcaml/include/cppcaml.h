@@ -301,45 +301,43 @@ value list_to_caml(value (*convert)(T), const CamlLinkedList<cstring>* l){
 #define MAKE_VAR_CLASS_OVERLOAD_(APIPREFIX,APIF,CLASS,SUFFIX) __caml_api_registry_var__##APIPREFIX ## _  ## CLASS ## _ ##APIF ## _ ## SUFFIX
 #define MAKE_VAR_CLASS_OVERLOAD(APIPREFIX,APIF,CLASS,SUFFIX) MAKE_VAR_CLASS_OVERLOAD_(APIPREFIX,APIF,CLASS,SUFFIX)
 
-#define REGISTER_API(APIPREFIX,APIF, WRAPPER) \
-  static inline constexpr auto MAKE_VAR(APIPREFIX,APIF) \
+#define CPPCAML_REGISTRY(VARNAME,...) \
+  static inline constexpr auto VARNAME \
 __attribute((used, section("caml_api_registry"))) = \
-    CppCaml::ApiRegistryEntry(STR(APIF),STR(WRAPPER),APIF);
+    CppCaml::ApiRegistryEntry(__VA_ARGS__);
+
+#define REGISTER_API(APIPREFIX,APIF, WRAPPER) \
+  CPPCAML_REGISTRY(MAKE_VAR(APIPREFIX,APIF),\
+      STR(APIF),STR(WRAPPER),APIF)
 
 #define REGISTER_API_MEMBER(APIPREFIX,CLASS, APIF, WRAPPER) \
-  static inline constexpr auto MAKE_VAR_CLASS(APIPREFIX,APIF,CLASS) \
-__attribute((used, section("caml_api_registry"))) = \
-    CppCaml::ApiRegistryEntry(STR2(CLASS,APIF),STR(WRAPPER),STR(CLASS), &CLASS :: APIF);
+  CPPCAML_REGISTRY(MAKE_VAR_CLASS(APIPREFIX,APIF,CLASS),\
+      STR2(CLASS,APIF),STR(WRAPPER),STR(CLASS), &CLASS :: APIF)
 
 #define REGISTER_API_MEMBER_IMPLIED(APIPREFIX,CLASS, APIF, WRAPPER) \
-  static inline constexpr auto MAKE_VAR_CLASS(APIPREFIX,APIF,CLASS) \
-__attribute((used, section("caml_api_registry"))) = \
-    CppCaml::ApiRegistryEntry(CppCaml::DropFirstArgument(), STR2(CLASS,APIF),STR(WRAPPER),STR(CLASS), &CLASS :: APIF);
+  CPPCAML_REGISTRY(MAKE_VAR_CLASS(APIPREFIX,APIF,CLASS),\
+      CppCaml::DropFirstArgument(), STR2(CLASS,APIF),STR(WRAPPER),STR(CLASS), &CLASS :: APIF)
 
 #define REGISTER_API_MEMBER_OVERLOAD(APIPREFIX,CLASS, APIF, SUFFIX, WRAPPER, ...) \
-  static inline constexpr auto MAKE_VAR_CLASS_OVERLOAD(APIPREFIX,APIF,CLASS,SUFFIX) \
-__attribute((used, section("caml_api_registry"))) = \
-    CppCaml::ApiRegistryEntry(STR3(CLASS,APIF,SUFFIX),STR(WRAPPER),STR(CLASS), CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(), &CLASS :: APIF));
+  CPPCAML_REGISTRY(MAKE_VAR_CLASS_OVERLOAD(APIPREFIX,APIF,CLASS,SUFFIX),\
+      STR3(CLASS,APIF,SUFFIX),STR(WRAPPER),STR(CLASS), CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(), &CLASS :: APIF))
 
 #define REGISTER_API_MEMBER_OVERLOAD_IMPLIED(APIPREFIX,CLASS, APIF, SUFFIX, WRAPPER, ...) \
-  static inline constexpr auto MAKE_VAR_CLASS_OVERLOAD(APIPREFIX,APIF,CLASS,SUFFIX) \
-__attribute((used, section("caml_api_registry"))) = \
-    CppCaml::ApiRegistryEntry(CppCaml::DropFirstArgument(), STR3(CLASS,APIF,SUFFIX),STR(WRAPPER),STR(CLASS), CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(), &CLASS :: APIF));
+  CPPCAML_REGISTRY(MAKE_VAR_CLASS_OVERLOAD(APIPREFIX,APIF,CLASS,SUFFIX),\
+      CppCaml::DropFirstArgument(), STR3(CLASS,APIF,SUFFIX),STR(WRAPPER),STR(CLASS), CppCaml::resolveOverload<CLASS>(CppCaml::type_list<__VA_ARGS__>(), &CLASS :: APIF))
 
+// CR smuenzel: remove direct token pasting
 #define REGISTER_API_CUSTOM(APIF, WRAPPER,...) \
-  static inline constexpr auto __caml_api_registry_var__##APIF \
-__attribute((used, section("caml_api_registry"))) = \
-    CppCaml::ApiRegistryEntry(STR(APIF),STR(WRAPPER),CppCaml::type_list<__VA_ARGS__>());
+  CPPCAML_REGISTRY(__caml_api_registry_var__##APIF,\
+      STR(APIF),STR(WRAPPER),CppCaml::type_list<__VA_ARGS__>())
 
 #define REGISTER_API_CONSTRUCTOR(CLASS,WRAPPER) \
-  static inline constexpr auto __caml_api_registry_var__make_##CLASS \
-__attribute((used, section("caml_api_registry"))) = \
-    CppCaml::ApiRegistryEntry("make_" STR(CLASS),STR(WRAPPER),CppCaml::type_list<CLASS*>());
+  CPPCAML_REGISTRY(__caml_api_registry_var__make_##CLASS,\
+      "make_" STR(CLASS),STR(WRAPPER),CppCaml::type_list<CLASS*>())
 
 #define REGISTER_API_IMPLIED_FIRST(APIPREFIX, APIF, WRAPPER) \
-  static inline constexpr auto MAKE_VAR(APIPREFIX,APIF) \
-__attribute((used, section("caml_api_registry"))) = \
-    CppCaml::ApiRegistryEntry(CppCaml::DropFirstArgument(),STR(APIF),STR(WRAPPER),APIF);
+  CPPCAML_REGISTRY(MAKE_VAR(APIPREFIX,APIF),\
+      CppCaml::DropFirstArgument(),STR(APIF),STR(WRAPPER),APIF)
 
 /////////////////////////////////////
 // Function Autogen
