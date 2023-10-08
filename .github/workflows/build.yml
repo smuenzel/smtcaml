@@ -38,7 +38,7 @@ jobs:
       uses: actions/cache@v3
       with:
         path: vendor/build
-        key: hashFiles(vendor/vendor-boolector,vendor/vendor-cvc5,vendor/vendor-stp)
+        key: ${{hashFiles('vendor/vendor-boolector','vendor/vendor-cvc5','vendor/vendor-stp')}}
     - if: ${{ steps.cache-vendor.outputs.cache-hit != 'true' }}
       name: build vendor-boolector
       run: cd vendor/vendor-boolector && ./build-all.sh
