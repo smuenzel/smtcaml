@@ -32,11 +32,20 @@ jobs:
         ocaml-compiler: ${{ matrix.ocaml-compiler }}
     - name: Install opam dependencies
       run: opam install core dune z3 higher_kinded --yes
-    - name: build vendor-boolector
+    - name: Cache vendor builds
+      id: cache-vendor
+      uses: actions/cache@v3
+      with:
+        path: vendor/build
+        key: hashFiles(vendor/vendor-boolector,vendor/vendor-cvc5,vendor/vendor-stp)
+    - if: ${{ steps.cache-vendor.outputs.cache-hit != 'true' }}
+      name: build vendor-boolector
       run: cd vendor/vendor-boolector && ./build-all.sh
-    - name: build vendor-cvc5
+    - if: ${{ steps.cache-vendor.outputs.cache-hit != 'true' }}
+      name: build vendor-cvc5
       run: cd vendor/vendor-cvc5 && ./build-all.sh
-    - name: build vendor-stp
+    - if: ${{ steps.cache-vendor.outputs.cache-hit != 'true' }}
+      name: build vendor-stp
       run: cd vendor/vendor-stp && ./build-all.sh
     - name: dune build
       run: opam exec -- dune build  @all
