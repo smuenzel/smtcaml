@@ -275,9 +275,10 @@ end
 
 module Op_types = Smtcaml_intf.Make_op_types(Types)
 
-module rec Base : Smtcaml_intf.Backend_base with module Types := Types 
-                                             and module Op_types := Op_types
-                                             and module Options := Options
+module rec Base : Smtcaml_intf.Backend_base
+  with module Types := Types 
+   and module Op_types := Op_types
+   and module Options := Options
 = struct
 
   type _ t = B.Solver.t
@@ -293,6 +294,9 @@ module rec Base : Smtcaml_intf.Backend_base with module Types := Types
 
   module Expr = struct
     type (_,_) t = B.Term.t
+
+    let sort t =
+      B.Term.sort t
   end
 
   module Model = struct
@@ -323,8 +327,9 @@ module rec Base : Smtcaml_intf.Backend_base with module Types := Types
     | B.Result.Unknown -> Unknown "unknown"
 end
 
-and Boolean_t : Smtcaml_intf.Boolean with module Types := Types
-                                    and module Op_types := Op_types
+and Boolean_t : Smtcaml_intf.Boolean
+  with module Types := Types
+   and module Op_types := Op_types
 = struct
 
   let sort_boolean _ = B.mk_bool_sort ()
@@ -358,8 +363,9 @@ and Boolean_t : Smtcaml_intf.Boolean with module Types := Types
   end
 end
 
-and Bitvector_t : Smtcaml_intf.Bitvector with module Types := Types
-                                          and module Op_types := Op_types
+and Bitvector_t : Smtcaml_intf.Bitvector
+  with module Types := Types
+   and module Op_types := Op_types
 = struct
   open T
 

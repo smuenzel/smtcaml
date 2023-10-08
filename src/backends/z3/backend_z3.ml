@@ -78,6 +78,9 @@ module Expr = struct
   let context (t : Z3.Expr.expr) =
     context_native t
     |> unsafe_context_of_native
+
+  let sort (t : Z3.Expr.expr) =
+    Z3.Expr.get_sort t
 end
 
 let sort_boolean t = Z3.Boolean.mk_sort (c t)

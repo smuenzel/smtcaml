@@ -62,6 +62,8 @@ module type Backend_base = sig
 
   module Expr : sig
     type ('i, 's) t = ('i, 's) Types.expr
+
+    val sort : ('i, 's) t -> ('i, 's) Sort.t
   end
 
   module Model : sig

@@ -19,6 +19,8 @@ end
 
 module Expr = struct
   type (_,_) t = C.term
+
+  let sort t = C.term__getSort t
 end
 
 module Model = struct
