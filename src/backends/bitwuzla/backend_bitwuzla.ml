@@ -266,148 +266,196 @@ module Options = struct
         )
 end
 
-type _ t = B.Solver.t
-
-module Packed = struct
-  type 'i t' = 'i t
-  type t = T : _ t' -> t
-end
-
-module Sort = struct
-  type (_,_) t = B.Sort.t
-end
-
-module Expr = struct
-  type (_,_) t = B.Term.t
-end
-
-module Model = struct
-  type _ t = unit
-
-  let eval_to_string instance _model expr =
-    Some (B.Solver.get_value instance expr |> B.Term.to_string)
-
-  let eval_bitvector i m e =
-    eval_to_string i m e
-    |> Option.map ~f:(String.chop_prefix_exn ~prefix:"#b")
-    |> Option.map ~f:Fast_bitvector.Little_endian.of_string
-end
-
-let create ?(options = Options.default) () =
-  Packed.T (B.Solver.create options)
-
-let var sort symbol =
-  B.mk_const ~symbol sort
-
-let check_current_and_get_model t : _ Smtcaml_intf.Solver_result.t =
-  match B.Solver.check_sat t with
-  | B.Result.Sat -> Satisfiable ()
-  | B.Result.Unsat -> Unsatisfiable
-  | B.Result.Unknown -> Unknown "unknown"
-
-let sort_boolean _ = B.mk_bool_sort ()
-let sort_bitvector _ i = B.mk_bv_sort i
-
-let sort_uninterpreted_function _t ~domain ~codomain =
-  B.mk_fun_sort [| domain |] codomain
-
-let assert_ t e = B.Solver.assert_formula t e
-
-module Boolean = struct
-  module Numeral = struct
-    let true_ _ = B.mk_true ()
-    let false_ _ = B.mk_false ()
-
-    let bool t b = if b then true_ t else false_ t
-
-  end
-
-  let not = B.mk_term1 Not
-  let and_ = B.mk_term2 And
-  let or_ = B.mk_term2 Or
-
-  let eq = B.mk_term2 Equal
-  let neq a b = not (eq a b)
-  let distinct vs = B.mk_term Distinct (Array.of_list vs)
-
-  let ite = B.mk_term3 Ite
-
-  let iff = B.mk_term2 Iff
-  let implies = B.mk_term2 Implies
-
-end
-
-module Bv = struct
-  module Sort = struct
-    let length s = B.Sort.bv_size s
-
-  end
-
-  let length e = Sort.length (B.Term.sort e)
-
-  module Numeral = struct
-    let int s i = B.mk_bv_value_int s i
-
-    let fast_bitvector s fbv =
-      B.mk_bv_value s (Fast_bitvector.Little_endian.to_string fbv) 2
-
-    let zero ~length t = B.mk_bv_zero (sort_bitvector t length)
-    let zero_e e = B.mk_bv_zero (B.Term.sort e)
-  end
-
-  let extract ~low ~high e =
-    B.mk_term1_indexed2 Bv_extract e high low
-
-  let extract_single ~bit e = extract ~low:bit ~high:bit e
-
-  let concat = B.mk_term2 Bv_concat
-
-  let zero_extend ~extra_zeros e = B.mk_term1_indexed1 Bv_zero_extend e extra_zeros
-  let sign_extend ~extra_bits e = B.mk_term1_indexed1 Bv_sign_extend e extra_bits
-
-  let not = B.mk_term1 Bv_not
-  let and_ = B.mk_term2 Bv_and
-  let or_ = B.mk_term2 Bv_or
-  let xor = B.mk_term2 Bv_xor
-
-  let add = B.mk_term2 Bv_add
-  let sub = B.mk_term2 Bv_sub
-
-  let is_zero e = Boolean.eq e (Numeral.zero_e e)
-  let is_not_zero e = Boolean.neq e (Numeral.zero_e e)
-
-  let is_all_ones e = Boolean.eq e (B.mk_bv_ones (B.Term.sort e))
-
-  let sign e =
-    let length = length e in
-    extract_single ~bit:(length - 1) e
-
-  let parity e = B.mk_term1 Bv_redxor e
-
-  let is_add_overflow ~signed:_ _ _ = assert false
-  let is_add_underflow _ _ = assert false
-  let is_sub_overflow _ _ = assert false
-  let is_sub_underflow ~signed:_ _ _ = assert false
-
-  let shift_left ~count e = B.mk_term2 Bv_shl e count
-  let shift_right_logical ~count e = B.mk_term2 Bv_shr e count
-  let shift_right_arithmetic ~count e = B.mk_term2 Bv_ashr e count
-
-  let of_bool b =
-    let s = B.mk_bv_sort 1 in
-    Boolean.ite b (B.mk_bv_one s) (B.mk_bv_zero s)
-end
-
-module Ufun = struct
-  let apply a b = B.mk_term2 Apply a b
-
-end
-
 module Types = struct
-  type 'i instance = 'i t
+  type 'i instance = B.Solver.t
   type _ model = unit
-  type ('i, 's) sort = ('i, 's) Sort.t
-  type ('i, 's) expr = ('i, 's) Expr.t
+  type ('i, 's) sort = B.Sort.t
+  type ('i, 's) expr = B.Term.t
 end
 
 module Op_types = Smtcaml_intf.Make_op_types(Types)
+
+module rec Base : Smtcaml_intf.Backend_base with module Types := Types 
+                                             and module Op_types := Op_types
+                                             and module Options := Options
+= struct
+
+  type _ t = B.Solver.t
+
+  module Packed = struct
+    type 'i t' = 'i t
+    type t = T : _ t' -> t
+  end
+
+  module Sort = struct
+    type (_,_) t = B.Sort.t
+  end
+
+  module Expr = struct
+    type (_,_) t = B.Term.t
+  end
+
+  module Model = struct
+    type _ t = unit
+
+    let eval_to_string instance _model expr =
+      Some (B.Solver.get_value instance expr |> B.Term.to_string)
+
+    let eval_bitvector i m e =
+      eval_to_string i m e
+      |> Option.map ~f:(String.chop_prefix_exn ~prefix:"#b")
+      |> Option.map ~f:Fast_bitvector.Little_endian.of_string
+  end
+
+  let create ?(options = Options.default) () =
+    Packed.T (B.Solver.create options)
+
+  let var sort symbol =
+    B.mk_const ~symbol sort
+
+  let check_current_and_get_model t : _ Smtcaml_intf.Solver_result.t =
+    match B.Solver.check_sat t with
+    | B.Result.Sat -> Satisfiable ()
+    | B.Result.Unsat -> Unsatisfiable
+    | B.Result.Unknown -> Unknown "unknown"
+end
+
+and Boolean_t : Smtcaml_intf.Boolean with module Types := Types
+                                    and module Op_types := Op_types
+= struct
+
+  let sort_boolean _ = B.mk_bool_sort ()
+
+  let assert_ t e = B.Solver.assert_formula t e
+
+  module Boolean = struct
+    module Numeral = struct
+      let true_ _ = B.mk_true ()
+      let false_ _ = B.mk_false ()
+
+      let bool t b = if b then true_ t else false_ t
+
+    end
+
+    let not = B.mk_term1 Not
+    let and_ = B.mk_term2 And
+    let or_ = B.mk_term2 Or
+
+    let eq = B.mk_term2 Equal
+    let neq a b = not (eq a b)
+    let distinct vs = B.mk_term Distinct (Array.of_list vs)
+
+    let ite = B.mk_term3 Ite
+
+    let iff = B.mk_term2 Iff
+    let implies = B.mk_term2 Implies
+
+  end
+end
+
+and Bitvector_t : Smtcaml_intf.Bitvector with module Types := Types
+                                          and module Op_types := Op_types
+= struct
+  open T
+
+  let sort_bitvector _ i = B.mk_bv_sort i
+
+  module Bv = struct
+    module Sort = struct
+      let length s = B.Sort.bv_size s
+
+    end
+
+    let length e = Sort.length (B.Term.sort e)
+
+    module Numeral = struct
+      let int s i = B.mk_bv_value_int s i
+
+      let fast_bitvector s fbv =
+        B.mk_bv_value s (Fast_bitvector.Little_endian.to_string fbv) 2
+
+      let zero ~length t = B.mk_bv_zero (sort_bitvector t length)
+      let zero_e e = B.mk_bv_zero (B.Term.sort e)
+    end
+
+    let extract ~low ~high e =
+      B.mk_term1_indexed2 Bv_extract e high low
+
+    let extract_single ~bit e = extract ~low:bit ~high:bit e
+
+    let concat = B.mk_term2 Bv_concat
+
+    let zero_extend ~extra_zeros e = B.mk_term1_indexed1 Bv_zero_extend e extra_zeros
+    let sign_extend ~extra_bits e = B.mk_term1_indexed1 Bv_sign_extend e extra_bits
+
+    let not = B.mk_term1 Bv_not
+    let and_ = B.mk_term2 Bv_and
+    let or_ = B.mk_term2 Bv_or
+    let xor = B.mk_term2 Bv_xor
+
+    let add = B.mk_term2 Bv_add
+    let sub = B.mk_term2 Bv_sub
+
+    let is_zero e = Boolean.eq e (Numeral.zero_e e)
+    let is_not_zero e = Boolean.neq e (Numeral.zero_e e)
+
+    let is_all_ones e = Boolean.eq e (B.mk_bv_ones (B.Term.sort e))
+
+    let sign e =
+      let length = length e in
+      extract_single ~bit:(length - 1) e
+
+    let parity e = B.mk_term1 Bv_redxor e
+
+    let is_add_overflow ~signed:_ _ _ = assert false
+    let is_add_underflow _ _ = assert false
+    let is_sub_overflow _ _ = assert false
+    let is_sub_underflow ~signed:_ _ _ = assert false
+
+    include Smtcaml_utils.Add_sub_over_under_flow.Make(T)
+
+    let shift_left ~count e = B.mk_term2 Bv_shl e count
+    let shift_right_logical ~count e = B.mk_term2 Bv_shr e count
+    let shift_right_arithmetic ~count e = B.mk_term2 Bv_ashr e count
+
+    let of_bool b =
+      let s = B.mk_bv_sort 1 in
+      Boolean.ite b (B.mk_bv_one s) (B.mk_bv_zero s)
+  end
+
+
+end
+
+and Uf_t : Smtcaml_intf.Uninterpreted_function
+  with module Types := Types
+= struct
+  let sort_uninterpreted_function _t ~domain ~codomain =
+    B.mk_fun_sort [| domain |] codomain
+
+  module Ufun = struct
+    let apply a b = B.mk_term2 Apply a b
+  end
+
+end
+
+and T : Smtcaml_intf.Interface_definitions.Bitvector_uf
+  with module Types = Types
+   and module Op_types = Op_types
+   and module Options = Options
+= struct
+  include Base
+  include Boolean_t
+  include Bitvector_t
+  include Uf_t
+
+  module Types = Types
+  module Op_types = Op_types
+  module Options = Options
+end
+
+include (T : module type of struct include T end
+  with module Types := T.Types
+   and module Op_types := T.Op_types
+   and module Options := T.Options
+ )
+

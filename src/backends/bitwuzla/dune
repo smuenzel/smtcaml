@@ -1,6 +1,6 @@
 (library
   (name backend_bitwuzla)
-  (libraries core core_unix ppxlib core_kernel.nonempty_list bitwuzla-cxx smtcaml_intf)
+  (libraries core core_unix ppxlib core_kernel.nonempty_list bitwuzla-cxx smtcaml_intf smtcaml_utils)
   (preprocess (pps ppx_jane))
   (inline_tests)
   )

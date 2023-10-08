@@ -4,20 +4,23 @@ module Sort_kind = Smtcaml_intf.Sort_kind
 module type P = sig
   include Smtcaml_intf.Backend_base
 
-  type m_sort := Sort_kind.bv
+  module Bv : sig
+    type m_sort := Sort_kind.bv
 
-  val zero_extend : extra_zeros:int -> ('i, m_sort) Op_types.unary
+    val zero_extend : extra_zeros:int -> ('i, m_sort) Op_types.unary
 
-  val add : ('i, m_sort) Op_types.binary
-  val sub : ('i, m_sort) Op_types.binary
+    val add : ('i, m_sort) Op_types.binary
+    val sub : ('i, m_sort) Op_types.binary
 
-  val is_not_zero : ('i, m_sort) Op_types.unary_test
+    val is_not_zero : ('i, m_sort) Op_types.unary_test
 
-  val sign : ('i, m_sort) Op_types.unary
+    val sign : ('i, m_sort) Op_types.unary
+  end
 end
 
 module Make(P : P) = struct
   open P
+  open Bv
 
   let add_overflow_unsigned a b =
     let a' = zero_extend ~extra_zeros:1 a in
