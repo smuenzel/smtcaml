@@ -39,6 +39,6 @@ jobs:
     - name: build vendor-stp
       run: cd vendor/vendor-stp && ./build-all.sh
     - name: dune build
-      run: dune build  @all
+      run: opam exec -- dune build  @all
     - name: dune runtest
-      run: dune build  @runtest
+      run: opam exec -- dune build  @runtest
