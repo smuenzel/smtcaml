@@ -1,0 +1,23 @@
+name: Build
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+          submodules: recursive
+    - name: build vendor-boolector
+      run: cd vendor/vendor-boolector && ./build-all.sh
+    - name: build vendor-cvc5
+      run: cd vendor/vendor-cvc5 && ./build-all.sh
+    - name: build vendor-stp
+      run: cd vendor/vendor-stp && ./build-all.sh
