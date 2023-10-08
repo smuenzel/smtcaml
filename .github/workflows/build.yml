@@ -25,19 +25,19 @@ jobs:
     - uses: actions/setup-python@v4
       with:
         cache: 'pip'
-    - run: pip install toml
-    - name: build vendor-boolector
-      run: cd vendor/vendor-boolector && ./build-all.sh
-    - name: build vendor-cvc5
-      run: cd vendor/vendor-cvc5 && ./build-all.sh
-    - name: build vendor-stp
-      run: cd vendor/vendor-stp && ./build-all.sh
+    - run: pip install tomli
     - name: Use OCaml ${{ matrix.ocaml-compiler }}
       uses: ocaml/setup-ocaml@v2
       with:
         ocaml-compiler: ${{ matrix.ocaml-compiler }}
     - name: Install opam dependencies
       run: opam install core dune z3 higher_kinded --yes
+    - name: build vendor-boolector
+      run: cd vendor/vendor-boolector && ./build-all.sh
+    - name: build vendor-cvc5
+      run: cd vendor/vendor-cvc5 && ./build-all.sh
+    - name: build vendor-stp
+      run: cd vendor/vendor-stp && ./build-all.sh
     - name: dune build
       run: dune build  @all
     - name: dune runtest
