@@ -33,39 +33,29 @@ let c (t : _ Types.instance) = t.context
 (* let cn t : Z3native.ptr = Obj.magic t.context *)
 let s (t : _ Types.instance) = t.solver
 
-module Expr_t = struct
-  type (_,_) t = Z3.Expr.expr
+module type Expr = sig
+  include Smtcaml_intf.Base_modules.Expr
 
-  let to_native (t : Z3.Expr.expr) : Z3native.ast = Obj.magic t
-
-  let unsafe_of_native (ast : Z3native.ast) : Z3.Expr.expr = Obj.magic ast
-
-  let context_native (t : Z3.Expr.expr) =
-    Z3native.context_of_ast (to_native t)
-
-  let context (t : Z3.Expr.expr) =
-    context_native t
-    |> unsafe_context_of_native
-
-  let sort (t : Z3.Expr.expr) =
-    Z3.Expr.get_sort t
+  val to_native : _ t -> Z3native.ast
+  val unsafe_of_native : Z3native.ast -> _ t
+  val context_native : _ t -> Z3native.context
+  val context : _ t -> Z3.context
 end
 
-module Sort_t = struct
-  type (_,_) t = Z3.Sort.sort
+module type Sort = sig
+  include Smtcaml_intf.Base_modules.Sort
 
-  let to_native (t : Z3.Sort.sort) : Z3native.ast = Obj.magic t
-
-  let context (t : Z3.Sort.sort) =
-    Z3native.context_of_ast (to_native t)
-    |> unsafe_context_of_native
+  (* val to_native : _ t -> Z3native.ast *)
+  val context : _ t -> Z3.context
 end
 
-let op f a = f (Expr_t.context a) a
-let op2_nolist f a b = f (Expr_t.context a) [a; b]
-let op_list f a = f (Expr_t.context (List.hd_exn a)) a
+module type Util = sig
+  val op : (Z3.context -> Z3.Expr.expr -> 'a) -> Z3.Expr.expr -> 'a
+  val op2_nolist : (Z3.context -> Z3.Expr.expr list -> 'a) -> Z3.Expr.expr -> Z3.Expr.expr -> 'a
+  val op_list : (Z3.context -> Z3.Expr.expr list -> 'a) -> Z3.Expr.expr list -> 'a
+end
 
-module rec Base : Smtcaml_intf.Backend
+module rec Base : Smtcaml_intf.Backend_base
   with module Types := Types 
    and module Op_types := Op_types
    and module Options := Options
@@ -103,29 +93,6 @@ module rec Base : Smtcaml_intf.Backend
       ; solver
       }
 
-  module Sort = Sort_t
-
-  module Expr = Expr_t
-
-  module Model = struct
-    type _ t = Z3.Model.model
-
-    let eval_to_string _t model expr =
-      let apply_model_completion = true in
-      Z3.Model.eval model expr apply_model_completion
-      |> Option.map ~f:Z3.Expr.to_string
-
-    let eval_bool _t model expr =
-      let apply_model_completion = true in
-      Z3.Model.eval model expr apply_model_completion
-      |> Option.map ~f:Z3.Boolean.get_bool_value
-      |> Option.map ~f:(function
-          | Z3enums.L_FALSE -> false
-          | Z3enums.L_UNDEF -> assert false
-          | Z3enums.L_TRUE -> true
-        )
-  end
-
   let var sort name = Z3.Expr.mk_const_s (Sort.context sort) name sort
 
   let var_anon sort = Z3.Expr.mk_fresh_const (Sort.context sort) "Xanon" sort
@@ -140,10 +107,72 @@ module rec Base : Smtcaml_intf.Backend
 
 end
 
+and Util : Util
+= struct
+  let op f a = f (Expr.context a) a
+  let op2_nolist f a b = f (Expr.context a) [a; b]
+  let op_list f a = f (Expr.context (List.hd_exn a)) a
+end
+
+and Expr : Expr
+  with module Types := Types
+= struct
+
+  type (_,_) t = Z3.Expr.expr
+
+  let to_native (t : Z3.Expr.expr) : Z3native.ast = Obj.magic t
+
+  let unsafe_of_native (ast : Z3native.ast) : Z3.Expr.expr = Obj.magic ast
+
+  let context_native (t : Z3.Expr.expr) =
+    Z3native.context_of_ast (to_native t)
+
+  let context (t : Z3.Expr.expr) =
+    context_native t
+    |> unsafe_context_of_native
+
+  let sort (t : Z3.Expr.expr) =
+    Z3.Expr.get_sort t
+end
+
+and Model : Smtcaml_intf.Base_modules.Model
+  with module Types := Types
+= struct
+  type _ t = Z3.Model.model
+
+  let eval_to_string _t model expr =
+    let apply_model_completion = true in
+    Z3.Model.eval model expr apply_model_completion
+    |> Option.map ~f:Z3.Expr.to_string
+
+  let eval_bool _t model expr =
+    let apply_model_completion = true in
+    Z3.Model.eval model expr apply_model_completion
+    |> Option.map ~f:Z3.Boolean.get_bool_value
+    |> Option.map ~f:(function
+        | Z3enums.L_FALSE -> false
+        | Z3enums.L_UNDEF -> assert false
+        | Z3enums.L_TRUE -> true
+      )
+end
+
+and Sort : Sort
+  with module Types := Types
+= struct
+  type (_,_) t = Z3.Sort.sort
+
+  let to_native (t : Z3.Sort.sort) : Z3native.ast = Obj.magic t
+
+  let context (t : Z3.Sort.sort) =
+    Z3native.context_of_ast (to_native t)
+    |> unsafe_context_of_native
+end
+
 and Boolean_t : Smtcaml_intf.Boolean
   with module Types := Types
    and module Op_types := Op_types
 = struct
+  open Util
 
   let sort_boolean t = Z3.Boolean.mk_sort (c t)
 
@@ -177,7 +206,8 @@ and Bitvector_t : Smtcaml_intf.Bitvector
   with module Types := Types
    and module Op_types := Op_types
 = struct
-  open T
+  open Util
+  module Boolean = T.Boolean
 
   let sort_bitvector t l = Z3.BitVector.mk_sort (c t) l
 
@@ -191,17 +221,17 @@ and Bitvector_t : Smtcaml_intf.Bitvector
     module Numeral = struct
       let bit_cn cn i =
         Z3native.mk_bv_numeral cn 1 [ i ]
-        |> Expr_t.unsafe_of_native
+        |> Expr.unsafe_of_native
 
       (* let bit t i = bit_cn (cn t) i *)
 
       let int sort i =
-        Z3.Expr.mk_numeral_int (Sort_t.context sort) i sort
+        Z3.Expr.mk_numeral_int (Sort.context sort) i sort
 
       let fast_bitvector sort bv =
         assert (Sort_internal.length sort = Fast_bitvector.length bv);
         Z3.Expr.mk_numeral_string
-          (Sort_t.context sort)
+          (Sort.context sort)
           ("#b" ^ (Fast_bitvector.Little_endian.to_string bv))
           sort
 
@@ -209,11 +239,11 @@ and Bitvector_t : Smtcaml_intf.Bitvector
         if Stdlib.not (Z3.Expr.is_numeral t)
         then raise_s [%message "not a numeral"];
         let length = Sort_internal.length (Z3.Expr.get_sort t) in
-        let ctx = Expr_t.context_native t in
+        let ctx = Expr.context_native t in
         let short_string =
           Z3native.get_numeral_binary_string
             ctx
-            (Expr_t.to_native t)
+            (Expr.to_native t)
         in
         let bv = Fast_bitvector.create ~length in
         let short_string_length = String.length short_string in
@@ -230,7 +260,7 @@ and Bitvector_t : Smtcaml_intf.Bitvector
       let zero ~length t =
         Z3.Expr.mk_numeral_int (c t) 0 (sort_bitvector t length)
 
-      let zero_e t = Z3.Expr.mk_numeral_int (Expr_t.context t) 0 (Z3.Expr.get_sort t)
+      let zero_e t = Z3.Expr.mk_numeral_int (Expr.context t) 0 (Z3.Expr.get_sort t)
 
     end
 
@@ -242,15 +272,15 @@ and Bitvector_t : Smtcaml_intf.Bitvector
     end
 
     let extract ~low ~high e =
-      Z3.BitVector.mk_extract (Expr_t.context e) high low e
+      Z3.BitVector.mk_extract (Expr.context e) high low e
 
     let extract_single ~bit e = extract ~low:bit ~high:bit e
 
     let concat a b =
-      Z3.BitVector.mk_concat (Expr_t.context a) a b
+      Z3.BitVector.mk_concat (Expr.context a) a b
 
     let of_bool b =
-      let cn = Expr_t.context_native b in
+      let cn = Expr.context_native b in
       Boolean.ite b (Numeral.bit_cn cn true) (Numeral.bit_cn cn false)
 
     let not = op Z3.BitVector.mk_not
@@ -277,39 +307,39 @@ and Bitvector_t : Smtcaml_intf.Bitvector
       |> List.reduce_balanced_exn ~f:xor
 
     let is_add_overflow ~signed a b =
-      let ctx = Expr_t.context a in
+      let ctx = Expr.context a in
       Z3.BitVector.mk_add_no_overflow ctx a b signed
       |> Boolean.not
 
     let is_add_underflow a b =
-      let ctx = Expr_t.context a in
+      let ctx = Expr.context a in
       Z3.BitVector.mk_add_no_underflow ctx a b
       |> Boolean.not
 
     let is_sub_underflow ~signed a b =
-      let ctx = Expr_t.context a in
+      let ctx = Expr.context a in
       Z3.BitVector.mk_sub_no_underflow ctx a b signed
       |> Boolean.not
 
     let is_sub_overflow a b =
-      let ctx = Expr_t.context a in
+      let ctx = Expr.context a in
       Z3.BitVector.mk_sub_no_overflow ctx a b
       |> Boolean.not
 
     let shift_left ~count e =
-      Z3.BitVector.mk_shl (Expr_t.context e) e count
+      Z3.BitVector.mk_shl (Expr.context e) e count
 
     let shift_right_logical ~count e =
-      Z3.BitVector.mk_lshr (Expr_t.context e) e count
+      Z3.BitVector.mk_lshr (Expr.context e) e count
 
     let shift_right_arithmetic ~count e =
-      Z3.BitVector.mk_ashr (Expr_t.context e) e count
+      Z3.BitVector.mk_ashr (Expr.context e) e count
 
     let zero_extend ~extra_zeros e =
-      Z3.BitVector.mk_zero_ext (Expr_t.context e) extra_zeros e
+      Z3.BitVector.mk_zero_ext (Expr.context e) extra_zeros e
 
     let sign_extend ~extra_bits e =
-      Z3.BitVector.mk_sign_ext (Expr_t.context e) extra_bits e
+      Z3.BitVector.mk_sign_ext (Expr.context e) extra_bits e
 
     module Sort = Sort_internal
   end
@@ -323,7 +353,7 @@ and Uf_t : Smtcaml_intf.Uninterpreted_function
     Z3.Z3Array.mk_sort t.context domain codomain
 
   module Ufun = struct
-    let apply a b = Z3.Z3Array.mk_select (Expr_t.context a) a b
+    let apply a b = Z3.Z3Array.mk_select (Expr.context a) a b
   end
 
 end
@@ -341,12 +371,18 @@ and T : Smtcaml_intf.Interface_definitions.Bitvector_uf
   module Types = Types
   module Op_types = Op_types
   module Options = Options
+  module Expr = Expr
+  module Sort = Sort
+  module Model = Model
 end
 
 include (T : module type of struct include T end
   with module Types := T.Types
    and module Op_types := T.Op_types
    and module Options := T.Options
+   and module Sort := T.Sort
+   and module Expr := T.Expr
+   and module Model := T.Model
  )
 
 
