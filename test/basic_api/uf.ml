@@ -25,10 +25,10 @@ module Test(Smt : Smtcaml_intf.Interface_definitions.Bitvector_uf) = struct
     | Satisfiable model ->
       print_s [%message "model"
           (Smt.Model.eval_to_string t model c : string option)
-          (Smt.Model.eval_bitvector t model c : Fast_bitvector.t option)
-          (Smt.Model.eval_bitvector t model sum : Fast_bitvector.t option)
-          (Smt.Model.eval_bitvector t model app0 : Fast_bitvector.t option)
-          (Smt.Model.eval_bitvector t model app1 : Fast_bitvector.t option)
+          (Smt.Bv.Model.eval t model c : Fast_bitvector.t option)
+          (Smt.Bv.Model.eval t model sum : Fast_bitvector.t option)
+          (Smt.Bv.Model.eval t model app0 : Fast_bitvector.t option)
+          (Smt.Bv.Model.eval t model app1 : Fast_bitvector.t option)
       ]
 
 end
@@ -39,10 +39,10 @@ let%expect_test "bitwuzla" =
   [%expect {|
     (model
      ("Smt.Model.eval_to_string t model c" (#b00000000000000011000011010011111))
-     ("Smt.Model.eval_bitvector t model c" (00000000000000011000011010011111))
-     ("Smt.Model.eval_bitvector t model sum" (00000000000000000000000000100011))
-     ("Smt.Model.eval_bitvector t model app0" (00000000000000011000011010011111))
-     ("Smt.Model.eval_bitvector t model app1" (00000000000000011000011010011111))) |}]
+     ("Smt.Bv.Model.eval t model c" (00000000000000011000011010011111))
+     ("Smt.Bv.Model.eval t model sum" (00000000000000000000000000100011))
+     ("Smt.Bv.Model.eval t model app0" (00000000000000011000011010011111))
+     ("Smt.Bv.Model.eval t model app1" (00000000000000011000011010011111))) |}]
 
 let%expect_test "boolector" =
   let module T = Test(Backend_boolector) in
@@ -50,10 +50,10 @@ let%expect_test "boolector" =
   [%expect {|
     (model
      ("Smt.Model.eval_to_string t model c" (00000000000000011000011010011111))
-     ("Smt.Model.eval_bitvector t model c" (00000000000000011000011010011111))
-     ("Smt.Model.eval_bitvector t model sum" (00000000000000000000000000100011))
-     ("Smt.Model.eval_bitvector t model app0" (00000000000000011000011010011111))
-     ("Smt.Model.eval_bitvector t model app1" (00000000000000011000011010011111))) |}]
+     ("Smt.Bv.Model.eval t model c" (00000000000000011000011010011111))
+     ("Smt.Bv.Model.eval t model sum" (00000000000000000000000000100011))
+     ("Smt.Bv.Model.eval t model app0" (00000000000000011000011010011111))
+     ("Smt.Bv.Model.eval t model app1" (00000000000000011000011010011111))) |}]
 
 let%expect_test "cvc5" =
   let module T = Test(Backend_cvc5) in
@@ -61,17 +61,17 @@ let%expect_test "cvc5" =
   [%expect {|
     (model
      ("Smt.Model.eval_to_string t model c" (#b00000000000000011000011010011111))
-     ("Smt.Model.eval_bitvector t model c" (00000000000000011000011010011111))
-     ("Smt.Model.eval_bitvector t model sum" (00000000000000000000000000100011))
-     ("Smt.Model.eval_bitvector t model app0" (00000000000000011000011010011111))
-     ("Smt.Model.eval_bitvector t model app1" (00000000000000011000011010011111))) |}]
+     ("Smt.Bv.Model.eval t model c" (00000000000000011000011010011111))
+     ("Smt.Bv.Model.eval t model sum" (00000000000000000000000000100011))
+     ("Smt.Bv.Model.eval t model app0" (00000000000000011000011010011111))
+     ("Smt.Bv.Model.eval t model app1" (00000000000000011000011010011111))) |}]
 
 let%expect_test "z3" =
   let module T = Test(Backend_z3) in
   T.run ();
   [%expect {|
     (model ("Smt.Model.eval_to_string t model c" (#x0001869f))
-     ("Smt.Model.eval_bitvector t model c" (00000000000000011000011010011111))
-     ("Smt.Model.eval_bitvector t model sum" (00000000000000000000000000100011))
-     ("Smt.Model.eval_bitvector t model app0" (00000000000000011000011010011111))
-     ("Smt.Model.eval_bitvector t model app1" (00000000000000011000011010011111))) |}]
+     ("Smt.Bv.Model.eval t model c" (00000000000000011000011010011111))
+     ("Smt.Bv.Model.eval t model sum" (00000000000000000000000000100011))
+     ("Smt.Bv.Model.eval t model app0" (00000000000000011000011010011111))
+     ("Smt.Bv.Model.eval t model app1" (00000000000000011000011010011111))) |}]

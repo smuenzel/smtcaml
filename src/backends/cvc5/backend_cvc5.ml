@@ -60,11 +60,6 @@ module rec Base : Smtcaml_intf.Backend_base
     let eval_to_string solver () term =
       Some (C.term__toString (C.solver__getValue__t solver term))
 
-    let eval_bitvector solver model term =
-      eval_to_string solver model term
-      |> Option.map ~f:(String.chop_prefix_exn ~prefix:"#b")
-      |> Option.map ~f:Fast_bitvector.Little_endian.of_string
-
     let eval_bool solver () term =
       Some (C.term__getBooleanValue (C.solver__getValue__t solver term))
   end
@@ -138,6 +133,14 @@ and Bitvector_t : Smtcaml_intf.Bitvector
     module Sort = struct
       let length sort = C.sort__getBitVectorSize sort
     end
+
+    module Model = struct
+      let eval solver model term =
+        Model.eval_to_string solver model term
+        |> Option.map ~f:(String.chop_prefix_exn ~prefix:"#b")
+        |> Option.map ~f:Fast_bitvector.Little_endian.of_string
+    end
+
 
     let length e0 = Sort.length (C.term__getSort e0)
 

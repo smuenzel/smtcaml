@@ -53,10 +53,6 @@ module rec Base : Smtcaml_intf.Backend_base
     let eval_to_string _instance _model expr =
       Some (B.bv_assignment expr)
 
-    let eval_bitvector instance model expr =
-      eval_to_string instance model expr
-      |> Option.map ~f:Fast_bitvector.Little_endian.of_string
-
     let eval_bool _instance _model expr =
       Some (B.is_bv_const_one expr)
   end
@@ -158,6 +154,12 @@ and Bitvector_t : Smtcaml_intf.Bitvector
   module Bv = struct
     module Sort = struct
       let length sort = B.bitvec_sort_get_width sort
+    end
+
+    module Model = struct
+      let eval instance model expr =
+        Model.eval_to_string instance model expr
+        |> Option.map ~f:Fast_bitvector.Little_endian.of_string
     end
 
     let length e = Sort.length (Expr.sort e)

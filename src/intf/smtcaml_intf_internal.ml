@@ -72,8 +72,6 @@ module type Backend_base = sig
 
     val eval_to_string : 'i t' -> 'i t -> ('i, 's) Expr.t -> string option
 
-    val eval_bitvector : 'i t' -> 'i t -> ('i, Sort_kind.bv) Expr.t -> Fast_bitvector.t option
-
     val eval_bool : 'i t' -> 'i t -> ('i, Sort_kind.bool) Expr.t -> bool option
   end
 
@@ -96,6 +94,10 @@ module type Bitvector = sig
   module Bv : sig
     module Sort : sig
       val length : ('i, m_sort) Types.sort -> int
+    end
+
+    module Model : sig
+      val eval : 'i Types.instance -> 'i Types.model -> ('i, Sort_kind.bv) Types.expr -> Fast_bitvector.t option
     end
 
     val length : ('i, m_sort) Types.expr -> int
