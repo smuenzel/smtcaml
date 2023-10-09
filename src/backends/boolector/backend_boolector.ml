@@ -203,27 +203,11 @@ and Bitvector_t : Smtcaml_intf.Bitvector
 
     let parity e = B.redxor e
 
-    let is_add_overflow ~signed e0 e1 =
-      match signed with
-      | true -> B.saddo e0 e1
-      | false -> B.uaddo e0 e1
-
-    let is_add_underflow _e0 _e1 =
-      assert false
-
-    let is_sub_overflow _e0 _e1 =
-      assert false
-
-    let is_sub_underflow ~signed e0 e1 =
-      match signed with
-      | true -> B.ssubo e0 e1
-      | false -> B.usubo e0 e1
+    include Smtcaml_utils.Add_sub_over_under_flow.Make(T)
 
     let shift_left ~count e = B.sll e count
     let shift_right_logical ~count e = B.srl e count
     let shift_right_arithmetic ~count e = B.sra e count
-
-
 
     let of_bool b = b
   end
