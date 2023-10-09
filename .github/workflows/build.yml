@@ -37,7 +37,7 @@ jobs:
         ocaml-compiler: ${{ matrix.ocaml-compiler }}
         dune-cache: true
     - name: Install opam dependencies
-      run: opam install core core_kernel core_unix cinaps ocaml_intrinsics dune z3 higher_kinded --yes
+      run: opam install core core_kernel core_unix cinaps ocaml_intrinsics dune z3 higher_kinded zarith --yes
     - name: Cache vendor builds
       id: cache-vendor
       uses: actions/cache@v3
