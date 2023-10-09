@@ -80,7 +80,14 @@ module rec Base : Smtcaml_intf.Backend_base
     if B.is_bitvec_sort sort
     then B.var sort name
     else if B.is_fun_sort sort
-    then B.uf_opt sort None 
+    then B.uf_opt sort (Some name)
+    else assert false
+
+  let var_anon sort =
+    if B.is_bitvec_sort sort
+    then B.var_opt sort None
+    else if B.is_fun_sort sort
+    then B.uf_opt sort None
     else assert false
 
   let check_current_and_get_model t : _ Smtcaml_intf.Solver_result.t =

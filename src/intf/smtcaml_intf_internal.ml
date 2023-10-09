@@ -80,6 +80,7 @@ module type Backend_base = sig
   val create : ?options:Options.t -> unit -> Packed.t
 
   val var : ('i,'s) Sort.t -> string -> ('i, 's) Expr.t
+  val var_anon : ('i,'s) Sort.t -> ('i, 's) Expr.t
 
   val check_current_and_get_model : 'i t -> 'i Model.t Solver_result.t
 end

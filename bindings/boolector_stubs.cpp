@@ -360,6 +360,16 @@ inline BoolectorNode* boolector_uf_opt(Btor*btor, BoolectorSort sort, std::optio
 
 API2I(uf_opt)
 
+inline BoolectorNode* boolector_var_opt(Btor*btor, BoolectorSort sort, std::optional<const char *> symbol){
+  if(symbol)
+    return boolector_var(btor,sort,symbol.value());
+  else
+    return boolector_var(btor,sort,0);
+
+}
+
+API2I(var_opt)
+
 apireturn caml_boolector_unit(value){
   return Val_unit;
 }

@@ -93,6 +93,8 @@ let assert_ t expr = Z3.Solver.add (s t) [ expr ]
 
 let var sort name = Z3.Expr.mk_const_s (Sort.context sort) name sort
 
+let var_anon sort = Z3.Expr.mk_fresh_const (Sort.context sort) "Xanon" sort
+
 let check_current_and_get_model t : _ Smtcaml_intf.Solver_result.t =
   match Z3.Solver.check (s t) [] with
   | UNSATISFIABLE -> Unsatisfiable

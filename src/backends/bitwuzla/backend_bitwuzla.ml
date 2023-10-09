@@ -320,6 +320,9 @@ module rec Base : Smtcaml_intf.Backend_base
   let var sort symbol =
     B.mk_const ~symbol sort
 
+  let var_anon sort =
+    B.mk_const ?symbol:None sort
+
   let check_current_and_get_model t : _ Smtcaml_intf.Solver_result.t =
     match B.Solver.check_sat t with
     | B.Result.Sat -> Satisfiable ()

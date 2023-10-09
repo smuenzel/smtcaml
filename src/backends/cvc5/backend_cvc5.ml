@@ -78,6 +78,9 @@ module rec Base : Smtcaml_intf.Backend_base
   let var sort name =
     C.solver__mkConst sort (Some name)
 
+  let var_anon sort =
+    C.solver__mkConst sort None
+
   let check_current_and_get_model t : _ Smtcaml_intf.Solver_result.t =
     let result = C.solver__checkSat t in
     if C.result__isSat result

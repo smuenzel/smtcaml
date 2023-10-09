@@ -184,6 +184,7 @@ external fun_vector : btor -> (node array) -> node -> node = "caml____boolector_
 external fun_sort_vector : btor -> (sort array) -> sort -> sort = "caml____boolector_fun_sort_vector"
 external apply_vector : btor -> (node array) -> node -> node = "caml____boolector_apply_vector"
 external uf_opt : sort -> (string option) -> node = "caml____boolector_uf_opt"
+external var_opt : sort -> (string option) -> node = "caml____boolector_var_opt"
 (*$*)
 
 let set_solver btor (solver : solver) =
