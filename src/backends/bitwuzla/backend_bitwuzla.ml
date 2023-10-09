@@ -44,6 +44,7 @@ module Options = struct
       | Prop_ineq_bounds : bool t
       | Prop_nprops : int t
       | Prop_nupdates : int t
+      | Prop_opt_lt_concat_sext : bool t
       | Prop_path_sel : B.Options.prop_path_sel t
       | Prop_prob_pick_rand_input : int t
       | Prop_prob_pick_inv_value : int t
@@ -82,6 +83,7 @@ module Options = struct
       | Prop_ineq_bounds -> (module Bool)
       | Prop_nprops -> (module Int)
       | Prop_nupdates -> (module Int)
+      | Prop_opt_lt_concat_sext -> (module Bool)
       | Prop_path_sel -> (module Prop_path_sel)
       | Prop_prob_pick_rand_input -> (module Int)
       | Prop_prob_pick_inv_value -> (module Int)
@@ -127,6 +129,7 @@ module Options = struct
         | Prop_ineq_bounds
         | Prop_nprops
         | Prop_nupdates
+        | Prop_opt_lt_concat_sext
         | Prop_path_sel
         | Prop_prob_pick_rand_input
         | Prop_prob_pick_inv_value
@@ -166,6 +169,7 @@ module Options = struct
         | Prop_ineq_bounds -> Prop_ineq_bounds
         | Prop_nprops -> Prop_nprops
         | Prop_nupdates -> Prop_nupdates
+        | Prop_opt_lt_concat_sext -> Prop_opt_lt_concat_sext
         | Prop_path_sel -> Prop_path_sel
         | Prop_prob_pick_rand_input -> Prop_prob_pick_rand_input
         | Prop_prob_pick_inv_value -> Prop_prob_pick_inv_value
@@ -203,6 +207,7 @@ module Options = struct
         | Prop_ineq_bounds -> Packed.T Prop_ineq_bounds
         | Prop_nprops -> Packed.T Prop_nprops
         | Prop_nupdates -> Packed.T Prop_nupdates
+        | Prop_opt_lt_concat_sext -> Packed.T Prop_opt_lt_concat_sext
         | Prop_path_sel -> Packed.T Prop_path_sel
         | Prop_prob_pick_rand_input -> Packed.T Prop_prob_pick_rand_input
         | Prop_prob_pick_inv_value -> Packed.T Prop_prob_pick_inv_value
