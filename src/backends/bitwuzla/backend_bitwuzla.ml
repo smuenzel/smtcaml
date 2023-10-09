@@ -275,7 +275,7 @@ end
 
 module Op_types = Smtcaml_intf.Make_op_types(Types)
 
-module rec Base : Smtcaml_intf.Backend_base
+module rec Base : Smtcaml_intf.Backend
   with module Types := Types 
    and module Op_types := Op_types
    and module Options := Options

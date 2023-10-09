@@ -41,6 +41,33 @@ module Make_op_types (Types : Types) : Op_types with module Types := Types = str
   include T
 end
 
+module Base_modules = struct
+  module type Sort = sig
+    module Types : Types
+
+    type ('i, 's) t = ('i, 's) Types.sort
+  end
+
+  module type Expr = sig
+    module Types : Types
+
+    type ('i, 's) t = ('i, 's) Types.expr
+
+    val sort : ('i, 's) t -> ('i, 's) Types.sort
+  end
+
+  module type Model = sig
+    module Types : Types
+
+    type 'i t = 'i Types.model
+
+    val eval_to_string : 'i Types.instance -> 'i t -> ('i, 's) Types.expr -> string option
+
+    val eval_bool : 'i Types.instance -> 'i t -> ('i, Sort_kind.bool) Types.expr -> bool option
+  end
+
+end
+
 module type Backend_base = sig
   module Types : Types
 
@@ -56,31 +83,20 @@ module type Backend_base = sig
     type t = T : _ Types.instance -> t
   end
 
-  module Sort : sig
-    type ('i, 's) t = ('i, 's) Types.sort
-  end
-
-  module Expr : sig
-    type ('i, 's) t = ('i, 's) Types.expr
-
-    val sort : ('i, 's) t -> ('i, 's) Sort.t
-  end
-
-  module Model : sig
-    type 'i t' := 'i t
-    type 'i t = 'i Types.model
-
-    val eval_to_string : 'i t' -> 'i t -> ('i, 's) Expr.t -> string option
-
-    val eval_bool : 'i t' -> 'i t -> ('i, Sort_kind.bool) Expr.t -> bool option
-  end
-
   val create : ?options:Options.t -> unit -> Packed.t
 
-  val var : ('i,'s) Sort.t -> string -> ('i, 's) Expr.t
-  val var_anon : ('i,'s) Sort.t -> ('i, 's) Expr.t
+  val var : ('i,'s) Types.sort -> string -> ('i, 's) Types.expr
+  val var_anon : ('i,'s) Types.sort -> ('i, 's) Types.expr
 
-  val check_current_and_get_model : 'i t -> 'i Model.t Solver_result.t
+  val check_current_and_get_model : 'i t -> 'i Types.model Solver_result.t
+end
+
+module type Backend = sig
+  include Backend_base
+
+  module Sort : Base_modules.Sort with module Types := Types
+  module Expr : Base_modules.Expr with module Types := Types
+  module Model : Base_modules.Model with module Types := Types
 end
 
 module type Bitvector = sig

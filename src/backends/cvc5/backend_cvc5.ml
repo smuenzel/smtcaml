@@ -31,7 +31,7 @@ let op3 o e0 e1 e2 = term_op o [| e0; e1; e2 |]
 
 let op_list o elist = term_op o (Array.of_list elist)
 
-module rec Base : Smtcaml_intf.Backend_base
+module rec Base : Smtcaml_intf.Backend
   with module Types := Types 
    and module Op_types := Op_types
    and module Options := Options

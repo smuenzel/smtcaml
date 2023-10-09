@@ -65,7 +65,7 @@ let op f a = f (Expr_t.context a) a
 let op2_nolist f a b = f (Expr_t.context a) [a; b]
 let op_list f a = f (Expr_t.context (List.hd_exn a)) a
 
-module rec Base : Smtcaml_intf.Backend_base
+module rec Base : Smtcaml_intf.Backend
   with module Types := Types 
    and module Op_types := Op_types
    and module Options := Options

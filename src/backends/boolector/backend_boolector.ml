@@ -24,7 +24,7 @@ module Op_types = Smtcaml_intf.Make_op_types(Types)
 let get_sort_context (sort : B.sort) : B.btor = Obj.magic sort
 let get_expr_context (expr : B.node) : B.btor = Obj.magic expr
 
-module rec Base : Smtcaml_intf.Backend_base
+module rec Base : Smtcaml_intf.Backend
   with module Types := Types 
    and module Op_types := Op_types
    and module Options := Options
