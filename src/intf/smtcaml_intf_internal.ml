@@ -191,6 +191,8 @@ module type Bitvector = sig
 
     val add : ('i, m_sort) Op_types.binary
     val sub : ('i, m_sort) Op_types.binary
+    val inc : ('i, m_sort) Op_types.unary
+    val dec : ('i, m_sort) Op_types.unary
 
     val is_zero : ('i, m_sort) Op_types.unary_test
     val is_not_zero : ('i, m_sort) Op_types.unary_test

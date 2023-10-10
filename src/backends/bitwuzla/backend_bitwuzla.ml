@@ -461,6 +461,9 @@ and Bitvector_t : Smtcaml_intf.Bitvector
     let add = B.mk_term2 Bv_add
     let sub = B.mk_term2 Bv_sub
 
+    let inc = B.mk_term1 Bv_inc
+    let dec = B.mk_term1 Bv_dec
+
     let is_zero e = Boolean.eq e (Numeral.zero_e e)
     let is_not_zero e = Boolean.neq e (Numeral.zero_e e)
 

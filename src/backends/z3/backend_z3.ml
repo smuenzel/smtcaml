@@ -341,6 +341,9 @@ and Bitvector_t : Smtcaml_intf.Bitvector
     let add = op Z3.BitVector.mk_add
     let sub = op Z3.BitVector.mk_sub
 
+    let inc e = add (Numeral.int_e e 1) e
+    let dec e = sub e (Numeral.int_e e 1)
+
     let is_zero e = Boolean.eq e (Numeral.zero_e e)
     let is_not_zero e = Boolean.neq e (Numeral.zero_e e)
 

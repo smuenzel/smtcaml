@@ -23,8 +23,8 @@ module Test(Smt : TS) = struct
       print_s [%message "no model" ~_:(result : _ Smtcaml_intf.Solver_result.t)]
     | Satisfiable model ->
       print_s [%message "model"
-          (Smt.Model.eval_to_string t model a : string option)
-          (Smt.Model.eval_to_string t model ax : string option)
+          (Smt.Bv.Model.eval t model a : Fast_bitvector.t option)
+          (Smt.Bv.Model.eval t model ax : Fast_bitvector.t option)
       ]
 
 end

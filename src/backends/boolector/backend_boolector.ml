@@ -245,6 +245,9 @@ and Bitvector_t : Smtcaml_intf.Bitvector
     let add = B.add
     let sub = B.sub
 
+    let inc = B.inc
+    let dec = B.dec
+
     let is_zero e =
       B.eq (Numeral.zero_e e) e
 
