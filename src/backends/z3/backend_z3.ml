@@ -279,6 +279,10 @@ and Bitvector_t : Smtcaml_intf.Bitvector
     let concat a b =
       Z3.BitVector.mk_concat (Expr.context a) a b
 
+    let concat_list l =
+      let op = Z3.BitVector.mk_concat (Expr.context (List.hd_exn l)) in
+      List.reduce_balanced_exn l ~f:op
+
     let of_bool b =
       let cn = Expr.context_native b in
       Boolean.ite b (Numeral.bit_cn cn true) (Numeral.bit_cn cn false)

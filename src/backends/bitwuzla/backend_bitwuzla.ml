@@ -405,6 +405,7 @@ and Bitvector_t : Smtcaml_intf.Bitvector
     let extract_single ~bit e = extract ~low:bit ~high:bit e
 
     let concat = B.mk_term2 Bv_concat
+    let concat_list list = B.mk_term Bv_concat (Array.of_list list)
 
     let zero_extend ~extra_zeros e = B.mk_term1_indexed1 Bv_zero_extend e extra_zeros
     let sign_extend ~extra_bits e = B.mk_term1_indexed1 Bv_sign_extend e extra_bits

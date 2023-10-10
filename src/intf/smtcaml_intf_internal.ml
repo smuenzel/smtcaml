@@ -128,6 +128,7 @@ module type Bitvector = sig
     val extract : low:int -> high:int -> ('i, m_sort) Op_types.unary
     val extract_single : bit:int -> ('i, m_sort) Op_types.unary
     val concat : ('i, m_sort) Op_types.binary
+    val concat_list : ('i, m_sort) Op_types.redlist
     val zero_extend : extra_zeros:int -> ('i, m_sort) Op_types.unary
     val sign_extend : extra_bits:int -> ('i, m_sort) Op_types.unary
 

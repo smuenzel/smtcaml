@@ -172,6 +172,8 @@ and Bitvector_t : Smtcaml_intf.Bitvector
 
     let concat = op2 BITVECTOR_CONCAT
 
+    let concat_list = op_list BITVECTOR_CONCAT
+
     let zero_extend ~extra_zeros e =
       term_complex_op BITVECTOR_ZERO_EXTEND [| extra_zeros |] [| e |]
 

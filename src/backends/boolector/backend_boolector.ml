@@ -184,6 +184,8 @@ and Bitvector_t : Smtcaml_intf.Bitvector
 
     let concat e0 e1 = B.concat e0 e1
 
+    let concat_list l = List.reduce_balanced_exn l ~f:B.concat
+
     let zero_extend ~extra_zeros e = B.uext e extra_zeros
 
     let sign_extend ~extra_bits e = B.sext e extra_bits
