@@ -34,6 +34,18 @@ module type Op_types = sig
 
   type ('i, 's) unary_test = ('i, 's) Types.expr -> ('i, Sort_kind.bool) Types.expr
   type ('i, 's) binary_test = ('i, 's) Types.expr -> ('i, 's) unary_test
+
+end
+
+module type Ordering = sig
+  module Types : Types
+  module Op_types : Op_types with module Types := Types
+  val (==) : ('i, 's) Op_types.binary_test
+  val (<>) : ('i, 's) Op_types.binary_test
+  val (>) : ('i, 's) Op_types.binary_test
+  val (>=) : ('i, 's) Op_types.binary_test
+  val (<) : ('i, 's) Op_types.binary_test
+  val (<=) : ('i, 's) Op_types.binary_test
 end
 
 module Make_op_types (Types : Types) : Op_types with module Types := Types = struct
@@ -125,6 +137,18 @@ module type Bitvector = sig
       val zero_e : ('i, m_sort) Op_types.unary
     end
 
+    module Signed : sig
+      include Ordering
+        with module Types := Types
+         and module Op_types := Op_types
+    end
+
+    module Unsigned : sig
+      include Ordering
+        with module Types := Types
+         and module Op_types := Op_types
+    end
+
     val extract : low:int -> high:int -> ('i, m_sort) Op_types.unary
     val extract_single : bit:int -> ('i, m_sort) Op_types.unary
     val concat : ('i, m_sort) Op_types.binary
@@ -173,6 +197,7 @@ module type Boolean = sig
   val sort_boolean : 'i Types.instance -> ('i, m_sort) Types.sort
 
   val assert_ : 'i Types.instance -> ('i, m_sort) Types.expr -> unit
+  val assert_not : 'i Types.instance -> ('i, m_sort) Types.expr -> unit
 
   module Boolean : sig
     module Numeral : sig

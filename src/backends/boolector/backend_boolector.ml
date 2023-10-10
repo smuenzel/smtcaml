@@ -101,8 +101,7 @@ and Boolean_t : Smtcaml_intf.Boolean
   let sort_boolean t =
     B.bool_sort t
 
-  let assert_ _ expr =
-    B.assert_ expr
+  let assert_ _ expr = B.assert_ expr
 
   module Boolean = struct
     module Numeral = struct
@@ -140,6 +139,8 @@ and Boolean_t : Smtcaml_intf.Boolean
       |> Option.value_exn
   end
 
+  let assert_not _ expr = B.assert_ (Boolean.not expr)
+
 end
 
 and Bitvector_t : Smtcaml_intf.Bitvector
@@ -176,6 +177,24 @@ and Bitvector_t : Smtcaml_intf.Bitvector
       let zero ~length t = B.zero (sort_bitvector t length)
 
       let zero_e e = B.zero (Expr.sort e)
+    end
+
+    module Signed = struct
+      let (==) = Boolean.eq
+      let (<>) = Boolean.neq
+      let (<) = B.slt
+      let (<=) = B.slte
+      let (>) = B.sgt
+      let (>=) = B.sgte
+    end
+
+    module Unsigned = struct
+      let (==) = Boolean.eq
+      let (<>) = Boolean.neq
+      let (<) = B.ult
+      let (<=) = B.ulte
+      let (>) = B.ugt
+      let (>=) = B.ugte
     end
 
     let extract ~low ~high e = B.slice e high low

@@ -200,6 +200,8 @@ and Boolean_t : Smtcaml_intf.Boolean
 
     let distinct = op_list Z3.Boolean.mk_distinct
   end
+
+  let assert_not t expr = Z3.Solver.add (s t) [ Boolean.not expr ]
 end
 
 and Bitvector_t : Smtcaml_intf.Bitvector
@@ -269,6 +271,24 @@ and Bitvector_t : Smtcaml_intf.Bitvector
         let apply_model_completion = true in
         Z3.Model.eval model expr apply_model_completion
         |> Option.map ~f:Numeral.to_fast_bitvector
+    end
+
+    module Signed = struct
+      let (==) = Boolean.eq
+      let (<>) = Boolean.neq
+      let (<) = op Z3.BitVector.mk_slt
+      let (<=) = op Z3.BitVector.mk_sle
+      let (>) = op Z3.BitVector.mk_sgt
+      let (>=) = op Z3.BitVector.mk_sge
+    end
+
+    module Unsigned = struct
+      let (==) = Boolean.eq
+      let (<>) = Boolean.neq
+      let (<) = op Z3.BitVector.mk_ult
+      let (<=) = op Z3.BitVector.mk_ule
+      let (>) = op Z3.BitVector.mk_ugt
+      let (>=) = op Z3.BitVector.mk_uge
     end
 
     let extract ~low ~high e =

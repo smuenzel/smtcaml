@@ -119,6 +119,8 @@ and Boolean_t : Smtcaml_intf.Boolean
 
     let distinct list = term_op DISTINCT (Array.of_list list)
   end
+
+  let assert_not _ expr = C.solver__assertFormula (Boolean.not expr)
 end
 
 and Bitvector_t : Smtcaml_intf.Bitvector
@@ -163,6 +165,24 @@ and Bitvector_t : Smtcaml_intf.Bitvector
 
       let zero_e e0 =
         C.solver__mkBitVector__u32_u64 (get_term_context e0) (length e0) 0L
+    end
+
+    module Signed = struct
+      let (==) = Boolean.eq
+      let (<>) = Boolean.neq
+      let (<) = op2 BITVECTOR_SLT
+      let (<=) = op2 BITVECTOR_SLE
+      let (>) = op2 BITVECTOR_SGT
+      let (>=) = op2 BITVECTOR_SGE
+    end
+
+    module Unsigned = struct
+      let (==) = Boolean.eq
+      let (<>) = Boolean.neq
+      let (<) = op2 BITVECTOR_ULT
+      let (<=) = op2 BITVECTOR_ULE
+      let (>) = op2 BITVECTOR_UGT
+      let (>=) = op2 BITVECTOR_UGE
     end
 
     let extract ~low ~high e =

@@ -364,6 +364,8 @@ and Boolean_t : Smtcaml_intf.Boolean
     let implies = B.mk_term2 Implies
 
   end
+
+  let assert_not t e = B.Solver.assert_formula t (Boolean.not e)
 end
 
 and Bitvector_t : Smtcaml_intf.Bitvector
@@ -397,6 +399,24 @@ and Bitvector_t : Smtcaml_intf.Bitvector
 
       let zero ~length t = B.mk_bv_zero (sort_bitvector t length)
       let zero_e e = B.mk_bv_zero (B.Term.sort e)
+    end
+
+    module Signed = struct
+      let (==) = Boolean.eq
+      let (<>) = Boolean.neq
+      let (<) = B.mk_term2 Bv_slt
+      let (<=) = B.mk_term2 Bv_sle
+      let (>) = B.mk_term2 Bv_sgt
+      let (>=) = B.mk_term2 Bv_sge
+    end
+
+    module Unsigned = struct
+      let (==) = Boolean.eq
+      let (<>) = Boolean.neq
+      let (<) = B.mk_term2 Bv_ult
+      let (<=) = B.mk_term2 Bv_ule
+      let (>) = B.mk_term2 Bv_ugt
+      let (>=) = B.mk_term2 Bv_uge
     end
 
     let extract ~low ~high e =
