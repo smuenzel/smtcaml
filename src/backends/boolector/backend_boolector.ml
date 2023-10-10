@@ -220,6 +220,13 @@ and Bitvector_t : Smtcaml_intf.Bitvector
 
     let concat_list l = List.reduce_balanced_exn l ~f:B.concat
 
+    let repeat ~count e = B.repeat e count
+
+    let broadcast_single_bit sort bit =
+      let target_size = Bitvector_t.Bv.Sort.length sort in
+      assert (length bit = 1);
+      repeat ~count:target_size bit
+
     let zero_extend ~extra_zeros e = B.uext e extra_zeros
 
     let sign_extend ~extra_bits e = B.sext e extra_bits

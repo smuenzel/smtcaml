@@ -441,6 +441,13 @@ and Bitvector_t : Smtcaml_intf.Bitvector
     let concat = B.mk_term2 Bv_concat
     let concat_list list = B.mk_term Bv_concat (Array.of_list list)
 
+    let repeat ~count e = B.mk_term1_indexed1 Bv_repeat e count
+
+    let broadcast_single_bit sort bit =
+      let target_size = Bitvector_t.Bv.Sort.length sort in
+      assert (length bit = 1);
+      repeat ~count:target_size bit
+
     let zero_extend ~extra_zeros e = B.mk_term1_indexed1 Bv_zero_extend e extra_zeros
     let sign_extend ~extra_bits e = B.mk_term1_indexed1 Bv_sign_extend e extra_bits
 

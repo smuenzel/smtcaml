@@ -319,6 +319,14 @@ and Bitvector_t : Smtcaml_intf.Bitvector
       let op = Z3.BitVector.mk_concat (Expr.context (List.hd_exn l)) in
       List.reduce_balanced_exn l ~f:op
 
+    let repeat ~count e =
+      Z3.BitVector.mk_repeat (Expr.context e) count e
+
+    let broadcast_single_bit sort bit =
+      let target_size = Bitvector_t.Bv.Sort.length sort in
+      assert (length bit = 1);
+      repeat ~count:target_size bit
+
     let of_bool b =
       let cn = Expr.context_native b in
       Boolean.ite b (Numeral.bit_cn cn true) (Numeral.bit_cn cn false)
