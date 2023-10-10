@@ -147,6 +147,7 @@ module type Bitvector = sig
 
     module Numeral : sig
       val int : ('i, m_sort) Types.sort -> int -> ('i, m_sort) Types.expr
+      val int_e : ('i, m_sort) Types.expr -> int -> ('i, m_sort) Types.expr
       val fast_bitvector : ('i, m_sort) Types.sort -> Fast_bitvector.t -> ('i, m_sort) Types.expr 
       val zero : length:int -> 'i Types.instance -> ('i, m_sort) Types.expr
       val zero_e : ('i, m_sort) Op_types.unary
@@ -190,6 +191,8 @@ module type Bitvector = sig
     val is_zero : ('i, m_sort) Op_types.unary_test
     val is_not_zero : ('i, m_sort) Op_types.unary_test
     val is_all_ones : ('i, m_sort) Op_types.unary_test
+    val is_power_of_two_or_zero : ('i, m_sort) Op_types.unary_test
+    val is_power_of_two : ('i, m_sort) Op_types.unary_test
     val sign : ('i, m_sort) Op_types.unary
     val parity : ('i, m_sort) Op_types.unary
 
@@ -197,7 +200,6 @@ module type Bitvector = sig
     val is_add_overflow : signed:bool -> ('i, m_sort) Op_types.binary_test
     (* sign(a) = sign(b) = -1, sign(a+b) <> -1*)
     val is_add_underflow : ('i, m_sort) Op_types.binary_test
-
     (* a - b > max *)
     val is_sub_overflow : ('i, m_sort) Op_types.binary_test
     (* sign(a) = -1, sign(b) <> -1, sign(a-b) <> -1 *)
@@ -208,6 +210,21 @@ module type Bitvector = sig
     val shift_right_arithmetic : count:('i, m_sort) Types.expr -> ('i, m_sort) Op_types.unary 
 
     val of_bool : ('i, Sort_kind.bool) Types.expr -> ('i, m_sort) Types.expr
+
+    module Set : sig
+      val const_empty : 'i Types.instance -> int -> ('i, m_sort) Types.expr
+
+      val union : ('i, m_sort) Op_types.binary
+      val inter : ('i, m_sort) Op_types.binary
+      val complement : ('i, m_sort) Op_types.unary
+      val diff : ('i, m_sort) Op_types.binary
+      val symmdiff : ('i, m_sort) Op_types.binary
+
+      val is_empty : ('i, m_sort) Op_types.unary_test
+      val is_subset : ('i, m_sort) Types.expr -> of_:('i, m_sort) Types.expr  -> ('i, Sort_kind.bool) Types.expr 
+      val has_max_one_member : ('i, m_sort) Op_types.unary_test
+      val has_single_member : ('i, m_sort) Op_types.unary_test
+    end
   end
 end
 

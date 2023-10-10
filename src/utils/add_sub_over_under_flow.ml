@@ -1,6 +1,4 @@
 
-module Sort_kind = Smtcaml_intf.Sort_kind
-
 module Make(P : Smtcaml_intf.Interface_definitions.Bitvector_basic) = struct
   open P
   open Bv

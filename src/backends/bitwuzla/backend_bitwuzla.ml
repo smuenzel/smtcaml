@@ -377,9 +377,10 @@ and Bitvector_t : Smtcaml_intf.Bitvector
   let sort_bitvector _ i = B.mk_bv_sort i
 
   module Bv = struct
+    module Set = Smtcaml_utils.Set_ops.Make(T)
+
     module Sort = struct
       let length s = B.Sort.bv_size s
-
     end
 
     module Model = struct
@@ -393,6 +394,8 @@ and Bitvector_t : Smtcaml_intf.Bitvector
 
     module Numeral = struct
       let int s i = B.mk_bv_value_int s i
+
+      let int_e e i = int (Expr.sort e) i
 
       let fast_bitvector s fbv =
         B.mk_bv_value s (Fast_bitvector.Little_endian.to_string fbv) 2
@@ -453,6 +456,8 @@ and Bitvector_t : Smtcaml_intf.Bitvector
     let is_not_zero e = Boolean.neq e (Numeral.zero_e e)
 
     let is_all_ones e = Boolean.eq e (B.mk_bv_ones (B.Term.sort e))
+
+    include Smtcaml_utils.Power_of_two.Make(T)
 
     let sign e =
       let length = length e in

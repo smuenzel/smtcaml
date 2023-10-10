@@ -214,6 +214,8 @@ and Bitvector_t : Smtcaml_intf.Bitvector
   let sort_bitvector t l = Z3.BitVector.mk_sort (c t) l
 
   module Bv = struct
+    module Set = Smtcaml_utils.Set_ops.Make(T)
+
     module Sort_internal = struct
       let length = Z3.BitVector.get_size
     end
@@ -229,6 +231,9 @@ and Bitvector_t : Smtcaml_intf.Bitvector
 
       let int sort i =
         Z3.Expr.mk_numeral_int (Sort.context sort) i sort
+
+      let int_e e i =
+        int (Z3.Expr.get_sort e) i
 
       let fast_bitvector sort bv =
         assert (Sort_internal.length sort = Fast_bitvector.length bv);
@@ -330,6 +335,8 @@ and Bitvector_t : Smtcaml_intf.Bitvector
     let is_not_zero e = Boolean.neq e (Numeral.zero_e e)
 
     let is_all_ones e = Boolean.eq e (not (Numeral.zero_e e))
+
+    include Smtcaml_utils.Power_of_two.Make(T)
 
     let sign e =
       let length = length e in

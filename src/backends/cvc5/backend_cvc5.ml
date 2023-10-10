@@ -132,6 +132,8 @@ and Bitvector_t : Smtcaml_intf.Bitvector
   let sort_bitvector t l = C.solver__mkBitVectorSort t l
 
   module Bv = struct
+    module Set = Smtcaml_utils.Set_ops.Make(T)
+
     module Sort = struct
       let length sort = C.sort__getBitVectorSize sort
     end
@@ -152,6 +154,9 @@ and Bitvector_t : Smtcaml_intf.Bitvector
           (get_sort_context sort)
           (C.sort__getBitVectorSize sort)
           (Int64.of_int i)
+
+      let int_e e i =
+        int (Expr.sort e) i
 
       let fast_bitvector sort bv =
         assert (Sort.length sort = Fast_bitvector.length bv);
@@ -228,6 +233,8 @@ and Bitvector_t : Smtcaml_intf.Bitvector
     let is_zero e = Boolean.eq (Numeral.zero_e e) e
     let is_not_zero e = Boolean.neq (Numeral.zero_e e) e
     let is_all_ones e = Boolean.eq (not (Numeral.zero_e e)) e 
+
+    include Smtcaml_utils.Power_of_two.Make(T)
 
     let sign e =
       let length = length e in
