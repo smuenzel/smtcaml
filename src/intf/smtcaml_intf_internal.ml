@@ -48,6 +48,21 @@ module type Ordering = sig
   val (<=) : ('i, 's) Op_types.binary_test
 end
 
+module type Arithmetic_ops = sig
+  module Types : Types
+  module Op_types : Op_types with module Types := Types
+  val (+) : ('i, 's) Op_types.binary
+  val (-) : ('i, 's) Op_types.binary
+  val ( * ) : ('i, 's) Op_types.binary
+  val ( / ) : ('i, 's) Op_types.binary
+  val ( mod ) : ('i, 's) Op_types.binary
+end
+
+module type Arithmetic_ops_signed = sig
+  include Arithmetic_ops
+  val (~-) : ('i, 's) Op_types.unary
+end
+
 module Make_op_types (Types : Types) : Op_types with module Types := Types = struct
   module rec T : Op_types with module Types := Types = T
   include T
@@ -141,10 +156,18 @@ module type Bitvector = sig
       include Ordering
         with module Types := Types
          and module Op_types := Op_types
+
+      include Arithmetic_ops_signed
+        with module Types := Types
+         and module Op_types := Op_types
     end
 
     module Unsigned : sig
       include Ordering
+        with module Types := Types
+         and module Op_types := Op_types
+
+      include Arithmetic_ops
         with module Types := Types
          and module Op_types := Op_types
     end

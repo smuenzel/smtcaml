@@ -280,6 +280,12 @@ and Bitvector_t : Smtcaml_intf.Bitvector
       let (<=) = op Z3.BitVector.mk_sle
       let (>) = op Z3.BitVector.mk_sgt
       let (>=) = op Z3.BitVector.mk_sge
+      let (+) = Bitvector_t.Bv.add
+      let (-) = Bitvector_t.Bv.sub
+      let (~-) = op Z3.BitVector.mk_neg
+      let ( * ) = op Z3.BitVector.mk_mul
+      let (/) = op Z3.BitVector.mk_sdiv
+      let (mod) = op Z3.BitVector.mk_srem
     end
 
     module Unsigned = struct
@@ -289,6 +295,11 @@ and Bitvector_t : Smtcaml_intf.Bitvector
       let (<=) = op Z3.BitVector.mk_ule
       let (>) = op Z3.BitVector.mk_ugt
       let (>=) = op Z3.BitVector.mk_uge
+      let (+) = Bitvector_t.Bv.add
+      let (-) = Bitvector_t.Bv.sub
+      let ( * ) = op Z3.BitVector.mk_mul
+      let (/) = op Z3.BitVector.mk_udiv
+      let (mod) = op Z3.BitVector.mk_urem
     end
 
     let extract ~low ~high e =

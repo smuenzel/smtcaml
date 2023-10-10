@@ -186,6 +186,12 @@ and Bitvector_t : Smtcaml_intf.Bitvector
       let (<=) = B.slte
       let (>) = B.sgt
       let (>=) = B.sgte
+      let (+) = Bitvector_t.Bv.add
+      let (-) = Bitvector_t.Bv.sub
+      let (~-) = B.neg
+      let ( * ) = B.mul
+      let (/) = B.sdiv
+      let (mod) = B.srem
     end
 
     module Unsigned = struct
@@ -195,6 +201,11 @@ and Bitvector_t : Smtcaml_intf.Bitvector
       let (<=) = B.ulte
       let (>) = B.ugt
       let (>=) = B.ugte
+      let (+) = Bitvector_t.Bv.add
+      let (-) = Bitvector_t.Bv.sub
+      let ( * ) = B.mul
+      let (/) = B.udiv
+      let (mod) = B.urem
     end
 
     let extract ~low ~high e = B.slice e high low
