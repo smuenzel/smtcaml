@@ -68,6 +68,8 @@ module rec Base : Smtcaml_intf.Backend_base
     type t = T : _ t' -> t
   end
 
+  let backend_name = "z3"
+
   let create
       ?(options = Options.default)
       ()
@@ -355,6 +357,8 @@ and Bitvector_t : Smtcaml_intf.Bitvector
       (* No mk_redxor *)
       List.init length ~f:(fun i -> extract_single a ~bit:i)
       |> List.reduce_balanced_exn ~f:xor
+
+    include Smtcaml_utils.Popcount.Make(T)
 
     let is_add_overflow ~signed a b =
       let ctx = Expr.context a in

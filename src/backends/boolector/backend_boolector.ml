@@ -57,6 +57,8 @@ module rec Base : Smtcaml_intf.Backend
       Some (B.is_bv_const_one expr)
   end
 
+  let backend_name = "boolector"
+
   let create ?(options=Options.default) () =
     let t = B.new_ () in
     Options.Fields.Direct.iter options
@@ -256,6 +258,8 @@ and Bitvector_t : Smtcaml_intf.Bitvector
     include Smtcaml_utils.Power_of_two.Make(T)
 
     let parity e = B.redxor e
+
+    include Smtcaml_utils.Popcount.Make(T)
 
     include Smtcaml_utils.Add_sub_over_under_flow.Make(T)
 

@@ -64,6 +64,8 @@ module rec Base : Smtcaml_intf.Backend
       Some (C.term__getBooleanValue (C.solver__getValue__t solver term))
   end
 
+  let backend_name = "cvc5"
+
   let create ?(options=()) () =
     let () = options in
     let t = C.new_Solver () in
@@ -252,6 +254,8 @@ and Bitvector_t : Smtcaml_intf.Bitvector
       (* No mk_redxor *)
       List.init length ~f:(fun i -> extract_single a ~bit:i)
       |> List.reduce_balanced_exn ~f:xor
+
+    include Smtcaml_utils.Popcount.Make(T)
 
     include Smtcaml_utils.Add_sub_over_under_flow.Make(T)
 

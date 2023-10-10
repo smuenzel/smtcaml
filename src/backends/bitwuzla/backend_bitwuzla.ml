@@ -314,6 +314,8 @@ module rec Base : Smtcaml_intf.Backend
       Some (B.Solver.get_value instance expr |> B.Term.is_bv_value_one)
   end
 
+  let backend_name = "bitwuzla"
+
   let create ?(options = Options.default) () =
     Packed.T (B.Solver.create options)
 
@@ -471,6 +473,8 @@ and Bitvector_t : Smtcaml_intf.Bitvector
       extract_single ~bit:(length - 1) e
 
     let parity e = B.mk_term1 Bv_redxor e
+
+    include Smtcaml_utils.Popcount.Make(T)
 
     include Smtcaml_utils.Add_sub_over_under_flow.Make(T)
 

@@ -110,6 +110,8 @@ module type Backend_base = sig
     type t = T : _ Types.instance -> t
   end
 
+  val backend_name : string
+
   val create : ?options:Options.t -> unit -> Packed.t
 
   val var : ('i,'s) Types.sort -> string -> ('i, 's) Types.expr
@@ -197,6 +199,8 @@ module type Bitvector = sig
     val is_power_of_two : ('i, m_sort) Op_types.unary_test
     val sign : ('i, m_sort) Op_types.unary
     val parity : ('i, m_sort) Op_types.unary
+
+    val popcount : ?result_bit_size:int -> ('i, m_sort) Op_types.unary
 
     (* a + b > max *)
     val is_add_overflow : signed:bool -> ('i, m_sort) Op_types.binary_test
