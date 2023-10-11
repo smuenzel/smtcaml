@@ -418,7 +418,73 @@ and Uf_t : Smtcaml_intf.Uninterpreted_function
 
   module Ufun = struct
     module Model = struct
-      let eval_to_list_exn _ = assert false
+      (* not tail-recursive *)
+      let rec eval_to_list_exn instance model expr convert_domain convert_codomain =
+        let apply_model_completion = true in
+        let ev =
+          Z3.Model.eval model expr apply_model_completion 
+          |> Option.value_exn
+        in
+        let fd = Z3.Expr.get_func_decl ev in
+        match Z3.FuncDecl.get_decl_kind fd with
+        | OP_CONST_ARRAY -> 
+          let else_val = List.hd_exn (Z3.Expr.get_args ev) in
+          let else_val = convert_codomain instance model else_val in
+          { Smtcaml_intf.Ufun_interp.
+            values = []
+          ; else_val
+          }
+        | OP_AS_ARRAY ->
+          (* CR smuenzel: Need to find an example to test this *)
+          raise_s
+            [%message "cannot handle this interp"
+                ~_:(Z3.FuncDecl.to_string fd : string)
+            ]
+        | OP_STORE ->
+          begin match Z3.Expr.get_args ev with
+            | [ store_array; store_domain; store_codomain ] ->
+              let inner =
+                eval_to_list_exn instance model store_array convert_domain convert_codomain
+              in
+              let v =
+                convert_domain instance model store_domain
+              , convert_codomain instance model store_codomain
+              in
+              { inner with
+                values = v::inner.values
+              }
+            | _ ->
+              assert false
+          end
+        | _ ->
+          raise_s
+            [%message "cannot handle this interp"
+                ~_:(Z3.FuncDecl.to_string fd : string)
+            ]
+          (*
+        let open Poly in
+
+
+        Printf.eprintf "%i\n" (Z3enums.int_of_decl_kind (Z3.FuncDecl.get_decl_kind fd));
+        Printf.eprintf "%s\n" (Z3.FuncDecl.to_string fd);
+        assert (Z3.FuncDecl.get_decl_kind fd = Z3enums.OP_AS_ARRAY);
+        assert (Z3.FuncDecl.get_num_parameters fd = 1);
+        match Z3.FuncDecl.get_parameters fd with
+        | array_interp :: _ ->
+          let array_interp = Z3.FuncDecl.Parameter.get_func_decl array_interp in
+          let interp = Option.value_exn (Z3.Model.get_func_interp model array_interp) in
+          let entries = Z3.Model.FuncInterp.get_entries interp in
+          List.map entries
+            ~f:(fun x ->
+                let args = Z3.Model.FuncInterp.FuncEntry.get_args x in
+                let return = Z3.Model.FuncInterp.FuncEntry.get_value x in
+                let arg = List.hd_exn args in
+                convert_domain instance model arg
+              , convert_codomain instance model return
+              )
+
+        | _ -> assert false
+             *)
     end
 
     let apply a b = Z3.Z3Array.mk_select (Expr.context a) a b

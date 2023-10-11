@@ -651,6 +651,8 @@ APIM0(Result,toString)
 APIM0(Result,getUnknownExplanation)
 
 APIM0(Term,getNumChildren)
+APIM1_RENAME__(Term,operator_index,operator[])
+APIM1_RENAME__(Term,operator_equal,operator==)
 APIM0(Term,getId)
 APIM0(Term,getKind)
 APIM0(Term,getSort)
@@ -688,6 +690,11 @@ APIM0(Term,getBooleanValue)
 APIM0(Term,isBitVectorValue)
 APIM1(Term,getBitVectorValue)
 //...
+
+APIM0(Op,toString)
+APIM0(Op,getKind)
+APIM0(Op,isIndexed)
+APIM0(Op,getNumIndices)
 
 
 

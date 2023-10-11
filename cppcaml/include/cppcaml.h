@@ -314,6 +314,10 @@ __attribute((used, section("caml_api_registry"))) = \
   CPPCAML_REGISTRY(MAKE_VAR_CLASS(APIPREFIX,APIF,CLASS),\
       STR2(CLASS,APIF),STR(WRAPPER),STR(CLASS), &CLASS :: APIF)
 
+#define REGISTER_API_MEMBER_RENAME(APIPREFIX,CLASS, APIF, WRAPPER,APIF_CPP) \
+  CPPCAML_REGISTRY(MAKE_VAR_CLASS(APIPREFIX,APIF,CLASS),\
+      STR2(CLASS,APIF),STR(WRAPPER),STR(CLASS), &CLASS :: APIF_CPP)
+
 #define REGISTER_API_MEMBER_IMPLIED(APIPREFIX,CLASS, APIF, WRAPPER) \
   CPPCAML_REGISTRY(MAKE_VAR_CLASS(APIPREFIX,APIF,CLASS),\
       CppCaml::DropFirstArgument(), STR2(CLASS,APIF),STR(WRAPPER),STR(CLASS), &CLASS :: APIF)
@@ -420,6 +424,13 @@ inline value call_native_from_bytecode(value (*fun)(Args...), value *argv, int a
     return CppCaml::CALLER(&CLASS :: APIF UNPAREN PARAMS_INSTANCE); \
   }
 
+// CR smuenzel: merge this
+#define APIX_M_RENAME(CALLER,PARAMS,PARAMS_INSTANCE,APIF,CLASS,APIF_CPP) \
+  REGISTER_API_MEMBER_RENAME(APIPREFIX,CLASS,APIF, MAKE_APIF_NCLASS(APIPREFIX,APIF,CLASS),APIF_CPP); \
+  apireturn MAKE_APIF_NCLASS(APIPREFIX,APIF,CLASS)(UNPAREN PARAMS){ \
+    return CppCaml::CALLER(&CLASS :: APIF_CPP UNPAREN PARAMS_INSTANCE); \
+  }
+
 #define APIM0__(CLASS,APIF) \
   APIX_M(call_api_class,(value v_c),(,v_c),APIF,CLASS)
 
@@ -428,6 +439,9 @@ inline value call_native_from_bytecode(value (*fun)(Args...), value *argv, int a
 
 #define APIM1__(CLASS,APIF) \
   APIX_M(call_api_class,(value v_c, value v0),(,v_c,v0),APIF,CLASS)
+
+#define APIM1_RENAME__(CLASS,APIF,APIF_CPP) \
+  APIX_M_RENAME(call_api_class,(value v_c, value v0),(,v_c,v0),APIF,CLASS,APIF_CPP)
 
 #define APIM2__(CLASS,APIF) \
   APIX_M(call_api_class,(value v_c, value v0, value v1),(,v_c,v0,v1),APIF,CLASS)

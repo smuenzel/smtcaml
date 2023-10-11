@@ -504,7 +504,56 @@ and Uf_t : Smtcaml_intf.Uninterpreted_function
 
   module Ufun = struct
     module Model = struct
-      let eval_to_list_exn _ = assert false
+      let extract_cond ~var cond =
+        match B.Term.kind cond with
+        | Equal ->
+          let children = B.Term.children cond in
+          assert (Array.length children = 2);
+          assert (B.Term.equal children.(0) var);
+          children.(1)
+        | _ ->
+          raise_s [%message "unknown interpretation"
+              (B.Term.to_string cond : string)
+          ]
+
+
+      (* CR smuenzel: add more checks to make sure we're parsing right *)
+      let rec parse_ite ~var expr : _ Smtcaml_intf.Ufun_interp.t =
+        match B.Term.kind expr with
+        | Ite ->
+          let children = B.Term.children expr in
+          assert (Array.length children = 3);
+          let cond = children.(0) in
+          let then_ = children.(1) in
+          let else_ = children.(2) in
+          let cond = extract_cond ~var cond in
+          let v = cond, then_ in
+          let sub : _ Smtcaml_intf.Ufun_interp.t = parse_ite ~var else_ in
+          { sub with
+            values = v :: sub.values
+          }
+        | _ ->
+          { Smtcaml_intf.Ufun_interp.
+            values = []
+          ; else_val = expr
+          }
+
+      let eval_to_list_exn instance model expr convert_domain convert_codomain =
+        let value = B.Solver.get_value instance expr in
+        match B.Term.kind value with
+        | Lambda ->
+          let children = B.Term.children value in
+          assert (Array.length children = 2);
+          let var = children.(0) in
+          let expr = children.(1) in
+          parse_ite ~var expr
+          |> Smtcaml_intf.Ufun_interp.map
+            ~f_d:(convert_domain instance model)
+            ~f_cd:(convert_codomain instance model)
+        | _ ->
+          raise_s [%message "unknown interpretation"
+              (B.Term.to_string value : string)
+          ]
     end
 
     let apply a b = B.mk_term2 Apply a b

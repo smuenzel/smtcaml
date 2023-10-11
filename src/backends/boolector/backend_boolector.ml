@@ -288,7 +288,8 @@ and Uf_t : Smtcaml_intf.Uninterpreted_function
 
   module Ufun = struct
     module Model = struct
-      let eval_to_list_exn _ = assert false
+      let eval_to_list_exn _instance _model _expr _convert_domain _convert_codomain =
+        raise_s [%message "model generation not supported (yet)"]
     end
 
     let apply a b = B.apply_vector (get_expr_context b) [| b |] a

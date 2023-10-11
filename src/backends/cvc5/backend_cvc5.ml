@@ -287,7 +287,97 @@ and Uf_t : Smtcaml_intf.Uninterpreted_function
 
   module Ufun = struct
     module Model = struct
-      let eval_to_list_exn _ = assert false
+      let parse_cond ~var solver model expr convert_domain =
+        match C.op__getKind (C.term__getOp expr) with
+        | EQUAL ->
+          let children = Int64.to_int_exn (C.term__getNumChildren expr) in
+          assert (children = 2);
+          let left = C.term__operator_index expr 0L in
+          let right = C.term__operator_index expr 1L in
+          if C.term__operator_equal var left
+          then 
+            convert_domain solver model right
+          else
+            raise_s [%message "don't know how to interpret"
+                (C.term__toString left : string)
+                (C.term__toString right : string)
+                (C.term__toString var : string)
+            ]
+        | _ ->
+          raise_s [%message "don't know how to interpret"
+          ]
+
+      let rec parse_ite ~var solver model expr convert_domain convert_codomain =
+        if C.term__hasOp expr
+        then begin
+          match C.op__getKind (C.term__getOp expr) with
+          | ITE ->
+            let children = Int64.to_int_exn (C.term__getNumChildren expr) in
+            assert (children = 3);
+            let cond = C.term__operator_index expr 0L in
+            let then_ = C.term__operator_index expr 1L in
+            let else_ = C.term__operator_index expr 2L in
+            let cond = parse_cond ~var solver model cond convert_domain in
+            let then_ = convert_codomain solver model then_ in
+            let else_ : _ Smtcaml_intf.Ufun_interp.t =
+              parse_ite ~var solver model else_ convert_domain convert_codomain
+            in
+            { else_ with
+              values = (cond,then_) :: else_.values
+            }
+          | _ ->
+            raise_s [%message "don't know how to interpret"
+            ]
+        end
+        else
+          { Smtcaml_intf.Ufun_interp.
+            values = []
+          ; else_val = convert_codomain solver model expr
+          }
+
+      let get_var_from_arguments arguments =
+        match C.op__getKind (C.term__getOp arguments) with
+        | VARIABLE_LIST ->
+          let children = Int64.to_int_exn (C.term__getNumChildren arguments) in
+          assert (children = 1);
+          let variable = C.term__operator_index arguments 0L in
+          variable
+        | _ ->
+          raise_s [%message "don't know how to interpret"
+            (C.term__toString arguments)
+          ]
+
+      let eval_to_list_exn solver model expr convert_domain convert_codomain =
+        let value = C.solver__getValue__t solver expr in
+        match C.term__getKind value with
+        | LAMBDA ->
+          let children = Int64.to_int_exn (C.term__getNumChildren value) in
+          assert (children = 2);
+          let arguments = C.term__operator_index value 0L in
+          let results = C.term__operator_index value 1L in
+          let var = get_var_from_arguments arguments in
+          if C.term__hasOp results
+          then
+            parse_ite ~var solver model results convert_domain convert_codomain
+              (*
+            raise_s [%message "don't know how to interpret"
+                (C.term__toString value)
+                (C.term__getKind value : C.kind)
+                (C.term__toString arguments)
+                (C.term__toString results)
+                (C.term__getOp results |> C.op__toString)
+            ]
+                 *)
+          else
+            { Smtcaml_intf.Ufun_interp.
+              values = []
+            ; else_val = convert_codomain solver model results
+            }
+        | _ ->
+          raise_s [%message "don't know how to interpret"
+              (C.term__toString value)
+              (C.term__getKind value : C.kind)
+          ]
     end
 
     let apply a b = op2 APPLY_UF a b

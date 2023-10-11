@@ -17,6 +17,19 @@ module Solver_result = struct
   [@@deriving sexp]
 end
 
+module Ufun_interp = struct
+  type ('d, 'cd) t =
+    { values : ('d * 'cd) list
+    ; else_val : 'cd
+    } [@@deriving sexp]
+
+  let map ~f_d ~f_cd t =
+    { values = List.map t.values ~f:(fun (d,cd) -> f_d d, f_cd cd)
+    ; else_val = f_cd t.else_val
+    }
+
+end
+
 module type Types = sig
   type 'instance instance
   type ('instance, 'sort) sort
@@ -295,7 +308,7 @@ module type Uninterpreted_function = sig
           , ('d -> 'cd) Sort_kind.ufun
           , ('i, 'd, 'rd) Op_types.eval
             -> ('i, 'cd, 'rcd) Op_types.eval 
-            -> ('rd * 'rcd) list
+            -> ('rd, 'rcd) Ufun_interp.t
           ) Op_types.eval
     end
 

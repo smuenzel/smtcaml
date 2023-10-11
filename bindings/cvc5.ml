@@ -514,6 +514,8 @@ external result__isUnknown : (* class Result *) sat_result -> bool = "caml_cvc5_
 external result__toString : (* class Result *) sat_result -> string = "caml_cvc5__Result__toString"
 external result__getUnknownExplanation : (* class Result *) sat_result -> unknownExplanation = "caml_cvc5__Result__getUnknownExplanation"
 external term__getNumChildren : (* class Term *) term -> int64 = "caml_cvc5__Term__getNumChildren"
+external term__operator_index : (* class Term *) term -> int64 -> term = "caml_cvc5__Term__operator_index"
+external term__operator_equal : (* class Term *) term -> term -> bool = "caml_cvc5__Term__operator_equal"
 external term__getId : (* class Term *) term -> int64 = "caml_cvc5__Term__getId"
 external term__getKind : (* class Term *) term -> kind = "caml_cvc5__Term__getKind"
 external term__getSort : (* class Term *) term -> sort = "caml_cvc5__Term__getSort"
@@ -548,6 +550,10 @@ external term__isBooleanValue : (* class Term *) term -> bool = "caml_cvc5__Term
 external term__getBooleanValue : (* class Term *) term -> bool = "caml_cvc5__Term__getBooleanValue"
 external term__isBitVectorValue : (* class Term *) term -> bool = "caml_cvc5__Term__isBitVectorValue"
 external term__getBitVectorValue : (* class Term *) term -> uint32_t -> string = "caml_cvc5__Term__getBitVectorValue"
+external op__toString : (* class Op *) op -> string = "caml_cvc5__Op__toString"
+external op__getKind : (* class Op *) op -> kind = "caml_cvc5__Op__getKind"
+external op__isIndexed : (* class Op *) op -> bool = "caml_cvc5__Op__isIndexed"
+external op__getNumIndices : (* class Op *) op -> int64 = "caml_cvc5__Op__getNumIndices"
 (*$*)
 
 
