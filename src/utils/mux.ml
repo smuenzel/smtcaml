@@ -41,4 +41,16 @@ module Make(P : Smtcaml_intf.Interface_definitions.Bitvector_basic) = struct
     ; output
     ; constraints
     }
+
+  let get_selector_value =
+    let rec find fb i len =
+      if i >= len
+      then assert false
+      else if Fast_bitvector.Unsafe.get fb i
+      then i
+      else find fb (succ i) len
+    in
+    fun fb ->
+      let len = Fast_bitvector.length fb in
+      find fb 0 len
 end
