@@ -432,7 +432,7 @@ and Uf_t : Smtcaml_intf.Uninterpreted_function
           let else_val = convert_codomain instance model else_val in
           { Smtcaml_intf.Ufun_interp.
             values = []
-          ; else_val
+          ; else_val = Some else_val
           }
         | OP_AS_ARRAY ->
           (* CR smuenzel: Need to find an example to test this *)

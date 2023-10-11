@@ -20,12 +20,12 @@ end
 module Ufun_interp = struct
   type ('d, 'cd) t =
     { values : ('d * 'cd) list
-    ; else_val : 'cd
+    ; else_val : 'cd option
     } [@@deriving sexp]
 
   let map ~f_d ~f_cd t =
     { values = List.map t.values ~f:(fun (d,cd) -> f_d d, f_cd cd)
-    ; else_val = f_cd t.else_val
+    ; else_val = Option.map ~f:f_cd t.else_val
     }
 
 end

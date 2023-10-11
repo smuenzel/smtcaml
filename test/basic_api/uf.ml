@@ -76,43 +76,6 @@ module Test_store(Smt : Smtcaml_intf.Interface_definitions.Bitvector_uf) = struc
 
 end
 
-(*
-let%expect_test "bitwuzla" =
-  let module T = Test(Backend_bitwuzla) in
-  T.run ();
-  [%expect {|
-    (model
-     ("Smt.Model.eval_to_string_exn t model c"
-      #b00000000000000011000011010011111)
-     ("Smt.Bv.Model.eval_exn t model c" 00000000000000011000011010011111)
-     ("Smt.Bv.Model.eval_exn t model sum" 00000000000000000000000000100011)
-     ("Smt.Bv.Model.eval_exn t model app0" 00000000000000011000011010011111)
-     ("Smt.Bv.Model.eval_exn t model app1" 00000000000000011000011010011111)) |}]
-
-let%expect_test "boolector" =
-  let module T = Test(Backend_boolector) in
-  T.run ();
-  [%expect {|
-    (model
-     ("Smt.Model.eval_to_string_exn t model c" 00000000000000011000011010011111)
-     ("Smt.Bv.Model.eval_exn t model c" 00000000000000011000011010011111)
-     ("Smt.Bv.Model.eval_exn t model sum" 00000000000000000000000000100011)
-     ("Smt.Bv.Model.eval_exn t model app0" 00000000000000011000011010011111)
-     ("Smt.Bv.Model.eval_exn t model app1" 00000000000000011000011010011111)) |}]
-
-let%expect_test "cvc5" =
-  let module T = Test(Backend_cvc5) in
-  T.run ();
-  [%expect {|
-    (model
-     ("Smt.Model.eval_to_string_exn t model c"
-      #b00000000000000011000011010011111)
-     ("Smt.Bv.Model.eval_exn t model c" 00000000000000011000011010011111)
-     ("Smt.Bv.Model.eval_exn t model sum" 00000000000000000000000000100011)
-     ("Smt.Bv.Model.eval_exn t model app0" 00000000000000011000011010011111)
-     ("Smt.Bv.Model.eval_exn t model app1" 00000000000000011000011010011111)) |}]
-   *)
-
 let%expect_test "bitwuzla" =
   let module T1 = Test_const(Backend_bitwuzla) in
   T1.run ();
@@ -121,7 +84,7 @@ let%expect_test "bitwuzla" =
      (fun_model
       ((values
         ((00000000000000000000000000100011 00000000000000011000011010011111)))
-       (else_val 00000000000000000000000000000000)))) |}]
+       (else_val (00000000000000000000000000000000))))) |}]
   ;
   let module T2 = Test_store(Backend_bitwuzla) in
   T2.run ();
@@ -131,7 +94,29 @@ let%expect_test "bitwuzla" =
       ((values
         ((11111111111111111111111111111111 11111111111111111111111111111111)
          (11111111111111111111111111111110 11111111111111111111111111111110)))
-       (else_val 00000000000000000000000000000000)))) |}]
+       (else_val (00000000000000000000000000000000))))) |}]
+  ;
+  ()
+
+let%expect_test "boolector" =
+  let module T1 = Test_const(Backend_boolector) in
+  T1.run ();
+  [%expect {|
+    (model
+     (fun_model
+      ((values
+        ((00000000000000000000000000100011 00000000000000011000011010011111)))
+       (else_val ())))) |}]
+  ;
+  let module T2 = Test_store(Backend_boolector) in
+  T2.run ();
+  [%expect {|
+    (model
+     (fun_model
+      ((values
+        ((11111111111111111111111111111111 11111111111111111111111111111111)
+         (11111111111111111111111111111110 11111111111111111111111111111110)))
+       (else_val ())))) |}]
   ;
   ()
 
@@ -139,7 +124,8 @@ let%expect_test "cvc5" =
   let module T1 = Test_const(Backend_cvc5) in
   T1.run ();
   [%expect {|
-    (model (fun_model ((values ()) (else_val 00000000000000011000011010011111)))) |}]
+    (model
+     (fun_model ((values ()) (else_val (00000000000000011000011010011111))))) |}]
   ;
   let module T2 = Test_store(Backend_cvc5) in
   T2.run ();
@@ -148,7 +134,7 @@ let%expect_test "cvc5" =
      (fun_model
       ((values
         ((11111111111111111111111111111111 11111111111111111111111111111111)))
-       (else_val 11111111111111111111111111111110)))) |}]
+       (else_val (11111111111111111111111111111110))))) |}]
   ;
   ()
 
@@ -156,7 +142,8 @@ let%expect_test "z3" =
   let module T1 = Test_const(Backend_z3) in
   T1.run ();
   [%expect {|
-    (model (fun_model ((values ()) (else_val 00000000000000011000011010011111)))) |}]
+    (model
+     (fun_model ((values ()) (else_val (00000000000000011000011010011111))))) |}]
   ;
   let module T2 = Test_store(Backend_z3) in
   T2.run ();
@@ -165,6 +152,6 @@ let%expect_test "z3" =
      (fun_model
       ((values
         ((00000000000000000000000000000001 00000000000000000000000000000001)))
-       (else_val 00000000000000000000000000000000)))) |}]
+       (else_val (00000000000000000000000000000000))))) |}]
   ;
   ()

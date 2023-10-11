@@ -24,6 +24,18 @@ module Op_types = Smtcaml_intf.Make_op_types(Types)
 let get_sort_context (sort : B.sort) : B.btor = Obj.magic sort
 let get_expr_context (expr : B.node) : B.btor = Obj.magic expr
 
+(* We can't use the eval functions when evaluating a function, since boolector does
+   the string conversion *)
+let eval_string_hack expr ~f_normal ~f_string =
+  let oexpr = Obj.repr expr in
+  if Obj.is_block oexpr
+  then begin
+    if Obj.string_tag = (Obj.tag oexpr)
+    then f_string (Obj.obj oexpr : string)
+    else f_normal expr
+  end
+  else f_normal expr
+
 module rec Base : Smtcaml_intf.Backend
   with module Types := Types 
    and module Op_types := Op_types
@@ -51,10 +63,17 @@ module rec Base : Smtcaml_intf.Backend
     type _ t = unit
 
     let eval_to_string_exn _instance _model expr =
-      B.bv_assignment expr
+      eval_string_hack expr
+        ~f_normal:B.bv_assignment
+        ~f_string:Fn.id
 
     let eval_bool_exn _instance _model expr =
-      B.is_bv_const_one expr
+      eval_string_hack expr
+        ~f_normal:B.is_bv_const_one
+        ~f_string:(function
+            | "0" -> false
+            | "1" -> true
+            | _ -> assert false)
   end
 
   let backend_name = "boolector"
@@ -288,8 +307,27 @@ and Uf_t : Smtcaml_intf.Uninterpreted_function
 
   module Ufun = struct
     module Model = struct
-      let eval_to_list_exn _instance _model _expr _convert_domain _convert_codomain =
-        raise_s [%message "model generation not supported (yet)"]
+      (* This is a very bad hack because we're not allowed to do the correct
+         conversion. Maybe the "convert" functions should not be functions, but
+         GADTs instead, so that we can make this safe *)
+      let eval_to_list_exn instance model expr convert_domain convert_codomain =
+        let array = B.uf_assignment_vector expr in
+        let else_ = ref None in
+        let acc = ref [] in
+        Array.iter array
+          ~f:(fun (left, right) ->
+              match left with
+              | "*" -> else_ := Some (convert_codomain instance model (Obj.magic right))
+              | _ ->
+                acc :=
+                  ( convert_domain instance model (Obj.magic left)
+                  , convert_codomain instance model (Obj.magic right)
+                  ) :: !acc
+            );
+        { Smtcaml_intf.Ufun_interp.
+          values = !acc
+        ; else_val = !else_
+        }
     end
 
     let apply a b = B.apply_vector (get_expr_context b) [| b |] a

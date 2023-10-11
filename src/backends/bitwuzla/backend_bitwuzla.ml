@@ -535,7 +535,7 @@ and Uf_t : Smtcaml_intf.Uninterpreted_function
         | _ ->
           { Smtcaml_intf.Ufun_interp.
             values = []
-          ; else_val = expr
+          ; else_val = Some expr
           }
 
       let eval_to_list_exn instance model expr convert_domain convert_codomain =

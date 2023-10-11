@@ -332,7 +332,7 @@ and Uf_t : Smtcaml_intf.Uninterpreted_function
         else
           { Smtcaml_intf.Ufun_interp.
             values = []
-          ; else_val = convert_codomain solver model expr
+          ; else_val = Some (convert_codomain solver model expr)
           }
 
       let get_var_from_arguments arguments =
@@ -371,7 +371,7 @@ and Uf_t : Smtcaml_intf.Uninterpreted_function
           else
             { Smtcaml_intf.Ufun_interp.
               values = []
-            ; else_val = convert_codomain solver model results
+            ; else_val = Some (convert_codomain solver model results)
             }
         | _ ->
           raise_s [%message "don't know how to interpret"
