@@ -974,6 +974,8 @@ struct CamlConversion<std::vector<T>>{
     CAMLreturn(v_ret);
   }
 
+  template <typename Q = T>
+  requires CamlOfValue<Q>
   static inline RepresentationType of_value(value v) { 
     auto len = Wosize_val(v);
     auto f = [](value v){
@@ -1040,7 +1042,7 @@ struct CamlConversion<std::pair<T0,T1>>{
   typedef CamlConversion<T1> N1;
   static const auto allocates = CamlAllocates::Allocation;
 
-  static inline value to_value(std::pair<N0,N1>&p){
+  static inline value to_value(std::pair<T0,T1>&p){
     CAMLparam0();
     CAMLlocal3(v_pair,v_first,v_second);
     v_first = N0::to_value(p.first);
@@ -1063,6 +1065,8 @@ struct CamlConversion<std::pair<T0,T1>>{
 
   static inline RepresentationType get_underlying(RepresentationType r) { return r; }
 };
+
+
 
 template<typename T>
 concept PropertyAllowConst = requires {
@@ -1107,6 +1111,8 @@ struct CamlConversion<const T&> {
 */
 
 static_assert(CamlBidirectional<const std::string>);
+
+static_assert(CamlToValue<std::pair<std::string, std::string>>);
 
 // Needed so that we can expand the parameter pack. There must be a better way.....
 template<typename T_first, typename T_second> struct first_type { typedef T_first type; };

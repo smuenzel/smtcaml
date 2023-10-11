@@ -14,6 +14,7 @@ DECL_API_TYPE(Btor*,btor);
 DECL_API_TYPE(const char*,string);
 DECL_API_TYPE(BtorOption,btor_option);
 DECL_API_TYPE(void,unit);
+DECL_API_TYPE(std::string,string);
 
 typedef std::remove_pointer<BoolectorSort>::type BoolectorSortRaw;
 
@@ -333,6 +334,23 @@ apireturn caml_boolector_bv_assignment(value v_p0){
   return CppCaml::call_api_implied_first(boolector_free_bv_assignment_,boolector_bv_assignment,v_p0);
 }
 REGISTER_API_CUSTOM(boolector_bv_assignment,caml_boolector_bv_assignment,const char *, BoolectorNode*);
+
+
+std::vector<std::pair<std::string,std::string>> boolector_uf_assignment_vector(Btor*btor, BoolectorNode*uf){
+  char** args;
+  char** values;
+  uint32_t size;
+  boolector_uf_assignment(btor,uf,&args,&values,&size);
+  std::vector<std::pair<std::string,std::string>> result(size);
+  for(uint32_t i =0; i< size; i++){
+    result[i] = std::make_pair(args[i],values[i]);
+  }
+  boolector_free_uf_assignment(btor, args, values, size);
+  return result;
+}
+
+API1I(uf_assignment_vector)
+
 
 inline BoolectorNode* boolector_fun_vector(Btor*btor, std::vector<BoolectorNode*> params, BoolectorNode*body){
   return boolector_fun(btor,params.data(), params.size(), body);
