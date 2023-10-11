@@ -35,6 +35,8 @@ module type Op_types = sig
   type ('i, 's) unary_test = ('i, 's) Types.expr -> ('i, Sort_kind.bool) Types.expr
   type ('i, 's) binary_test = ('i, 's) Types.expr -> ('i, 's) unary_test
 
+  type ('i, 's, 'r) eval = 'i Types.instance -> 'i Types.model -> ('i, 's) Types.expr -> 'r
+
 end
 
 module type Ordering = sig
@@ -88,9 +90,9 @@ module Base_modules = struct
 
     type 'i t = 'i Types.model
 
-    val eval_to_string : 'i Types.instance -> 'i t -> ('i, 's) Types.expr -> string option
+    val eval_to_string_exn : 'i Types.instance -> 'i t -> ('i, 's) Types.expr -> string
 
-    val eval_bool : 'i Types.instance -> 'i t -> ('i, Sort_kind.bool) Types.expr -> bool option
+    val eval_bool_exn : 'i Types.instance -> 'i t -> ('i, Sort_kind.bool) Types.expr -> bool
   end
 
 end
@@ -142,7 +144,7 @@ module type Bitvector = sig
     end
 
     module Model : sig
-      val eval : 'i Types.instance -> 'i Types.model -> ('i, Sort_kind.bv) Types.expr -> Fast_bitvector.t option
+      val eval_exn : 'i Types.instance -> 'i Types.model -> ('i, Sort_kind.bv) Types.expr -> Fast_bitvector.t
     end
 
     val length : ('i, m_sort) Types.expr -> int
@@ -188,6 +190,10 @@ module type Bitvector = sig
     val and_  : ('i, m_sort) Op_types.binary
     val or_  : ('i, m_sort) Op_types.binary
     val xor  : ('i, m_sort) Op_types.binary
+
+    val and_list  : ('i, m_sort) Op_types.redlist
+    val or_list   : ('i, m_sort) Op_types.redlist
+    val xor_list  : ('i, m_sort) Op_types.redlist
 
     val add : ('i, m_sort) Op_types.binary
     val sub : ('i, m_sort) Op_types.binary
@@ -274,6 +280,7 @@ end
 
 module type Uninterpreted_function = sig
   module Types : Types
+  module Op_types : Op_types with module Types := Types
 
   val sort_uninterpreted_function 
     : 'i Types.instance
@@ -282,6 +289,16 @@ module type Uninterpreted_function = sig
     -> ('i, ('d -> 'cd) Sort_kind.ufun) Types.sort
 
   module Ufun : sig
+    module Model : sig
+      val eval_to_list_exn
+        : ( 'i
+          , ('d -> 'cd) Sort_kind.ufun
+          , ('i, 'd, 'rd) Op_types.eval
+            -> ('i, 'cd, 'rcd) Op_types.eval 
+            -> ('rd * 'rcd) list
+          ) Op_types.eval
+    end
+
     val apply
       : ('i, ('d -> 'cd) Sort_kind.ufun) Types.expr
       -> ('i, 'd) Types.expr

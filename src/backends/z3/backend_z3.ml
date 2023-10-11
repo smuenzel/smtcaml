@@ -142,20 +142,21 @@ and Model : Smtcaml_intf.Base_modules.Model
 = struct
   type _ t = Z3.Model.model
 
-  let eval_to_string _t model expr =
+  let eval_to_string_exn _t model expr =
     let apply_model_completion = true in
     Z3.Model.eval model expr apply_model_completion
-    |> Option.map ~f:Z3.Expr.to_string
+    |> Option.value_exn
+    |> Z3.Expr.to_string
 
-  let eval_bool _t model expr =
+  let eval_bool_exn _t model expr =
     let apply_model_completion = true in
     Z3.Model.eval model expr apply_model_completion
-    |> Option.map ~f:Z3.Boolean.get_bool_value
-    |> Option.map ~f:(function
-        | Z3enums.L_FALSE -> false
-        | Z3enums.L_UNDEF -> assert false
-        | Z3enums.L_TRUE -> true
-      )
+    |> Option.value_exn
+    |> Z3.Boolean.get_bool_value
+    |> function
+    | Z3enums.L_FALSE -> false
+    | Z3enums.L_UNDEF -> assert false
+    | Z3enums.L_TRUE -> true
 end
 
 and Sort : Sort
@@ -274,10 +275,11 @@ and Bitvector_t : Smtcaml_intf.Bitvector
     end
 
     module Model = struct
-      let eval _t model expr =
+      let eval_exn _t model expr =
         let apply_model_completion = true in
         Z3.Model.eval model expr apply_model_completion
-        |> Option.map ~f:Numeral.to_fast_bitvector
+        |> Option.value_exn
+        |> Numeral.to_fast_bitvector
     end
 
     module Signed = struct
@@ -337,6 +339,10 @@ and Bitvector_t : Smtcaml_intf.Bitvector
     let and_ = op Z3.BitVector.mk_and
     let or_ = op Z3.BitVector.mk_or
     let xor = op Z3.BitVector.mk_xor
+
+    let and_list = List.reduce_balanced_exn ~f:and_
+    let or_list = List.reduce_balanced_exn ~f:or_
+    let xor_list = List.reduce_balanced_exn ~f:xor
 
     let add = op Z3.BitVector.mk_add
     let sub = op Z3.BitVector.mk_sub
@@ -404,12 +410,17 @@ end
 
 and Uf_t : Smtcaml_intf.Uninterpreted_function
   with module Types := Types
+   and module Op_types := Op_types
 = struct
 
   let sort_uninterpreted_function (t : _ T.t) ~domain ~codomain =
     Z3.Z3Array.mk_sort t.context domain codomain
 
   module Ufun = struct
+    module Model = struct
+      let eval_to_list_exn _ = assert false
+    end
+
     let apply a b = Z3.Z3Array.mk_select (Expr.context a) a b
   end
 

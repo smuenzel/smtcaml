@@ -57,11 +57,11 @@ module rec Base : Smtcaml_intf.Backend
   module Model = struct
     type _ t = unit
 
-    let eval_to_string solver () term =
-      Some (C.term__toString (C.solver__getValue__t solver term))
+    let eval_to_string_exn solver () term =
+      C.term__toString (C.solver__getValue__t solver term)
 
-    let eval_bool solver () term =
-      Some (C.term__getBooleanValue (C.solver__getValue__t solver term))
+    let eval_bool_exn solver () term =
+      C.term__getBooleanValue (C.solver__getValue__t solver term)
   end
 
   let backend_name = "cvc5"
@@ -141,10 +141,10 @@ and Bitvector_t : Smtcaml_intf.Bitvector
     end
 
     module Model = struct
-      let eval solver model term =
-        Model.eval_to_string solver model term
-        |> Option.map ~f:(String.chop_prefix_exn ~prefix:"#b")
-        |> Option.map ~f:Fast_bitvector.Little_endian.of_string
+      let eval_exn solver model term =
+        Model.eval_to_string_exn solver model term
+        |> String.chop_prefix_exn ~prefix:"#b"
+        |> Fast_bitvector.Little_endian.of_string
     end
 
 
@@ -236,6 +236,10 @@ and Bitvector_t : Smtcaml_intf.Bitvector
     let or_ = op2 BITVECTOR_OR
     let xor = op2 BITVECTOR_XOR
 
+    let and_list = op_list BITVECTOR_AND
+    let or_list = op_list BITVECTOR_OR
+    let xor_list = op_list BITVECTOR_XOR
+
     let add = op2 BITVECTOR_ADD
     let sub = op2 BITVECTOR_SUB
 
@@ -256,7 +260,7 @@ and Bitvector_t : Smtcaml_intf.Bitvector
       let length = length a in
       (* No mk_redxor *)
       List.init length ~f:(fun i -> extract_single a ~bit:i)
-      |> List.reduce_balanced_exn ~f:xor
+      |> xor_list
 
     include Smtcaml_utils.Popcount.Make(T)
 
@@ -276,11 +280,16 @@ end
 
 and Uf_t : Smtcaml_intf.Uninterpreted_function
   with module Types := Types
+   and module Op_types := Op_types
 = struct
   let sort_uninterpreted_function t ~domain ~codomain =
     C.solver__mkFunctionSort t [| domain |] codomain
 
   module Ufun = struct
+    module Model = struct
+      let eval_to_list_exn _ = assert false
+    end
+
     let apply a b = op2 APPLY_UF a b
   end
 end

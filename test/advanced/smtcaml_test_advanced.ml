@@ -25,10 +25,10 @@ module Test(Smt : Smtcaml_intf.Interface_definitions.Bitvector_basic) = struct
       print_s [%message "no model" ~_:(result : _ Smtcaml_intf.Solver_result.t)]
     | Satisfiable model ->
       print_s [%message "model"
-          (Smt.Bv.Model.eval t model a : Fast_bitvector.t option)
-          (Smt.Bv.Model.eval t model m1 : Fast_bitvector.t option)
-          (Smt.Bv.Model.eval t model pop : Fast_bitvector.t option)
-          (Smt.Bv.Model.eval t model pop_m1 : Fast_bitvector.t option)
+          (Smt.Bv.Model.eval_exn t model a : Fast_bitvector.t)
+          (Smt.Bv.Model.eval_exn t model m1 : Fast_bitvector.t)
+          (Smt.Bv.Model.eval_exn t model pop : Fast_bitvector.t)
+          (Smt.Bv.Model.eval_exn t model pop_m1 : Fast_bitvector.t)
       ]
 
 end

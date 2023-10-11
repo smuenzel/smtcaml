@@ -24,11 +24,11 @@ module Test(Smt : Smtcaml_intf.Interface_definitions.Bitvector_uf) = struct
       print_s [%message "no model" ~_:(result : _ Smtcaml_intf.Solver_result.t)]
     | Satisfiable model ->
       print_s [%message "model"
-          (Smt.Model.eval_to_string t model c : string option)
-          (Smt.Bv.Model.eval t model c : Fast_bitvector.t option)
-          (Smt.Bv.Model.eval t model sum : Fast_bitvector.t option)
-          (Smt.Bv.Model.eval t model app0 : Fast_bitvector.t option)
-          (Smt.Bv.Model.eval t model app1 : Fast_bitvector.t option)
+          (Smt.Model.eval_to_string_exn t model c : string)
+          (Smt.Bv.Model.eval_exn t model c : Fast_bitvector.t)
+          (Smt.Bv.Model.eval_exn t model sum : Fast_bitvector.t)
+          (Smt.Bv.Model.eval_exn t model app0 : Fast_bitvector.t)
+          (Smt.Bv.Model.eval_exn t model app1 : Fast_bitvector.t)
       ]
 
 end
@@ -38,40 +38,42 @@ let%expect_test "bitwuzla" =
   T.run ();
   [%expect {|
     (model
-     ("Smt.Model.eval_to_string t model c" (#b00000000000000011000011010011111))
-     ("Smt.Bv.Model.eval t model c" (00000000000000011000011010011111))
-     ("Smt.Bv.Model.eval t model sum" (00000000000000000000000000100011))
-     ("Smt.Bv.Model.eval t model app0" (00000000000000011000011010011111))
-     ("Smt.Bv.Model.eval t model app1" (00000000000000011000011010011111))) |}]
+     ("Smt.Model.eval_to_string_exn t model c"
+      #b00000000000000011000011010011111)
+     ("Smt.Bv.Model.eval_exn t model c" 00000000000000011000011010011111)
+     ("Smt.Bv.Model.eval_exn t model sum" 00000000000000000000000000100011)
+     ("Smt.Bv.Model.eval_exn t model app0" 00000000000000011000011010011111)
+     ("Smt.Bv.Model.eval_exn t model app1" 00000000000000011000011010011111)) |}]
 
 let%expect_test "boolector" =
   let module T = Test(Backend_boolector) in
   T.run ();
   [%expect {|
     (model
-     ("Smt.Model.eval_to_string t model c" (00000000000000011000011010011111))
-     ("Smt.Bv.Model.eval t model c" (00000000000000011000011010011111))
-     ("Smt.Bv.Model.eval t model sum" (00000000000000000000000000100011))
-     ("Smt.Bv.Model.eval t model app0" (00000000000000011000011010011111))
-     ("Smt.Bv.Model.eval t model app1" (00000000000000011000011010011111))) |}]
+     ("Smt.Model.eval_to_string_exn t model c" 00000000000000011000011010011111)
+     ("Smt.Bv.Model.eval_exn t model c" 00000000000000011000011010011111)
+     ("Smt.Bv.Model.eval_exn t model sum" 00000000000000000000000000100011)
+     ("Smt.Bv.Model.eval_exn t model app0" 00000000000000011000011010011111)
+     ("Smt.Bv.Model.eval_exn t model app1" 00000000000000011000011010011111)) |}]
 
 let%expect_test "cvc5" =
   let module T = Test(Backend_cvc5) in
   T.run ();
   [%expect {|
     (model
-     ("Smt.Model.eval_to_string t model c" (#b00000000000000011000011010011111))
-     ("Smt.Bv.Model.eval t model c" (00000000000000011000011010011111))
-     ("Smt.Bv.Model.eval t model sum" (00000000000000000000000000100011))
-     ("Smt.Bv.Model.eval t model app0" (00000000000000011000011010011111))
-     ("Smt.Bv.Model.eval t model app1" (00000000000000011000011010011111))) |}]
+     ("Smt.Model.eval_to_string_exn t model c"
+      #b00000000000000011000011010011111)
+     ("Smt.Bv.Model.eval_exn t model c" 00000000000000011000011010011111)
+     ("Smt.Bv.Model.eval_exn t model sum" 00000000000000000000000000100011)
+     ("Smt.Bv.Model.eval_exn t model app0" 00000000000000011000011010011111)
+     ("Smt.Bv.Model.eval_exn t model app1" 00000000000000011000011010011111)) |}]
 
 let%expect_test "z3" =
   let module T = Test(Backend_z3) in
   T.run ();
   [%expect {|
-    (model ("Smt.Model.eval_to_string t model c" (#x0001869f))
-     ("Smt.Bv.Model.eval t model c" (00000000000000011000011010011111))
-     ("Smt.Bv.Model.eval t model sum" (00000000000000000000000000100011))
-     ("Smt.Bv.Model.eval t model app0" (00000000000000011000011010011111))
-     ("Smt.Bv.Model.eval t model app1" (00000000000000011000011010011111))) |}]
+    (model ("Smt.Model.eval_to_string_exn t model c" #x0001869f)
+     ("Smt.Bv.Model.eval_exn t model c" 00000000000000011000011010011111)
+     ("Smt.Bv.Model.eval_exn t model sum" 00000000000000000000000000100011)
+     ("Smt.Bv.Model.eval_exn t model app0" 00000000000000011000011010011111)
+     ("Smt.Bv.Model.eval_exn t model app1" 00000000000000011000011010011111)) |}]

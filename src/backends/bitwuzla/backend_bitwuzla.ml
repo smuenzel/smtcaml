@@ -307,11 +307,11 @@ module rec Base : Smtcaml_intf.Backend
   module Model = struct
     type _ t = unit
 
-    let eval_to_string instance _model expr =
-      Some (B.Solver.get_value instance expr |> B.Term.to_string)
+    let eval_to_string_exn instance _model expr =
+      B.Solver.get_value instance expr |> B.Term.to_string
 
-    let eval_bool instance _m expr =
-      Some (B.Solver.get_value instance expr |> B.Term.is_bv_value_one)
+    let eval_bool_exn instance _m expr =
+      B.Solver.get_value instance expr |> B.Term.is_bv_value_one
   end
 
   let backend_name = "bitwuzla"
@@ -386,10 +386,10 @@ and Bitvector_t : Smtcaml_intf.Bitvector
     end
 
     module Model = struct
-      let eval i m e =
-        Model.eval_to_string i m e
-        |> Option.map ~f:(String.chop_prefix_exn ~prefix:"#b")
-        |> Option.map ~f:Fast_bitvector.Little_endian.of_string
+      let eval_exn i m e =
+        Model.eval_to_string_exn i m e
+        |> String.chop_prefix_exn ~prefix:"#b"
+        |> Fast_bitvector.Little_endian.of_string
     end
 
     let length e = Sort.length (B.Term.sort e)
@@ -458,6 +458,10 @@ and Bitvector_t : Smtcaml_intf.Bitvector
     let or_ = B.mk_term2 Bv_or
     let xor = B.mk_term2 Bv_xor
 
+    let and_list list = B.mk_term Bv_and (Array.of_list list)
+    let or_list list = B.mk_term Bv_or (Array.of_list list)
+    let xor_list list = B.mk_term Bv_xor (Array.of_list list)
+
     let add = B.mk_term2 Bv_add
     let sub = B.mk_term2 Bv_sub
 
@@ -493,11 +497,16 @@ end
 
 and Uf_t : Smtcaml_intf.Uninterpreted_function
   with module Types := Types
+   and module Op_types := Op_types
 = struct
   let sort_uninterpreted_function _t ~domain ~codomain =
     B.mk_fun_sort [| domain |] codomain
 
   module Ufun = struct
+    module Model = struct
+      let eval_to_list_exn _ = assert false
+    end
+
     let apply a b = B.mk_term2 Apply a b
   end
 

@@ -50,11 +50,11 @@ module rec Base : Smtcaml_intf.Backend
   module Model = struct
     type _ t = unit
 
-    let eval_to_string _instance _model expr =
-      Some (B.bv_assignment expr)
+    let eval_to_string_exn _instance _model expr =
+      B.bv_assignment expr
 
-    let eval_bool _instance _model expr =
-      Some (B.is_bv_const_one expr)
+    let eval_bool_exn _instance _model expr =
+      B.is_bv_const_one expr
   end
 
   let backend_name = "boolector"
@@ -162,9 +162,9 @@ and Bitvector_t : Smtcaml_intf.Bitvector
     end
 
     module Model = struct
-      let eval instance model expr =
-        Model.eval_to_string instance model expr
-        |> Option.map ~f:Fast_bitvector.Little_endian.of_string
+      let eval_exn instance model expr =
+        Model.eval_to_string_exn instance model expr
+        |> Fast_bitvector.Little_endian.of_string
     end
 
     let length e = Sort.length (Expr.sort e)
@@ -242,6 +242,10 @@ and Bitvector_t : Smtcaml_intf.Bitvector
     let or_ = B.or_
     let xor = B.xor
 
+    let and_list = List.reduce_balanced_exn ~f:and_
+    let or_list = List.reduce_balanced_exn ~f:or_
+    let xor_list = List.reduce_balanced_exn ~f:xor
+
     let add = B.add
     let sub = B.sub
 
@@ -277,11 +281,16 @@ end
 
 and Uf_t : Smtcaml_intf.Uninterpreted_function
   with module Types := Types
+   and module Op_types := Op_types
 = struct
   let sort_uninterpreted_function t ~domain ~codomain =
     B.fun_sort_vector t [| domain |] codomain
 
   module Ufun = struct
+    module Model = struct
+      let eval_to_list_exn _ = assert false
+    end
+
     let apply a b = B.apply_vector (get_expr_context b) [| b |] a
   end
 end
