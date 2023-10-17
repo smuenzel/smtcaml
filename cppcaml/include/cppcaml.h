@@ -303,7 +303,7 @@ value list_to_caml(value (*convert)(T), const CamlLinkedList<cstring>* l){
 
 #define CPPCAML_REGISTRY(VARNAME,...) \
   static inline constexpr auto VARNAME \
-__attribute((used, section("caml_api_registry"))) = \
+__attribute((used, retain, section("caml_api_registry"))) = \
     CppCaml::ApiRegistryEntry(__VA_ARGS__);
 
 #define REGISTER_API(APIPREFIX,APIF, WRAPPER) \

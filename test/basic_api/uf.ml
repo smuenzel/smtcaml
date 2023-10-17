@@ -29,13 +29,6 @@ module Test_const(Smt : Smtcaml_intf.Interface_definitions.Bitvector_uf) = struc
           Smt.Bv.Model.eval_exn
       in
       print_s [%message "model"
-        (*
-          (Smt.Model.eval_to_string_exn t model c : string)
-          (Smt.Bv.Model.eval_exn t model c : Fast_bitvector.t)
-          (Smt.Bv.Model.eval_exn t model sum : Fast_bitvector.t)
-          (Smt.Bv.Model.eval_exn t model app0 : Fast_bitvector.t)
-          (Smt.Bv.Model.eval_exn t model app1 : Fast_bitvector.t)
-           *)
           (fun_model
            : (Fast_bitvector.t, Fast_bitvector.t) Smtcaml_intf.Ufun_interp.t
           )

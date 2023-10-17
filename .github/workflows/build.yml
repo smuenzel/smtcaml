@@ -15,6 +15,7 @@ jobs:
       matrix:
         ocaml-compiler:
           - 4.14.1
+          - 5.1.0
 
     steps:
     - name: switch to gcc-13 on linux
