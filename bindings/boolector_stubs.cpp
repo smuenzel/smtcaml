@@ -71,7 +71,7 @@ template<> struct CppCaml::CamlConversion<BoolectorNode**> {
     for(size_t i = 0; i < length; i ++){
       Field(ar,i) = CppCaml::CamlConversion<BoolectorNode*>::to_value(context, n[i]);
     };
-    return ar;
+    CAMLreturn(ar);
   }
 };
 
