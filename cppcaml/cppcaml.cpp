@@ -4,9 +4,10 @@ using namespace CppCaml;
 value ApiFunctionDescription::to_value(){
   CAMLparam0();
   CAMLlocal5(v_ret, v_return_type, v_parameter_count, v_parameters, v_it);
-  CAMLlocal2(v_class_name, v_next);
+  CAMLlocal3(v_class_name, v_next, v_allocates);
   v_return_type = caml_copy_string(this->return_type);
   v_parameter_count = Val_long(this->parameter_count);
+  v_allocates = Val_bool(this->return_allocates);
   v_parameters = list_to_caml(caml_copy_string,this->parameters);
   if(this->class_name == 0){
     v_class_name = Val_none;
@@ -14,11 +15,12 @@ value ApiFunctionDescription::to_value(){
     v_class_name = caml_alloc_small(1,0);
     Field(v_class_name,0) = caml_copy_string(this->class_name);
   };
-  v_ret = caml_alloc_small(4,0);
+  v_ret = caml_alloc_small(5,0);
   Field(v_ret,0) = v_return_type;
   Field(v_ret,1) = v_parameter_count;
   Field(v_ret,2) = v_parameters;
   Field(v_ret,3) = v_class_name;
+  Field(v_ret,4) = v_allocates;
   CAMLreturn(v_ret);
 }
 

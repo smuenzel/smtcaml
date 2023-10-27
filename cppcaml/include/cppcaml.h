@@ -22,6 +22,29 @@
 
 namespace CppCaml {
 
+enum class CamlAllocates {
+  No_allocation, Allocation
+};
+
+struct Void {};
+
+template<typename V>
+struct ReplaceVoid{
+  typedef V type;
+};
+
+template<>
+struct ReplaceVoid<void>{
+  typedef Void type;
+};
+
+
+template <typename T> class CamlConversion;
+
+template<typename R, typename Rv = ReplaceVoid<R>::type> constexpr bool conv_allocates(){
+  return CamlConversion<Rv>::allocates == CamlAllocates::Allocation;
+}
+
 template<typename T>
 struct always_false : std::false_type {};
 
@@ -136,41 +159,42 @@ struct ApiFunctionDescription {
   const size_t parameter_count;
   const CamlLinkedList<cstring>* parameters;
   cstring class_name;
+  const bool return_allocates;
 
   template<typename R, typename... Ps>
     constexpr ApiFunctionDescription(type_list<R,Ps...>)
     : return_type(ApiTypename<R>::name), parameter_count(sizeof...(Ps))
-      , parameters(Params<Ps...>::p), class_name()
+      , parameters(Params<Ps...>::p), class_name(), return_allocates(conv_allocates<R>())
     {}
 
   template<typename R, typename... Ps>
     constexpr ApiFunctionDescription(R (*fun)(Ps...))
     : return_type(ApiTypename<R>::name), parameter_count(sizeof...(Ps))
-      , parameters(Params<Ps...>::p), class_name()
+      , parameters(Params<Ps...>::p), class_name(), return_allocates(conv_allocates<R>())
     {}
 
   template<typename R, typename P0, typename... Ps>
     constexpr ApiFunctionDescription(DropFirstArgument, R (*fun)(P0, Ps...))
     : return_type(ApiTypename<R>::name), parameter_count(sizeof...(Ps))
-      , parameters(Params<Ps...>::p), class_name()
+      , parameters(Params<Ps...>::p), class_name(), return_allocates(conv_allocates<R>())
     {}
 
   template<class C, typename R, typename... Ps>
     constexpr ApiFunctionDescription(cstring c, R (C::*fun)(Ps...) const)
     : return_type(ApiTypename<R>::name), parameter_count(sizeof...(Ps) + 1)
-      , parameters(Params<C*, Ps...>::p), class_name(c)
+      , parameters(Params<C*, Ps...>::p), class_name(c), return_allocates(conv_allocates<R>())
     {}
 
   template<class C, typename R, typename... Ps>
     constexpr ApiFunctionDescription(DropFirstArgument, cstring c, R (C::*fun)(Ps...) const)
     : return_type(ApiTypename<R>::name), parameter_count(sizeof...(Ps) + 1)
-      , parameters(Params<Ps...>::p), class_name(c)
+      , parameters(Params<Ps...>::p), class_name(c), return_allocates(conv_allocates<R>())
     {}
 
   template<class C, typename R, typename... Ps>
     constexpr ApiFunctionDescription(cstring c, R (C::*fun)(Ps...))
     : return_type(ApiTypename<R>::name), parameter_count(sizeof...(Ps) + 1)
-      , parameters(Params<C*, Ps...>::p), class_name(c)
+      , parameters(Params<C*, Ps...>::p), class_name(c), return_allocates(conv_allocates<R>())
     {}
 
   value to_value();
@@ -606,10 +630,6 @@ template<typename T> class CamlConversionProperties {
       */
 };
 
-enum class CamlAllocates {
-  No_allocation, Allocation
-};
-
 template<typename T, CamlRepresentationKind kind>
 concept PropertyRepresented = requires {
   requires(CamlConversionProperties<T>::representation_kind == kind);
@@ -837,8 +857,6 @@ struct CamlConversion<T> {
     }
   }
 };
-
-struct Void {};
 
 template<> struct CamlConversion<Void> {
   typedef struct Void RepresentationType;
@@ -1210,16 +1228,6 @@ requires (std::same_as<Result,void>)
 inline Void invoke_seq_void(F&& f, std::tuple<Ps...> ps, std::index_sequence<is...> iseq){
   std::invoke(std::forward<F>(f), get<is>(ps)...);
   return {};
-};
-
-template<typename V>
-struct ReplaceVoid{
-  typedef V type;
-};
-
-template<>
-struct ReplaceVoid<void>{
-  typedef Void type;
 };
 
 template<typename T> struct remove_pconst { typedef T type; };

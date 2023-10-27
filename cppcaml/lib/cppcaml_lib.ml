@@ -5,6 +5,7 @@ type fun_desc =
   ; parameter_count : int
   ; parameters : string list
   ; class_name : string option
+  ; return_allocates : bool
   } [@@deriving sexp]
 
 type api_registry_entry =
@@ -27,6 +28,7 @@ let function_type
     ; parameter_count
     ; parameters
     ; class_name
+    ; return_allocates = _
     }
   =
   let parameters =
@@ -48,20 +50,27 @@ let emit_entry
     ; description
     }
   =
+  let noalloc =
+    if description.return_allocates
+    then ""
+    else " [@@ocaml.noalloc]"
+  in
   if description.parameter_count > 5
   then begin
     Stdlib.Printf.printf
-      {|external %s : %s = "%s_bytecode" "%s"|}
+      {|external %s : %s = "%s_bytecode" "%s"%s|}
       (String.uncapitalize (modify name))
       (function_type description)
       wrapper_name
       wrapper_name
+      noalloc
   end else begin
     Stdlib.Printf.printf
-      {|external %s : %s = "%s"|}
+      {|external %s : %s = "%s"%s|}
       (String.uncapitalize (modify name))
       (function_type description)
       wrapper_name
+      noalloc
   end;
   Stdlib.print_newline ()
 
