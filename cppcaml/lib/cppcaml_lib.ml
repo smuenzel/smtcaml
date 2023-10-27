@@ -51,6 +51,8 @@ let emit_entry
     }
   =
   let noalloc =
+    (* CR smuenzel: this does not take into account potential callbacks
+       (e.g. boolector has exeception callbacks) *)
     if description.return_allocates
     then ""
     else " [@@ocaml.noalloc]"
