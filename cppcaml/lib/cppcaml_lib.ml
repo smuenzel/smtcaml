@@ -52,8 +52,10 @@ let emit_entry
   =
   let noalloc =
     (* CR smuenzel: this does not take into account potential callbacks
-       (e.g. boolector has exeception callbacks) *)
-    if description.may_allocate
+       (e.g. boolector has exeception callbacks).
+       Also, we don't know if the function will release the ocaml lock.
+       So disable for now. *)
+    if true || description.may_allocate
     then ""
     else " [@@ocaml.noalloc]"
   in
