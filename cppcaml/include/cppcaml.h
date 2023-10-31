@@ -159,42 +159,42 @@ struct ApiFunctionDescription {
   const size_t parameter_count;
   const CamlLinkedList<cstring>* parameters;
   cstring class_name;
-  const bool return_allocates;
+  const bool may_allocate;
 
   template<typename R, typename... Ps>
     constexpr ApiFunctionDescription(type_list<R,Ps...>)
     : return_type(ApiTypename<R>::name), parameter_count(sizeof...(Ps))
-      , parameters(Params<Ps...>::p), class_name(), return_allocates(conv_allocates<R>())
+      , parameters(Params<Ps...>::p), class_name(), may_allocate(conv_allocates<R>())
     {}
 
   template<typename R, typename... Ps>
     constexpr ApiFunctionDescription(R (*fun)(Ps...))
     : return_type(ApiTypename<R>::name), parameter_count(sizeof...(Ps))
-      , parameters(Params<Ps...>::p), class_name(), return_allocates(conv_allocates<R>())
+      , parameters(Params<Ps...>::p), class_name(), may_allocate(conv_allocates<R>())
     {}
 
   template<typename R, typename P0, typename... Ps>
     constexpr ApiFunctionDescription(DropFirstArgument, R (*fun)(P0, Ps...))
     : return_type(ApiTypename<R>::name), parameter_count(sizeof...(Ps))
-      , parameters(Params<Ps...>::p), class_name(), return_allocates(conv_allocates<R>())
+      , parameters(Params<Ps...>::p), class_name(), may_allocate(conv_allocates<R>())
     {}
 
   template<class C, typename R, typename... Ps>
     constexpr ApiFunctionDescription(cstring c, R (C::*fun)(Ps...) const)
     : return_type(ApiTypename<R>::name), parameter_count(sizeof...(Ps) + 1)
-      , parameters(Params<C*, Ps...>::p), class_name(c), return_allocates(conv_allocates<R>())
+      , parameters(Params<C*, Ps...>::p), class_name(c), may_allocate(conv_allocates<R>())
     {}
 
   template<class C, typename R, typename... Ps>
     constexpr ApiFunctionDescription(DropFirstArgument, cstring c, R (C::*fun)(Ps...) const)
     : return_type(ApiTypename<R>::name), parameter_count(sizeof...(Ps) + 1)
-      , parameters(Params<Ps...>::p), class_name(c), return_allocates(conv_allocates<R>())
+      , parameters(Params<Ps...>::p), class_name(c), may_allocate(conv_allocates<R>())
     {}
 
   template<class C, typename R, typename... Ps>
     constexpr ApiFunctionDescription(cstring c, R (C::*fun)(Ps...))
     : return_type(ApiTypename<R>::name), parameter_count(sizeof...(Ps) + 1)
-      , parameters(Params<C*, Ps...>::p), class_name(c), return_allocates(conv_allocates<R>())
+      , parameters(Params<C*, Ps...>::p), class_name(c), may_allocate(conv_allocates<R>())
     {}
 
   value to_value();

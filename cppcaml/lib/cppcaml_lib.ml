@@ -5,7 +5,7 @@ type fun_desc =
   ; parameter_count : int
   ; parameters : string list
   ; class_name : string option
-  ; return_allocates : bool
+  ; may_allocate : bool
   } [@@deriving sexp]
 
 type api_registry_entry =
@@ -28,7 +28,7 @@ let function_type
     ; parameter_count
     ; parameters
     ; class_name
-    ; return_allocates = _
+    ; may_allocate = _
     }
   =
   let parameters =
@@ -53,7 +53,7 @@ let emit_entry
   let noalloc =
     (* CR smuenzel: this does not take into account potential callbacks
        (e.g. boolector has exeception callbacks) *)
-    if description.return_allocates
+    if description.may_allocate
     then ""
     else " [@@ocaml.noalloc]"
   in

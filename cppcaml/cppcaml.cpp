@@ -7,7 +7,7 @@ value ApiFunctionDescription::to_value(){
   CAMLlocal3(v_class_name, v_next, v_allocates);
   v_return_type = caml_copy_string(this->return_type);
   v_parameter_count = Val_long(this->parameter_count);
-  v_allocates = Val_bool(this->return_allocates);
+  v_allocates = Val_bool(this->may_allocate);
   v_parameters = list_to_caml(caml_copy_string,this->parameters);
   if(this->class_name == 0){
     v_class_name = Val_none;
